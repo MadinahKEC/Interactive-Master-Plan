@@ -1,0 +1,21 @@
+{
+  "_note": "Project overlay per plot code. Edit here, via the admin console (next phase), or the API. Fields: name_ar, name_en, type (Hotel|Hospital|Mall|Office|MixedUse|Residential|Education|Community|Park|Cultural|Utilities|Transit), status (Completed|UnderConstruction|Future|Partner), progress 0-100, gallery [image urls], summary_ar, summary_en.",
+  "S19": {
+    "name_ar": "مدارس المعرفة",
+    "name_en": "Knowledge Schools",
+    "type": "Education",
+    "status": "Completed",
+    "progress": 100,
+    "summary_ar": "مجمع تعليمي مكتمل ضمن القطاع الجنوبي.",
+    "summary_en": "Completed education campus in the South sector."
+  },
+  "E35": {
+    "name_ar": "ملتقى المعرفة",
+    "name_en": "Knowledge Plaza",
+    "type": "MixedUse",
+    "status": "UnderConstruction",
+    "progress": 62,
+    "summary_ar": "وجهة متعددة الاستخدامات تحت الإنشاء بواجهة تجارية نابضة.",
+    "summary_en": "A mixed-use destination under construction with a vibrant retail frontage."
+  }
+}

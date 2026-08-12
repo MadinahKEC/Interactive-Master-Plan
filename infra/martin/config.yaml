@@ -1,0 +1,11 @@
+# Martin tile server config — publishes the plots MVT function.
+# Tile URL:  http://localhost:3001/plots/{z}/{x}/{y}
+listen_addresses: '0.0.0.0:3000'
+
+postgres:
+  connection_string: ${DATABASE_URL}
+  # Auto-publish the plots_mvt(z,x,y) function as the "plots" source
+  functions:
+    plots:
+      schema: public
+      function: plots_mvt

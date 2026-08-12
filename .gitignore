@@ -1,0 +1,33 @@
+# deps
+node_modules/
+dist/
+build/
+.vite/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# data (large / generated) — keep the geojson, ignore staging
+/data/tmp/
+/scripts/etl/_extract/
+
+# docker volumes
+infra/volumes/
+
+# firebase
+.firebase/
+firebase-debug.log
+*firebase-debug.log

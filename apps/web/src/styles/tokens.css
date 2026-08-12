@@ -1,0 +1,41 @@
+/* KEC design tokens — light + dark. See docs/07_UIUX_Design_System.md */
+:root {
+  --kec-green:#2F6B3E; --kec-title:#1C6034; --kec-green-deep:#143D1E; --kec-green-mid:#3E8E4F;
+  --kec-gold:#9A8A1E; --kec-olive:#7E6F1B;
+  --kec-ink:#16221B; --kec-muted:#5C6B60;
+  --kec-paper:#FBFCFA; --kec-surface:#F0F5EC; --kec-surface-2:#EAF3E4; --kec-hairline:#E4EBDF;
+  --kec-pos:#2F6B3E; --kec-neg:#B5462F; --kec-info:#2E7D6B; --kec-warn:#9A8A1E;
+  --card:#ffffff;
+  --panel-bg:rgba(251,252,250,.94);
+  --tip-bg:#ffffff;
+  --map-bg:#EAF3E4;
+  --kec-font:'Readex Pro',system-ui,'Segoe UI',Tahoma,sans-serif;
+  --kec-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --shadow:0 6px 22px rgba(20,61,30,.10),0 1px 3px rgba(20,61,30,.08);
+  --shadow-lg:0 18px 50px rgba(20,61,30,.22);
+  --radius:12px; --radius-lg:16px;
+}
+:root[data-theme="dark"] {
+  --kec-green:#3E8E4F; --kec-title:#7FC98F; --kec-green-deep:#0B1A10; --kec-green-mid:#4FA560;
+  --kec-gold:#C9B549; --kec-olive:#B7A63C;
+  --kec-ink:#E7F0E7; --kec-muted:#9DB0A2;
+  --kec-paper:#0F1F15; --kec-surface:#16291C; --kec-surface-2:#1D3524; --kec-hairline:#274031;
+  --card:#16291C;
+  --panel-bg:rgba(12,25,16,.90);
+  --tip-bg:#16291C;
+  --map-bg:#0B1A10;
+  --shadow:0 6px 22px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.4);
+  --shadow-lg:0 18px 50px rgba(0,0,0,.55);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body, #root { height:100%; }
+body { font-family:var(--kec-font); color:var(--kec-ink); background:var(--kec-paper);
+  overflow:hidden; transition:background .3s, color .3s; }
+button { font-family:inherit; }
+.mono { font-family:var(--kec-mono); }
+.maplibregl-ctrl-attrib { font-family:var(--kec-font); font-size:9px; opacity:.7; }
+.maplibregl-popup-content { font-family:var(--kec-font); border-radius:12px; padding:9px 13px;
+  box-shadow:var(--shadow); border:1px solid var(--kec-hairline); background:var(--tip-bg); color:var(--kec-ink); }
+.maplibregl-popup-tip { display:none; }
+.tip .tt { display:block; font-size:13px; font-weight:600; color:var(--kec-title); }
+.tip .ts { display:block; font-size:10.5px; color:var(--kec-muted); margin-top:2px; }

@@ -1,0 +1,20 @@
+import { useEffect, useRef } from 'react';
+import * as echarts from 'echarts';
+
+/** Minimal ECharts wrapper: inits once, updates option, resizes, disposes. */
+export function Chart({ option, height = 230 }: { option: any; height?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inst = useRef<echarts.ECharts | null>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    inst.current = echarts.init(ref.current, undefined, { renderer: 'canvas' });
+    const onResize = () => inst.current?.resize();
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); inst.current?.dispose(); inst.current = null; };
+  }, []);
+
+  useEffect(() => { inst.current?.setOption(option, true); }, [option]);
+
+  return <div ref={ref} style={{ width: '100%', height }} />;
+}
