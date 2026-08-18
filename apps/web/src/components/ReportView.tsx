@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { type PlotCollection } from '@kec/types';
 import { useApp, matchPlot } from '../store';
-import { t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, t, type ProjectInfo } from '../lib/domain';
 import type { EffLandUse } from '../lib/effective';
 import { IconClose } from './icons';
 
@@ -15,15 +15,26 @@ export function ReportView({ data, landUses, projects }: {
   const { lang, reportImage, setReportImage } = state;
 
   const stats = useMemo(() => {
-    const lu: Record<string, number> = {}; let n = 0, gfa = 0, area = 0, planned = 0;
+    const lu: Record<string, number> = {}; let n = 0, gfa = 0, area = 0;
+    const planStatus: Record<string, number> = {};
+    let planArea = 0, planGfa = 0;
+    const planList: { code: string; name: string; status: string; color: string; area: number; gfa: number }[] = [];
     if (data) for (const f of data.features) {
       if (!matchPlot(f.properties, state)) continue;
-      n++; gfa += f.properties.gfa || 0; area += f.properties.area || 0;
-      if (f.properties.planStatus) planned++;
-      const k = f.properties.land_use ?? '—'; lu[k] = (lu[k] || 0) + 1;
+      const p = f.properties;
+      n++; gfa += p.gfa || 0; area += p.area || 0;
+      const k = p.land_use ?? '—'; lu[k] = (lu[k] || 0) + 1;
+      if (p.planStatus) {
+        const pr = resolveProject(p.code, p.land_use, projects);
+        planArea += p.area || 0; planGfa += p.gfa || 0;
+        planStatus[pr.status.key] = (planStatus[pr.status.key] || 0) + 1;
+        const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : '—';
+        planList.push({ code: p.code, name: name || '—', status: lang === 'ar' ? pr.status.ar : pr.status.en, color: pr.status.color, area: p.area || 0, gfa: p.gfa || 0 });
+      }
     }
-    return { lu, n, gfa, area, planned };
-  }, [data, state]);
+    planList.sort((a, b) => b.area - a.area);
+    return { lu, n, gfa, area, planStatus, planArea, planGfa, planList };
+  }, [data, state, projects, lang]);
 
   if (reportImage === null) return null;
   const projectsNamed = Object.values(projects).filter((p) => p.name_ar || p.name_en).length;
@@ -54,9 +65,40 @@ export function ReportView({ data, landUses, projects }: {
           <Kpi v={nf.format(stats.n)} l={t('kpi.count', lang)} />
           <Kpi v={fmt(stats.gfa)} l={t('kpi.gfa', lang)} />
           <Kpi v={fmt(stats.area)} l={t('kpi.area', lang)} />
-          <Kpi v={String(stats.planned)} l={t('cp.planTitle', lang)} />
+          <Kpi v={String(stats.planList.length)} l={t('cp.planTitle', lang)} />
           <Kpi v={String(projectsNamed)} l={t('a.named', lang)} />
         </div>
+
+        {stats.planList.length > 0 && (
+          <>
+            <div className="rp-sub">{t('cp.planTitle', lang)}</div>
+            <div className="rp-kpis" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
+              <Kpi v={String(stats.planList.length)} l={t('cp.planned', lang)} />
+              <Kpi v={fmt(stats.planArea)} l={t('kpi.area', lang)} />
+              <Kpi v={fmt(stats.planGfa)} l={t('kpi.gfa', lang)} />
+            </div>
+            <div className="rp-status">
+              {['Completed', 'UnderConstruction', 'Future', 'Partner'].filter((k) => stats.planStatus[k]).map((k) => (
+                <span className="rp-st" key={k}><span className="dot" style={{ background: STATUS_META[k].color }} />{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}: <b>{stats.planStatus[k]}</b></span>
+              ))}
+            </div>
+            <table className="rp-table">
+              <thead><tr>
+                <th>{lang === 'ar' ? 'الرمز' : 'Code'}</th><th>{t('a.name', lang)}</th><th>{t('a.status', lang)}</th>
+                <th>{t('d.area', lang)}</th><th>{t('d.gfa', lang)}</th>
+              </tr></thead>
+              <tbody>
+                {stats.planList.slice(0, 40).map((r) => (
+                  <tr key={r.code}>
+                    <td className="mono">{r.code}</td><td>{r.name}</td>
+                    <td><span className="dot" style={{ background: r.color }} />{r.status}</td>
+                    <td className="mono">{fmt(r.area)}</td><td className="mono">{fmt(r.gfa)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
 
         <div className="rp-sub">{t('cp.uses', lang)}</div>
         <div className="rp-legend">
