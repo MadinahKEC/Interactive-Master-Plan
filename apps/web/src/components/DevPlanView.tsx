@@ -57,7 +57,7 @@ export function DevPlanView({
   return (
     <div className="admin-root devplan-view">
       <div className="admin-head">
-        <div className="admin-brand"><img src="/KEC.png" alt="KEC" /><b>{t('dp.title', lang)}</b>
+        <div className="admin-brand"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /><b>{t('dp.title', lang)}</b>
           <span className="dp-badge">{planned.length} {t('dp.count', lang)}</span>
         </div>
         <button className="ic-btn lg" onClick={onClose}><IconClose size={20} /></button>

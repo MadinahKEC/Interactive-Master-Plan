@@ -15,7 +15,7 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => voi
 
   return (
     <nav className="rail">
-      <div className="rail-brand"><img src="/KEC.png" alt="KEC" /></div>
+      <div className="rail-brand"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /></div>
 
       <div className="rail-group">
         <RailBtn tip={t('d.fullPlan', lang)} onClick={fitAll}><IconHome size={20} /></RailBtn>

@@ -23,7 +23,7 @@ export function Login() {
     return (
       <div className="auth-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="loading" style={{ position: 'static', background: 'transparent' }}>
-          <img src="/KEC.png" alt="KEC" className="load-logo" />
+          <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" className="load-logo" />
           <div className="ring" />
         </div>
       </div>
@@ -36,7 +36,7 @@ export function Login() {
     <div className="auth-overlay" style={{ display: 'flex' }}>
       <div className="auth-brand">
         <div className="auth-brand__in">
-          <div className="auth-mark"><img src="/KEC.png" alt="KEC" /></div>
+          <div className="auth-mark"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /></div>
           <h1 className="auth-brand__t">{ar ? 'المخطط العام التفاعلي' : 'Interactive Master Plan'}</h1>
           <p className="auth-brand__s">{ar ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City'}</p>
           <span className="auth-brand__rule" />

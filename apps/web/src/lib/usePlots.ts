@@ -12,7 +12,7 @@ export function usePlots() {
 
   useEffect(() => {
     let alive = true;
-    fetch('/plots.geojson')
+    fetch(import.meta.env.BASE_URL + 'plots.geojson')
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();

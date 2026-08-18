@@ -266,7 +266,7 @@ export interface ProjectInfo {
 export function useProjects() {
   const [map, setMap] = useState<Record<string, ProjectInfo>>({});
   useEffect(() => {
-    fetch('/projects.json')
+    fetch(import.meta.env.BASE_URL + 'projects.json')
       .then((r) => (r.ok ? r.json() : {}))
       .then((j) => setMap(j || {}))
       .catch(() => setMap({}));

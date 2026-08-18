@@ -65,7 +65,7 @@ export default function App() {
       <div className="powered">{t('powered', lang)}</div>
       {!baseData && !error && (
         <div className="loading">
-          <img src="/KEC.png" alt="KEC" className="load-logo" />
+          <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" className="load-logo" />
           <div className="ring" />
           <p>{t('loading', lang)}</p>
         </div>

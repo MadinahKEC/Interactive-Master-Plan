@@ -33,7 +33,7 @@ export function AdminConsole({
   return (
     <div className="admin-root">
       <div className="admin-head">
-        <div className="admin-brand"><img src="/KEC.png" alt="KEC" /><b>{t('a.title', lang)}</b></div>
+        <div className="admin-brand"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /><b>{t('a.title', lang)}</b></div>
         <button className="ic-btn lg" onClick={onClose}><IconClose size={20} /></button>
       </div>
       <div className="admin-main">

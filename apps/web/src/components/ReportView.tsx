@@ -51,7 +51,7 @@ export function ReportView({ data, landUses, projects }: {
 
       <div className="report-sheet report-print">
         <header className="rp-head">
-          <img src="/KEC.png" alt="KEC" />
+          <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
           <div className="rp-title">
             <h1>{t('report.title', lang)}</h1>
             <p>{lang === 'ar' ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City'} · {t('report.generated', lang)}: {date}</p>
@@ -82,21 +82,6 @@ export function ReportView({ data, landUses, projects }: {
                 <span className="rp-st" key={k}><span className="dot" style={{ background: STATUS_META[k].color }} />{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}: <b>{stats.planStatus[k]}</b></span>
               ))}
             </div>
-            <table className="rp-table">
-              <thead><tr>
-                <th>{lang === 'ar' ? 'الرمز' : 'Code'}</th><th>{t('a.name', lang)}</th><th>{t('a.status', lang)}</th>
-                <th>{t('d.area', lang)}</th><th>{t('d.gfa', lang)}</th>
-              </tr></thead>
-              <tbody>
-                {stats.planList.slice(0, 40).map((r) => (
-                  <tr key={r.code}>
-                    <td className="mono">{r.code}</td><td>{r.name}</td>
-                    <td><span className="dot" style={{ background: r.color }} />{r.status}</td>
-                    <td className="mono">{fmt(r.area)}</td><td className="mono">{fmt(r.gfa)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </>
         )}
 
