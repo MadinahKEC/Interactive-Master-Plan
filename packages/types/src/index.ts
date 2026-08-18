@@ -15,7 +15,8 @@ export interface PlotProps {
   height: number | null; // m
   coverage: number | null;
   far: number | null;
-  style?: string | null; // KMZ provenance
+  style?: string | null;      // KMZ provenance
+  planStatus?: string | null; // set when the plot is in the development plan (status key)
 }
 
 export type PlotFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, PlotProps>;

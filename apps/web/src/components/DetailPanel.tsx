@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, STATUS_META, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
 import { ProgressGallery } from './ProgressGallery';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, TypeIcon } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
@@ -40,6 +40,7 @@ export function DetailPanel({
     setProject(p.code, { phases: [{ name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' }] });
     onEdit(p.code);
   };
+  const removeFromPlan = () => setProject(p.code, { phases: [] });
 
   return (
     <div className="panel" id="detail">
@@ -72,6 +73,12 @@ export function DetailPanel({
         {phases.length > 0 && (
           <Section title={t('sec.devplan', lang)}>
             <Timeline phases={phases} lang={lang} />
+            {canAttr && (
+              <div className="dp-manage">
+                <button className="btn sm" onClick={() => onEdit(p.code)}><IconEdit size={13} /> {t('d.editAttrs', lang)}</button>
+                <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
+              </div>
+            )}
           </Section>
         )}
         {phases.length === 0 && canAttr && (

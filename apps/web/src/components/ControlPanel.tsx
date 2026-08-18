@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { SECTORS, type PlotCollection, type SectorKey } from '@kec/types';
 import { useApp, matchPlot } from '../store';
-import { resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, t, type ProjectInfo } from '../lib/domain';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -10,7 +10,8 @@ const fmtBig = (x: number) =>
 
 export function ControlPanel({ data, landUses, projects }: { data: PlotCollection; landUses: Record<string, EffLandUse>; projects: Record<string, ProjectInfo> }) {
   const state = useApp();
-  const { lang, sector, uses, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
+  const { lang, sector, uses, planOnly, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
+  const plannedCount = useMemo(() => data.features.filter((f) => f.properties.planStatus).length, [data]);
 
   const sectorCounts = useMemo(() => {
     const c: Record<string, number> = { all: 0 };
@@ -80,6 +81,21 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
           <Kpi v={fmtBig(kpis.gfa)} l={t('kpi.gfa', lang)} />
           <Kpi v={fmtBig(kpis.area)} l={t('kpi.area', lang)} />
         </div>
+
+        {plannedCount > 0 && (
+          <>
+            <div className="sect-title">{t('cp.planTitle', lang)} <span className="mini">{plannedCount} {t('cp.planned', lang)}</span></div>
+            <label className={`plan-toggle ${planOnly ? 'on' : ''}`}>
+              <input type="checkbox" checked={planOnly} onChange={togglePlanOnly} />
+              <span className="pt-switch" /><span className="pt-label">{t('cp.planOnly', lang)}</span>
+            </label>
+            <div className="plan-legend">
+              {['Completed', 'UnderConstruction', 'Future', 'Partner'].map((k) => (
+                <span className="pl-item" key={k}><span className="pl-dash" style={{ background: STATUS_META[k].color }} />{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}</span>
+              ))}
+            </div>
+          </>
+        )}
 
         <div className="sect-title">{t('cp.uses', lang)} <span className="mini">{t('cp.filterHint', lang)}</span></div>
         <div className="legend">

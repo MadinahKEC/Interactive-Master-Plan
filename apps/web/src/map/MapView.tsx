@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { LAND_USES, type PlotCollection, type PlotProps } from '@kec/types';
 import { buildStyle, landUseColor, KEC_BOUNDS, KEC_CENTER } from './mapStyle';
 import { useApp } from '../store';
-import { useOverrides } from '../lib/overrides';
+import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
 import type { EffLandUse } from '../lib/effective';
 
@@ -13,10 +13,11 @@ const FILTERED_LAYERS = ['plots-fill', 'plots-line', 'plots-3d', 'plots-label'];
 const fs = (id: string | number) => ({ source: 'plots', id, ...(TILES_URL ? { sourceLayer: 'plots' } : {}) });
 const PAD = { top: 90, bottom: 60, left: 360, right: 340 };
 
-function buildFilter(sector: string, uses: Set<string>, codes: string[] | null): FilterSpecification | null {
+function buildFilter(sector: string, uses: Set<string>, codes: string[] | null, planOnly: boolean): FilterSpecification | null {
   const parts: any[] = ['all'];
   if (sector !== 'all') parts.push(['==', ['get', 'sector'], sector]);
   if (uses.size < Object.keys(LAND_USES).length) parts.push(['in', ['get', 'land_use'], ['literal', [...uses]]]);
+  if (planOnly) parts.push(['has', 'planStatus']);
   if (codes) parts.push(['in', ['get', 'code'], ['literal', codes]]);
   return parts.length === 1 ? null : (parts as unknown as FilterSpecification);
 }
@@ -30,8 +31,8 @@ function boundsOf(data: PlotCollection): maplibregl.LngLatBounds {
   return b;
 }
 
-export function MapView({ data, projects, landUses }: {
-  data: PlotCollection | null; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>;
+export function MapView({ data, projects, landUses, canAnnotate }: {
+  data: PlotCollection | null; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; canAnnotate: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -44,6 +45,15 @@ export function MapView({ data, projects, landUses }: {
   const langRef = useRef(lang);
   const projRef = useRef(projects);
   const luRef = useRef(landUses);
+  const annotations = useOverrides((s) => s.annotations);
+  const annotRef = useRef<Annotation[]>(annotations);
+  const modeRef = useRef<'off' | 'text' | 'arrow' | 'rect'>('off');
+  const colorRef = useRef('#B5462F');
+  const pendingRef = useRef<number[] | null>(null);
+  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const canAnnotRef = useRef(canAnnotate);
+  const focusIdRef = useRef<string | null>(null);
+  useEffect(() => { canAnnotRef.current = canAnnotate; }, [canAnnotate]);
   useEffect(() => { langRef.current = lang; }, [lang]);
   useEffect(() => { projRef.current = projects; }, [projects]);
   useEffect(() => { luRef.current = landUses; }, [landUses]);
@@ -68,7 +78,7 @@ export function MapView({ data, projects, landUses }: {
     if (!ref.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: ref.current, style: buildStyle(TILES_URL, luRef.current), center: KEC_CENTER,
-      zoom: 13.4, maxZoom: 19, attributionControl: { compact: true },
+      zoom: 13.4, maxZoom: 19, attributionControl: { compact: true }, preserveDrawingBuffer: true,
     });
     mapRef.current = map;
     map.doubleClickZoom.disable();
@@ -76,12 +86,33 @@ export function MapView({ data, projects, landUses }: {
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
     const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 });
 
+    // keep the map painted through layout changes / GPU context loss (fixes blank map)
+    const ro = new ResizeObserver(() => { try { map.resize(); } catch { /* */ } });
+    ro.observe(ref.current);
+    const canvas = map.getCanvas();
+    const onCtxLost = (e: Event) => { e.preventDefault(); };
+    const onCtxRestored = () => { try { map.resize(); map.triggerRepaint(); } catch { /* */ } };
+    canvas.addEventListener('webglcontextlost', onCtxLost, false);
+    canvas.addEventListener('webglcontextrestored', onCtxRestored, false);
+    const onVisible = () => { if (document.visibilityState === 'visible') { try { map.resize(); map.triggerRepaint(); } catch { /* */ } } };
+    document.addEventListener('visibilitychange', onVisible);
+
     map.on('load', () => {
       const b = fullBounds.current ?? new maplibregl.LngLatBounds(KEC_BOUNDS[0], KEC_BOUNDS[1]);
       map.fitBounds(b, { padding: 60, duration: 0 });
+      try { map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.45, position: [1.5, 210, 30] }); } catch { /* */ }
+      // annotation layers (drawn on top)
+      const empty = { type: 'FeatureCollection', features: [] } as any;
+      if (!map.getSource('annot-polys')) map.addSource('annot-polys', { type: 'geojson', data: empty });
+      if (!map.getSource('annot-lines')) map.addSource('annot-lines', { type: 'geojson', data: empty });
+      if (!map.getLayer('annot-poly-fill')) map.addLayer({ id: 'annot-poly-fill', type: 'fill', source: 'annot-polys', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.16 } });
+      if (!map.getLayer('annot-poly-line')) map.addLayer({ id: 'annot-poly-line', type: 'line', source: 'annot-polys', paint: { 'line-color': ['get', 'color'], 'line-width': 2 } });
+      if (!map.getLayer('annot-lines-l')) map.addLayer({ id: 'annot-lines-l', type: 'line', source: 'annot-lines', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 3.4 } });
+      renderAnnot(annotRef.current);
     });
 
-    map.on('mousemove', 'plots-fill', (e) => {
+    const HIT = ['plots-fill', 'plots-3d'];
+    map.on('mousemove', HIT, (e) => {
       if (useApp.getState().editGeom) return;
       map.getCanvas().style.cursor = 'pointer';
       const f = e.features?.[0]; if (!f) return;
@@ -100,28 +131,53 @@ export function MapView({ data, projects, landUses }: {
         `<div class="tip"><span class="tt">${title}</span><span class="ts">${type} · <b class="mono">${p.code}</b> · <span style="color:${pr.ownership.color}">${own}</span></span></div>`,
       ).addTo(map);
     });
-    map.on('mouseleave', 'plots-fill', () => {
+    map.on('mouseleave', HIT, () => {
       map.getCanvas().style.cursor = ''; tip.remove();
       try { if (hovered.current != null) map.setFeatureState(fs(hovered.current), { hover: false }); } catch { /* */ }
       hovered.current = null;
     });
 
     // single = details only; ctrl = multi; double = zoom
-    map.on('click', 'plots-fill', (e) => {
-      if (useApp.getState().editGeom) return;
+    map.on('click', HIT, (e) => {
+      if (useApp.getState().editGeom || modeRef.current !== 'off') return;
       const p = e.features?.[0]?.properties as PlotProps | undefined; if (!p) return;
       const ctrl = (e.originalEvent as MouseEvent).ctrlKey || (e.originalEvent as MouseEvent).metaKey;
       if (ctrl) { if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; } useApp.getState().toggleMulti(p.code); return; }
       if (clickTimer.current) clearTimeout(clickTimer.current);
       clickTimer.current = window.setTimeout(() => { useApp.getState().select(p); clickTimer.current = null; }, 240);
     });
-    map.on('dblclick', 'plots-fill', (e) => {
-      if (useApp.getState().editGeom) return;
+    map.on('dblclick', HIT, (e) => {
+      if (useApp.getState().editGeom || modeRef.current !== 'off') return;
       if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; }
       const p = e.features?.[0]?.properties as PlotProps | undefined; if (p) zoomTo(p.code);
     });
 
-    return () => { map.remove(); mapRef.current = null; };
+    // annotation drawing (admin): text / arrow / rectangle. Click an existing one to delete.
+    map.on('click', (e) => {
+      const mode = modeRef.current; if (mode === 'off') return;
+      const ll: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+      const ov = useOverrides.getState();
+      const hits = map.queryRenderedFeatures(e.point, { layers: ['annot-lines-l', 'annot-poly-fill'].filter((l) => map.getLayer(l)) });
+      if (hits.length && hits[0].properties?.id) { ov.removeAnnotation(hits[0].properties.id as string); return; }
+      if (mode === 'text') {
+        focusIdRef.current = ov.addAnnotation({ kind: 'text', color: colorRef.current, coords: ll, text: '' });
+      } else if (mode === 'arrow' || mode === 'rect') {
+        if (!pendingRef.current) { pendingRef.current = ll; }
+        else {
+          const a = pendingRef.current, b = ll; pendingRef.current = null;
+          if (mode === 'arrow') ov.addAnnotation({ kind: 'arrow', color: colorRef.current, coords: [a, b] });
+          else ov.addAnnotation({ kind: 'rect', color: colorRef.current, coords: [[a[0], a[1]], [b[0], a[1]], [b[0], b[1]], [a[0], b[1]], [a[0], a[1]]] });
+        }
+      }
+    });
+
+    return () => {
+      ro.disconnect();
+      canvas.removeEventListener('webglcontextlost', onCtxLost);
+      canvas.removeEventListener('webglcontextrestored', onCtxRestored);
+      document.removeEventListener('visibilitychange', onVisible);
+      map.remove(); mapRef.current = null;
+    };
   }, []);
 
   // effective data -> geojson source
@@ -131,15 +187,39 @@ export function MapView({ data, projects, landUses }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, uses, searchCodes, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode } = useApp();
+  const { sector, uses, searchCodes, planOnly, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor } = useApp();
+
+  // capture a map snapshot for the report
+  useEffect(() => {
+    const map = mapRef.current; if (!map || exportToken === 0) return;
+    map.triggerRepaint();
+    const id = setTimeout(() => {
+      try { useApp.getState().setReportImage(map.getCanvas().toDataURL('image/png')); }
+      catch { useApp.getState().setReportImage(''); }
+    }, 300);
+    return () => clearTimeout(id);
+  }, [exportToken]);
+
+  useEffect(() => {
+    modeRef.current = annotateMode; pendingRef.current = null;
+    const map = mapRef.current; if (map) map.getCanvas().style.cursor = annotateMode !== 'off' ? 'crosshair' : '';
+  }, [annotateMode]);
+  useEffect(() => { colorRef.current = annotateColor; }, [annotateColor]);
 
   useEffect(() => { if (zoomToken && zoomCode) zoomTo(zoomCode); }, [zoomToken]); // eslint-disable-line
 
+  // force a resize + repaint when overlays close (belt-and-braces against a blank map)
+  useEffect(() => {
+    const map = mapRef.current; if (!map || revealToken === 0) return;
+    const id = requestAnimationFrame(() => { try { map.resize(); map.triggerRepaint(); } catch { /* */ } });
+    return () => cancelAnimationFrame(id);
+  }, [revealToken]);
+
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
-    const apply = () => { const f = buildFilter(sector, uses, searchCodes); FILTERED_LAYERS.forEach((l) => map.getLayer(l) && map.setFilter(l, f)); };
+    const apply = () => { const f = buildFilter(sector, uses, searchCodes, planOnly); FILTERED_LAYERS.forEach((l) => map.getLayer(l) && map.setFilter(l, f)); };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
-  }, [sector, uses, searchCodes]);
+  }, [sector, uses, searchCodes, planOnly]);
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
@@ -291,9 +371,59 @@ export function MapView({ data, projects, landUses }: {
     refreshEdit();
   };
 
+  // ---------- annotations render ----------
+  const renderAnnot = (annos: Annotation[]) => {
+    const map = mapRef.current; if (!map) return;
+    const lines: any[] = []; const polys: any[] = [];
+    const F = (type: string, coords: any, a: Annotation) => ({ type: 'Feature', properties: { id: a.id, color: a.color }, geometry: { type, coordinates: coords } });
+    for (const a of annos) {
+      if (a.kind === 'arrow') { const [s, e] = a.coords; lines.push(F('LineString', [s, e], a)); for (const seg of arrowHead(s, e)) lines.push(F('LineString', seg, a)); }
+      else if (a.kind === 'rect') { polys.push(F('Polygon', [a.coords], a)); }
+    }
+    (map.getSource('annot-lines') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: lines } as any);
+    (map.getSource('annot-polys') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: polys } as any);
+    const seen = new Set<string>();
+    for (const a of annos) if (a.kind === 'text') {
+      seen.add(a.id);
+      let m = markersRef.current.get(a.id);
+      if (!m) {
+        const el = document.createElement('div'); el.className = 'annot-label';
+        const dot = document.createElement('span'); dot.className = 'al-dot';
+        const txt = document.createElement('span'); txt.className = 'al-text';
+        const del = document.createElement('button'); del.className = 'al-del'; del.type = 'button'; del.textContent = '×';
+        el.append(dot, txt, del);
+        m = new maplibregl.Marker({ element: el, anchor: 'center', draggable: canAnnotRef.current }).setLngLat(a.coords as [number, number]).addTo(map);
+        markersRef.current.set(a.id, m);
+        del.onclick = (ev) => { ev.stopPropagation(); useOverrides.getState().removeAnnotation(a.id); };
+        txt.addEventListener('blur', () => useOverrides.getState().updateAnnotation(a.id, { text: txt.textContent || '' }));
+        txt.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); (txt as HTMLElement).blur(); } });
+        m.on('dragend', () => { const ll = m!.getLngLat(); useOverrides.getState().updateAnnotation(a.id, { coords: [ll.lng, ll.lat] }); });
+      }
+      const el = m.getElement();
+      const txtEl = el.querySelector('.al-text') as HTMLElement;
+      const delEl = el.querySelector('.al-del') as HTMLElement;
+      el.classList.toggle('editable', canAnnotRef.current);
+      txtEl.contentEditable = canAnnotRef.current ? 'true' : 'false';
+      delEl.style.display = canAnnotRef.current ? '' : 'none';
+      el.style.setProperty('--al-color', a.color);
+      if (document.activeElement !== txtEl) txtEl.textContent = a.text || '';
+      m.setDraggable(canAnnotRef.current);
+      if (document.activeElement !== txtEl) { const cur = m.getLngLat(); if (cur.lng !== a.coords[0] || cur.lat !== a.coords[1]) m.setLngLat(a.coords as [number, number]); }
+      if (focusIdRef.current === a.id) { focusIdRef.current = null; setTimeout(() => txtEl.focus(), 30); }
+    }
+    for (const [id, m] of markersRef.current) { if (!seen.has(id)) { m.remove(); markersRef.current.delete(id); } }
+  };
+
+  useEffect(() => {
+    annotRef.current = annotations;
+    const map = mapRef.current; if (!map) return;
+    const apply = () => renderAnnot(annotations);
+    map.isStyleLoaded() ? apply() : map.once('idle', apply);
+  }, [annotations]);
+
   return (
     <>
-      <div ref={ref} style={{ position: 'absolute', inset: 0 }} />
+      <div ref={ref} style={{ position: 'absolute', top: 0, bottom: 0, insetInlineStart: 'var(--rail-w)', insetInlineEnd: 0 }} />
       {editGeom && (
         <div className="geo-toolbar">
           <span className="geo-hint">{t('g.hint', lang)}</span>
@@ -306,6 +436,16 @@ export function MapView({ data, projects, landUses }: {
       )}
     </>
   );
+}
+
+/** Two short segments forming an arrowhead at `e`, pointing along s→e. */
+function arrowHead(s: number[], e: number[]): number[][][] {
+  const cosLat = Math.max(0.2, Math.cos((e[1] * Math.PI) / 180));
+  const dx = (e[0] - s[0]) * cosLat, dy = e[1] - s[1];
+  const ang = Math.atan2(dy, dx);
+  const size = 0.00030;
+  const seg = (a: number): number[][] => [e, [e[0] + (Math.cos(a) * size) / cosLat, e[1] + Math.sin(a) * size]];
+  return [seg(ang + Math.PI - 0.5), seg(ang + Math.PI + 0.5)];
 }
 
 function distToSeg(p: [number, number], a: [number, number], b: [number, number]) {

@@ -79,4 +79,11 @@ if (FIREBASE_ENABLED) {
       useAuth.setState({ user: null, status: 'out' });
     }
   });
+  // when the users map syncs in (e.g. on a fresh device), re-resolve the current role
+  useOverrides.subscribe(() => {
+    const u = useAuth.getState().user;
+    if (!u) return;
+    const { role, name } = roleFor(u.email);
+    if (role !== u.role || name !== u.name) useAuth.setState({ user: { ...u, role, name } });
+  });
 }

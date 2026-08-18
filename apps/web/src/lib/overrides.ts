@@ -27,6 +27,14 @@ export interface MergeRecord {
   name_ar?: string; name_en?: string;
   owner?: string;
 }
+/** A free annotation drawn on the map (admin only). */
+export interface Annotation {
+  id: string;
+  kind: 'text' | 'arrow' | 'rect';
+  color: string;
+  coords: any;           // text:[lng,lat] · arrow:[[lng,lat],[lng,lat]] · rect: ring [[lng,lat]...]
+  text?: string;
+}
 
 interface OverridesState {
   plotAttrs: Record<string, PlotAttrOverride>;
@@ -34,6 +42,7 @@ interface OverridesState {
   landUses: Record<string, LandUseOverride>;
   plotGeom: Record<string, GeomOverride>;
   merges: MergeRecord[];
+  annotations: Annotation[];
   users: AdminUser[];
   audit: AuditEntry[];
 
@@ -44,6 +53,10 @@ interface OverridesState {
   resetGeometry: (code: string) => void;
   mergePlots: (codes: string[], patch?: Partial<MergeRecord>, actor?: string) => string;
   unmerge: (id: string) => void;
+  addAnnotation: (a: Omit<Annotation, 'id'>) => string;
+  updateAnnotation: (id: string, patch: Partial<Annotation>) => void;
+  removeAnnotation: (id: string) => void;
+  clearAnnotations: () => void;
   addUser: (u: Omit<AdminUser, 'id'>, actor?: string) => void;
   updateUser: (id: string, patch: Partial<AdminUser>) => void;
   removeUser: (id: string) => void;
@@ -66,6 +79,7 @@ export const useOverrides = create<OverridesState>()(
       landUses: {},
       plotGeom: {},
       merges: [],
+      annotations: [],
       users: seedUsers,
       audit: [],
 
@@ -112,6 +126,15 @@ export const useOverrides = create<OverridesState>()(
       },
       unmerge: (id) => set((s) => ({ merges: s.merges.filter((m) => m.id !== id) })),
 
+      addAnnotation: (a) => {
+        const id = 'an-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        set((s) => ({ annotations: [...s.annotations, { ...a, id }] }));
+        return id;
+      },
+      updateAnnotation: (id, patch) => set((s) => ({ annotations: s.annotations.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+      removeAnnotation: (id) => set((s) => ({ annotations: s.annotations.filter((a) => a.id !== id) })),
+      clearAnnotations: () => set({ annotations: [] }),
+
       addUser: (u, actor = 'admin') =>
         set((s) => ({
           users: [...s.users, { ...u, id: 'u' + Date.now() }],
@@ -120,7 +143,7 @@ export const useOverrides = create<OverridesState>()(
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, users: get().users }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, annotations: get().annotations, users: get().users }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -130,6 +153,7 @@ export const useOverrides = create<OverridesState>()(
             landUses: o.landUses ?? s.landUses,
             plotGeom: o.plotGeom ?? s.plotGeom,
             merges: o.merges ?? s.merges,
+            annotations: o.annotations ?? s.annotations,
             users: o.users ?? s.users,
             audit: o.audit ?? s.audit,
           }));
@@ -138,8 +162,8 @@ export const useOverrides = create<OverridesState>()(
           return false;
         }
       },
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], users: seedUsers, audit: [] }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], annotations: [], users: seedUsers, audit: [] }),
     }),
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, users: s.users, audit: s.audit }) as any },
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, annotations: s.annotations, users: s.users, audit: s.audit }) as any },
   ),
 );

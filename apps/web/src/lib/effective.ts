@@ -30,22 +30,28 @@ export function effectiveCollection(
   attrs: Record<string, PlotAttrOverride>,
   geom: Record<string, GeomOverride>,
   merges: MergeRecord[],
+  projects: Record<string, ProjectInfo> = {},
 ): PlotCollection | null {
   if (!base) return null;
   const hidden = new Set<string>();
   merges.forEach((m) => m.codes.forEach((c) => hidden.add(c)));
   const byCode = new Map(base.features.map((f) => [f.properties.code, f]));
+  const planStatusOf = (code: string): string | undefined => {
+    const p = projects[code];
+    return p && (p.phases?.length ?? 0) > 0 ? (p.status ?? 'Future') : undefined;
+  };
 
   const features: PlotFeature[] = [];
   for (const f of base.features) {
     if (hidden.has(f.properties.code)) continue;
-    let feat = f;
     const patch = attrs[f.properties.code];
     const g = geom[f.properties.code];
-    if (patch || g) {
+    const ps = planStatusOf(f.properties.code);
+    let feat = f;
+    if (patch || g || ps) {
       feat = {
         ...f,
-        properties: patch ? ({ ...f.properties, ...patch } as PlotProps) : f.properties,
+        properties: { ...f.properties, ...(patch ?? {}), ...(ps ? { planStatus: ps } : {}) } as PlotProps,
         geometry: g ? ({ type: g.type, coordinates: g.coordinates } as any) : f.geometry,
       };
     }
@@ -64,6 +70,7 @@ export function effectiveCollection(
       gfa += s.properties.gfa || 0;
     }
     const first = src[0].properties;
+    const mps = planStatusOf(m.id);
     features.push({
       type: 'Feature',
       properties: {
@@ -71,6 +78,7 @@ export function effectiveCollection(
         land_use: first.land_use, sector: first.sector,
         gfa, area, floors: first.floors, height: first.height,
         coverage: first.coverage, far: first.far, style: null,
+        ...(mps ? { planStatus: mps } : {}),
       } as PlotProps,
       geometry: { type: 'MultiPolygon', coordinates: polys } as any,
     });

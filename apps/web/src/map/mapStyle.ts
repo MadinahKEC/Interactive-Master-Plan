@@ -7,6 +7,13 @@ export const KEC_BOUNDS: [[number, number], [number, number]] = [
   [39.70106, 24.48469],
 ];
 
+/** Colour a development-plan plot outline by its project status. */
+export function planStatusColor(): ExpressionSpecification {
+  return ['match', ['get', 'planStatus'],
+    'Completed', '#2F6B3E', 'UnderConstruction', '#9A8A1E', 'Future', '#5C6B60', 'Partner', '#7E6F1B',
+    '#5C6B60'] as ExpressionSpecification;
+}
+
 /** MapLibre `match` expression: colour a plot by its land_use (colours overridable). */
 export function landUseColor(colors?: Record<string, { color: string }>): ExpressionSpecification {
   const map = colors ?? LAND_USES;
@@ -100,6 +107,17 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
           'line-opacity': 0.55,
         },
       },
+      // development-plan plots: soft glow + dashed status-coloured outline (always on)
+      {
+        id: 'plan-glow', type: 'line', source: 'plots', ...srcLayer,
+        filter: ['has', 'planStatus'],
+        paint: { 'line-color': planStatusColor(), 'line-width': 7, 'line-opacity': 0.22, 'line-blur': 3 },
+      },
+      {
+        id: 'plan-outline', type: 'line', source: 'plots', ...srcLayer,
+        filter: ['has', 'planStatus'],
+        paint: { 'line-color': planStatusColor(), 'line-width': 2.6, 'line-opacity': 0.95, 'line-dasharray': [2, 1.4] },
+      },
       {
         id: 'plots-multi', type: 'fill', source: 'plots', ...srcLayer,
         paint: { 'fill-color': '#9A8A1E', 'fill-opacity': 0.28 },
@@ -126,7 +144,9 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         paint: {
           'fill-extrusion-color': landUseColor(colors),
           'fill-extrusion-height': height,
-          'fill-extrusion-opacity': 0.9,
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': 0.94,
+          'fill-extrusion-vertical-gradient': true,
         },
       },
       {

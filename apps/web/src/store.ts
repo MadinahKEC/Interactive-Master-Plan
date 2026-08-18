@@ -11,20 +11,27 @@ export interface AppState {
   dim: Dim;
   sector: SectorKey | 'all';
   uses: Set<string>;
+  planOnly: boolean;              // show only plots that are in the development plan
   search: string;
   searchCodes: string[] | null;   // computed match set (search-anything)
   selected: PlotProps | null;     // single selection
   multi: string[];                // ctrl multi-selection (codes)
   fitToken: number;               // bump to ask the map to fit the whole plan
   editGeom: string | null;        // plot code currently in shape-edit mode
+  annotateMode: 'off' | 'text' | 'arrow' | 'rect';
+  annotateColor: string;
   zoomCode: string | null;        // plot to zoom to
   zoomToken: number;              // bump to trigger a zoom to zoomCode
+  revealToken: number;            // bump to force a map resize+repaint (after overlays close)
+  exportToken: number;            // bump to ask the map for a snapshot
+  reportImage: string | null;     // captured map image (opens the report overlay)
 
   setLang: (l: Lang) => void;
   toggleLang: () => void;
   setBasemap: (b: Basemap) => void;
   setDim: (d: Dim) => void;
   setSector: (s: SectorKey | 'all') => void;
+  togglePlanOnly: () => void;
   toggleUse: (k: string) => void;
   setSearch: (s: string) => void;
   setSearchCodes: (c: string[] | null) => void;
@@ -33,7 +40,12 @@ export interface AppState {
   clearMulti: () => void;
   fitAll: () => void;
   setEditGeom: (code: string | null) => void;
+  setAnnotateMode: (m: AppState['annotateMode']) => void;
+  setAnnotateColor: (c: string) => void;
   requestZoom: (code: string) => void;
+  reveal: () => void;
+  requestExport: () => void;
+  setReportImage: (img: string | null) => void;
   reset: () => void;
 }
 
@@ -43,20 +55,27 @@ export const useApp = create<AppState>((set) => ({
   dim: '2d',
   sector: 'all',
   uses: new Set(Object.keys(LAND_USES)),
+  planOnly: false,
   search: '',
   searchCodes: null,
   selected: null,
   multi: [],
   fitToken: 0,
   editGeom: null,
+  annotateMode: 'off',
+  annotateColor: '#B5462F',
   zoomCode: null,
   zoomToken: 0,
+  revealToken: 0,
+  exportToken: 0,
+  reportImage: null,
 
   setLang: (lang) => set({ lang }),
   toggleLang: () => set((s) => ({ lang: s.lang === 'ar' ? 'en' : 'ar' })),
   setBasemap: (basemap) => set({ basemap }),
   setDim: (dim) => set({ dim }),
   setSector: (sector) => set({ sector }),
+  togglePlanOnly: () => set((s) => ({ planOnly: !s.planOnly })),
   toggleUse: (k) =>
     set((s) => { const uses = new Set(s.uses); uses.has(k) ? uses.delete(k) : uses.add(k); return { uses }; }),
   setSearch: (search) => set({ search }),
@@ -71,7 +90,12 @@ export const useApp = create<AppState>((set) => ({
   clearMulti: () => set({ multi: [] }),
   fitAll: () => set((s) => ({ selected: null, multi: [], fitToken: s.fitToken + 1 })),
   setEditGeom: (editGeom) => set({ editGeom }),
+  setAnnotateMode: (annotateMode) => set({ annotateMode }),
+  setAnnotateColor: (annotateColor) => set({ annotateColor }),
   requestZoom: (code) => set((s) => ({ zoomCode: code, zoomToken: s.zoomToken + 1 })),
+  reveal: () => set((s) => ({ revealToken: s.revealToken + 1 })),
+  requestExport: () => set((s) => ({ exportToken: s.exportToken + 1 })),
+  setReportImage: (reportImage) => set({ reportImage }),
   reset: () => set((s) => ({ sector: 'all', uses: new Set(Object.keys(LAND_USES)), search: '', searchCodes: null, selected: null, multi: [], fitToken: s.fitToken + 1 })),
 }));
 
@@ -79,6 +103,7 @@ export const useApp = create<AppState>((set) => ({
 export function matchPlot(p: PlotProps, s: AppState): boolean {
   if (s.sector !== 'all' && p.sector !== s.sector) return false;
   if (!s.uses.has(p.land_use ?? '')) return false;
+  if (s.planOnly && !p.planStatus) return false;
   if (s.searchCodes && !s.searchCodes.includes(p.code)) return false;
   return true;
 }
