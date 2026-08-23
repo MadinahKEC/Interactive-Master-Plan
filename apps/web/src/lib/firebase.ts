@@ -16,6 +16,7 @@
  */
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence,
   browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword,
@@ -37,7 +38,37 @@ export const FIREBASE_ENABLED = true;
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 const overridesDoc = doc(db, 'kec', 'overrides');
+
+// ---------- Storage (plot images) ----------
+/** Downscale an image file to keep uploads light. */
+function resizeImage(file: File, maxDim = 1400, quality = 0.72): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const scale = Math.min(1, maxDim / Math.max(w, h));
+      w = Math.round(w * scale); h = Math.round(h * scale);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      c.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))), 'image/jpeg', quality);
+    };
+    img.onerror = () => reject(new Error('image load failed'));
+    img.src = url;
+  });
+}
+
+/** Upload a plot image to Firebase Storage; returns its download URL. */
+export async function uploadPlotImage(code: string, file: File): Promise<string> {
+  const blob = await resizeImage(file);
+  const path = `plots/${code}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.jpg`;
+  const r = storageRef(storage, path);
+  await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+  return getDownloadURL(r);
+}
 
 // ---------- Auth ----------
 export function watchAuth(cb: (u: User | null) => void) { return onAuthStateChanged(auth, cb); }

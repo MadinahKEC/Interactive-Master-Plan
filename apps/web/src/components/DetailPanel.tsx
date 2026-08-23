@@ -4,20 +4,21 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, STATUS_META, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
-import { ProgressGallery } from './ProgressGallery';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, TypeIcon } from './icons';
+import { StageBar } from './StageBar';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, TypeIcon } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
-  projects, landUses, onEdit,
+  projects, landUses, onEdit, onSubdivide,
 }: {
-  projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onEdit: (code: string) => void;
+  projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onEdit: (code: string) => void; onSubdivide: (code: string) => void;
 }) {
   const { selected, lang, fitAll, setEditGeom, requestZoom } = useApp();
   const role = useAuth((s) => s.user?.role);
   const merges = useOverrides((s) => s.merges);
   const unmerge = useOverrides((s) => s.unmerge);
   const setProject = useOverrides((s) => s.setProject);
+  const splits = useOverrides((s) => s.splits);
   const canAttr = can(role as any, 'plot:attr:update');
   const canGeom = can(role as any, 'plot:geometry:update');
   if (!selected) return null;
@@ -88,8 +89,13 @@ export function DetailPanel({
         )}
 
         <Section title={t('sec.project', lang)}>
-          <ProgressGallery lang={lang} type={pr.type} status={pr.status} progress={pr.progress} gallery={pr.overlay.gallery} />
+          <StageBar lang={lang} stageKey={pr.overlay.stage} />
           {summary && <p className="d-summary">{summary}</p>}
+          {pr.overlay.gallery && pr.overlay.gallery.length > 0 && (
+            <div className="d-gallery">
+              {pr.overlay.gallery.map((src, i) => <img key={i} className="d-photo" src={src} alt="" loading="lazy" />)}
+            </div>
+          )}
         </Section>
 
         <Section title={t('sec.land', lang)}>
@@ -107,7 +113,8 @@ export function DetailPanel({
 
         <div className="d-actions">
           {canAttr && <button className="btn primary" onClick={() => onEdit(p.code)}><IconEdit size={15} /> {t('d.editAttrs', lang)}</button>}
-          {canGeom && <button className="btn" onClick={() => setEditGeom(p.code)}><IconShape size={15} /> {t('d.editShape', lang)}</button>}
+          {canGeom && <button className="btn icon-only" onClick={() => setEditGeom(p.code)} title={t('d.editShape', lang)}><IconShape size={15} /></button>}
+          {canAttr && <button className="btn icon-only" onClick={() => onSubdivide(Object.keys(splits).find((par) => splits[par].some((pt) => pt.code === p.code)) ?? p.code)} title={t('d.subdivide', lang)}><IconSplit size={15} /></button>}
           <button className="btn icon-only" onClick={() => requestZoom(p.code)} title={t('d.zoom', lang)}><IconZoom size={15} /></button>
         </div>
       </div>

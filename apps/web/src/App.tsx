@@ -9,6 +9,7 @@ import { AdminConsole } from './admin/AdminConsole';
 import { DevPlanView } from './components/DevPlanView';
 import { AnnotateToolbar } from './components/AnnotateToolbar';
 import { ReportView } from './components/ReportView';
+import { SubdivideModal } from './components/SubdivideModal';
 import { Login } from './components/Login';
 import { usePlots } from './lib/usePlots';
 import { useProjects, t } from './lib/domain';
@@ -25,14 +26,15 @@ export default function App() {
   const status = useAuth((s) => s.status);
   const role = useAuth((s) => s.user?.role);
   const canAnnotate = can(role as any, 'plot:attr:update');
-  const { plotAttrs, projects: projOver, landUses: luOver, plotGeom, merges } = useOverrides();
+  const { plotAttrs, projects: projOver, landUses: luOver, plotGeom, merges, splits } = useOverrides();
 
   const [adminOpen, setAdminOpen] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
   const [editCode, setEditCode] = useState<string | null>(null);
+  const [subdivideCode, setSubdivideCode] = useState<string | null>(null);
 
   const projects = useMemo(() => effectiveProjects(baseProjects, projOver), [baseProjects, projOver]);
-  const data = useMemo(() => effectiveCollection(baseData, plotAttrs, plotGeom, merges, projects), [baseData, plotAttrs, plotGeom, merges, projects]);
+  const data = useMemo(() => effectiveCollection(baseData, plotAttrs, plotGeom, merges, projects, splits), [baseData, plotAttrs, plotGeom, merges, projects, splits]);
   const landUses = useMemo(() => effectiveLandUses(luOver), [luOver]);
 
   useEffect(() => {
@@ -49,10 +51,11 @@ export default function App() {
       <Sidebar onOpenAdmin={() => openAdmin()} onOpenDevPlan={() => setDevOpen(true)} />
       <TopBar />
       {data && <ControlPanel data={data} landUses={landUses} projects={projects} />}
-      <DetailPanel projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} />
+      <DetailPanel projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
       {data && <MultiSelectPanel data={data} projects={projects} />}
       <AnnotateToolbar />
       <ReportView data={data} landUses={landUses} projects={projects} />
+      {subdivideCode && <SubdivideModal parentCode={subdivideCode} data={data} onClose={() => setSubdivideCode(null)} />}
       <AdminConsole
         open={adminOpen} onClose={() => { setAdminOpen(false); setEditCode(null); useApp.getState().reveal(); }}
         editCode={editCode} data={data} projects={projects} landUses={landUses}

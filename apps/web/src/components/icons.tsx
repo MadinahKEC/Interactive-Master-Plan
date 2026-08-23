@@ -26,6 +26,7 @@ export const IconPen = ({ size }: P) => (<svg {...S(size)}><path d="M15 4l5 5L9 
 export const IconAdmin = ({ size }: P) => (<svg {...S(size)}><path d="M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>);
 export const IconTag = ({ size }: P) => (<svg {...S(size)}><path d="M11 3H5a2 2 0 0 0-2 2v6l9 9 8-8-9-9Z" /><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" /></svg>);
 export const IconExport = ({ size }: P) => (<svg {...S(size)}><path d="M12 3v12M8 7l4-4 4 4" /><path d="M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" /></svg>);
+export const IconSplit = ({ size }: P) => (<svg {...S(size)}><rect x="4" y="5" width="16" height="14" rx="1.5" /><path d="M12 5v14M4 12h8" /></svg>);
 export const IconText = ({ size }: P) => (<svg {...S(size)}><path d="M5 5h14M12 5v14M9 19h6" /></svg>);
 export const IconArrow = ({ size }: P) => (<svg {...S(size)}><path d="M5 19 19 5M11 5h8v8" /></svg>);
 export const IconRect = ({ size }: P) => (<svg {...S(size)}><rect x="4" y="6" width="16" height="12" rx="1.5" /></svg>);

@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, resolveProject, inferType, t, type ProjectInfo, type Phase } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PROGRESS_STAGES, resolveProject, inferType, t, type ProjectInfo, type Phase } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
+import { uploadPlotImage } from '../lib/firebase';
 import { IconPlus, IconTrash } from '../components/icons';
 import type { EffLandUse } from '../lib/effective';
 
@@ -28,7 +29,7 @@ export function PlotEditor({
     progress: overlay.progress ?? pr.progress,
     summary_ar: overlay.summary_ar ?? '',
     summary_en: overlay.summary_en ?? '',
-    gallery: (overlay.gallery ?? []).join(', '),
+    stage: overlay.stage ?? '',
     owner: overlay.owner ?? '',
     ownership: overlay.ownership ?? pr.ownership.key,
     purchase_date: overlay.purchase_date ?? '',
@@ -48,12 +49,32 @@ export function PlotEditor({
   const addPhase = () => setPhases((ps) => [...ps, { name_ar: '', start: '', end: '', status: 'Future' }]);
   const removePhase = (i: number) => setPhases((ps) => ps.filter((_, j) => j !== i));
 
+  const [gallery, setGallery] = useState<string[]>(overlay.gallery ?? []);
+  const [uploading, setUploading] = useState(false);
+  const [imgErr, setImgErr] = useState('');
+  const onFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setUploading(true); setImgErr('');
+    try {
+      for (const file of Array.from(files)) {
+        const url = await uploadPlotImage(code, file);
+        setGallery((g) => [...g, url]);
+      }
+    } catch (e: any) {
+      setImgErr(e?.code === 'storage/unauthorized' || e?.code === 'storage/unknown'
+        ? (lang === 'ar' ? 'فعّل Firebase Storage وقواعده' : 'Enable Firebase Storage + rules')
+        : (lang === 'ar' ? 'تعذّر رفع الصورة' : 'Upload failed'));
+    } finally { setUploading(false); }
+  };
+  const removeImg = (i: number) => setGallery((g) => g.filter((_, j) => j !== i));
+
   const save = () => {
     setProject(code, {
       name_ar: f.name_ar || undefined, name_en: f.name_en || undefined,
       type: f.type, status: f.status, progress: Number(f.progress),
       summary_ar: f.summary_ar || undefined, summary_en: f.summary_en || undefined,
-      gallery: f.gallery.trim() ? f.gallery.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+      stage: f.stage || undefined,
+      gallery: gallery.length ? gallery : undefined,
       owner: f.owner || undefined, ownership: f.ownership, purchase_date: f.purchase_date || undefined,
       phases: phases.length ? phases : undefined,
     });
@@ -100,12 +121,25 @@ export function PlotEditor({
                 {Object.values(STATUS_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
               </select>
             </Field>
-            <Field label={`${t('a.progress', lang)} — ${f.progress}%`} full>
-              <input type="range" min={0} max={100} value={f.progress} onChange={(e) => up('progress', Number(e.target.value))} />
+            <Field label={t('a.stage', lang)} full>
+              <select value={f.stage} onChange={(e) => up('stage', e.target.value)}>
+                <option value="">{t('a.stageNone', lang)}</option>
+                {PROGRESS_STAGES.map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
+              </select>
             </Field>
             <Field label={t('a.summaryAr', lang)} full><textarea rows={2} value={f.summary_ar} onChange={(e) => up('summary_ar', e.target.value)} /></Field>
             <Field label={t('a.summaryEn', lang)} full><textarea rows={2} value={f.summary_en} onChange={(e) => up('summary_en', e.target.value)} /></Field>
-            <Field label={t('a.gallery', lang)} full><input value={f.gallery} onChange={(e) => up('gallery', e.target.value)} placeholder="https://…, https://…" /></Field>
+            <Field label={t('a.images', lang)} full>
+              <div className="img-upload">
+                <div className="img-thumbs">
+                  {gallery.map((src, i) => (
+                    <div className="img-thumb" key={i}><img src={src} alt="" /><button type="button" onClick={() => removeImg(i)}>×</button></div>
+                  ))}
+                  <label className="img-add">{uploading ? '…' : '＋'}<input type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} /></label>
+                </div>
+                {imgErr && <span className="img-err">{imgErr}</span>}
+              </div>
+            </Field>
           </div>
 
           <div className="ed-sec ed-sec-row">{t('sec.devplan', lang)}

@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@kec/types": "0.1.0",
+    "@turf/area": "^7.4.0",
+    "@turf/bbox": "^7.4.0",
+    "@turf/bbox-clip": "^7.4.0",
+    "@turf/helpers": "^7.4.0",
     "echarts": "^5.5.1",
     "firebase": "^12.17.1",
     "maplibre-gl": "^4.7.1",

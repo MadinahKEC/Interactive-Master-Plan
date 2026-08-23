@@ -72,6 +72,9 @@ export const DICT: Record<string, Entry> = {
   'a.type':          { ar: 'النوع', en: 'Type' },
   'a.status':        { ar: 'الحالة', en: 'Status' },
   'a.progress':      { ar: 'نسبة الإنجاز', en: 'Progress' },
+  'a.stage':         { ar: 'مرحلة المشروع', en: 'Project stage' },
+  'a.stageNone':     { ar: 'لم تبدأ', en: 'Not started' },
+  'a.images':        { ar: 'صور الأرض (إرفاق)', en: 'Plot images (attach)' },
   'a.summaryAr':     { ar: 'نبذة (عربي)', en: 'Summary (Arabic)' },
   'a.summaryEn':     { ar: 'نبذة (إنجليزي)', en: 'Summary (English)' },
   'a.gallery':       { ar: 'روابط الصور (بفاصلة)', en: 'Image URLs (comma-separated)' },
@@ -130,6 +133,17 @@ export const DICT: Record<string, Entry> = {
   'cp.planOnly':     { ar: 'إظهار قطع الخطة فقط', en: 'Show planned plots only' },
   'cp.planned':      { ar: 'ضمن الخطة', en: 'in plan' },
   'd.removeFromPlan':{ ar: 'إزالة من خطة التطوير', en: 'Remove from development plan' },
+  'd.subdivide':     { ar: 'تقسيم البلوت', en: 'Subdivide' },
+  'sub.title':       { ar: 'تقسيم البلوت', en: 'Subdivide plot' },
+  'sub.preset':      { ar: 'تحميل قالب Multaqa', en: 'Load Multaqa preset' },
+  'sub.addPart':     { ar: 'إضافة قطعة', en: 'Add part' },
+  'sub.apply':       { ar: 'تنفيذ التقسيم', en: 'Apply subdivision' },
+  'sub.undo':        { ar: 'إلغاء التقسيم', en: 'Undo subdivision' },
+  'sub.targetArea':  { ar: 'المساحة المستهدفة (م²)', en: 'Target area (m²)' },
+  'sub.parts':       { ar: 'القطع', en: 'Parts' },
+  'sub.hint':        { ar: 'تُقسَّم الأرض بأشكال متناسبة مع المساحات المدخلة، والبيانات تُحسب حسب شكل كل قطعة.', en: 'The plot is split into shapes proportional to the entered areas; data is scaled to each piece.' },
+  'sub.already':     { ar: 'هذه الأرض مقسّمة حالياً', en: 'This plot is currently subdivided' },
+  'sub.needParts':   { ar: 'أضف قطعتين على الأقل', en: 'Add at least two parts' },
   'merged.of':       { ar: 'مدموجة من', en: 'Merged from' },
   'd.unmerge':       { ar: 'إلغاء الدمج', en: 'Unmerge' },
   'd.copyLink':      { ar: 'نسخ رابط القطعة', en: 'Copy plot link' },
@@ -216,6 +230,16 @@ export const STATUS_META: Record<string, StatusMeta> = {
 
 export const STAGES = ['stage.foundation', 'stage.structure', 'stage.facade', 'stage.handover'] as const;
 
+/** Construction-progress stages (ordered) shown as a bar on the plot card. */
+export const PROGRESS_STAGES: { key: string; ar: string; en: string }[] = [
+  { key: 'concrete', ar: 'الخرسانة', en: 'Concrete' },
+  { key: 'construction', ar: 'الإنشاء', en: 'Construction' },
+  { key: 'mep', ar: 'الميكانيكا والكهرباء', en: 'MEP' },
+  { key: 'facade', ar: 'الواجهات', en: 'Façade' },
+  { key: 'furniture', ar: 'التأثيث', en: 'Furnishing' },
+  { key: 'completed', ar: 'مكتمل', en: 'Completed' },
+];
+
 // ---------- Ownership ----------
 export interface OwnershipMeta { key: string; ar: string; en: string; color: string }
 export const OWNERSHIP_META: Record<string, OwnershipMeta> = {
@@ -261,6 +285,7 @@ export interface ProjectInfo {
   owner?: string;      // investor / owner name
   purchase_date?: string;
   phases?: Phase[];    // development-plan timeline
+  stage?: string;      // PROGRESS_STAGES key (current construction stage)
 }
 
 export function useProjects() {

@@ -1,6 +1,6 @@
 import { LAND_USES, type PlotCollection, type PlotProps, type PlotFeature } from '@kec/types';
 import type { ProjectInfo } from './domain';
-import type { GeomOverride, LandUseOverride, MergeRecord, PlotAttrOverride } from './overrides';
+import type { GeomOverride, LandUseOverride, MergeRecord, PlotAttrOverride, SubPlotRecord } from './overrides';
 
 export interface EffLandUse { key: string; labelAr: string; labelEn: string; color: string }
 
@@ -31,10 +31,12 @@ export function effectiveCollection(
   geom: Record<string, GeomOverride>,
   merges: MergeRecord[],
   projects: Record<string, ProjectInfo> = {},
+  splits: Record<string, SubPlotRecord[]> = {},
 ): PlotCollection | null {
   if (!base) return null;
   const hidden = new Set<string>();
   merges.forEach((m) => m.codes.forEach((c) => hidden.add(c)));
+  Object.keys(splits).forEach((parent) => hidden.add(parent));
   const byCode = new Map(base.features.map((f) => [f.properties.code, f]));
   const planStatusOf = (code: string): string | undefined => {
     const p = projects[code];
@@ -82,6 +84,26 @@ export function effectiveCollection(
       } as PlotProps,
       geometry: { type: 'MultiPolygon', coordinates: polys } as any,
     });
+  }
+
+  // subdivided plots: each part becomes its own plot (parent hidden above)
+  for (const parent of Object.keys(splits)) {
+    const parentFeat = byCode.get(parent);
+    const sector = parentFeat?.properties.sector ?? 'Other';
+    for (const part of splits[parent]) {
+      const ps = planStatusOf(part.code);
+      features.push({
+        type: 'Feature',
+        properties: {
+          code: part.code, name: part.name_en || part.name_ar || part.code,
+          land_use: part.land_use, sector,
+          gfa: part.gfa ?? null, area: part.area ?? null, floors: part.floors ?? null,
+          height: part.height ?? null, coverage: part.coverage ?? null, far: part.far ?? null, style: null,
+          ...(ps ? { planStatus: ps } : {}),
+        } as PlotProps,
+        geometry: part.geometry as any,
+      });
+    }
   }
 
   return { ...base, features };
