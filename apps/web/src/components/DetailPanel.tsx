@@ -6,11 +6,11 @@ import { useOverrides } from '../lib/overrides';
 import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
-import { confirmDialog, useDialog } from '../lib/dialog';
+import { confirmDialog } from '../lib/dialog';
 import { StageBar } from './StageBar';
 import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconRename, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, TypeIcon } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
@@ -45,20 +45,6 @@ export function DetailPanel({
   const phases = pr.overlay.phases ?? [];
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
-  const renamePlot = async () => {
-    const r = await useDialog.getState().open({
-      title: t('d.rename', lang),
-      dir: lang === 'ar' ? 'rtl' : 'ltr',
-      body: (<p style={{ margin: 0 }}><span className="mono">{p.code}</span></p>),
-      fields: [
-        { key: 'name_ar', label: t('a.nameAr', lang), value: pr.overlay.name_ar ?? '' },
-        { key: 'name_en', label: t('a.nameEn', lang), value: pr.overlay.name_en ?? '' },
-      ],
-      buttons: [{ label: t('a.cancel', lang), value: 'cancel' }, { label: t('d.rename', lang), value: 'ok', variant: 'primary' }],
-    });
-    if (r.value === 'ok') setProject(p.code, { name_ar: r.fields.name_ar.trim() || undefined, name_en: r.fields.name_en.trim() || undefined });
-  };
-
   const addToPlan = () => {
     const today = new Date().toISOString().slice(0, 10);
     const end = new Date(Date.now() + 180 * 864e5).toISOString().slice(0, 10);
@@ -72,7 +58,6 @@ export function DetailPanel({
       <div className="d-head">
         <button className="d-close" onClick={fitAll} title={t('d.fullPlan', lang)}><IconClose size={17} /></button>
         <div className="d-quick">
-          {canAttr && <button className="dq-btn" onClick={renamePlot} title={t('d.rename', lang)}><IconRename size={15} /></button>}
           <button className={`dq-btn ${shortlist.codes.includes(p.code) ? 'on' : ''}`} onClick={() => shortlist.toggle(p.code)} title={t(shortlist.codes.includes(p.code) ? 'd.unfavorite' : 'd.favorite', lang)}><IconStar size={15} /></button>
           <button className="dq-btn" onClick={() => setPdfOpen(true)} title={t('d.pdf', lang)}><IconDownload size={15} /></button>
           <button className="dq-btn" onClick={() => setShareOpen(true)} title={t('d.share', lang)}><IconShare size={15} /></button>
