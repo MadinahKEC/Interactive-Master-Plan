@@ -75,6 +75,27 @@ export function DetailPanel({
       </div>
 
       <div className="d-scroll">
+        <Section title={t('sec.ownership', lang)}>
+          <div className="own-row">
+            <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
+            <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
+          </div>
+          <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date || '—'}</b></div>
+          {mergeRec && (
+            <div className="own-merge">
+              <div className="merge-contains">
+                <div className="mc-title"><IconMerge size={13} /> {t('merged.contains', lang)} <span className="mc-count">{mergeRec.codes.length}</span></div>
+                <ul className="mc-list">
+                  {mergeRec.codes.map((c) => (
+                    <li key={c}><span className="mc-name">{nameOfConstituent(c, projects, splits, lang)}</span><span className="mc-code mono">{c}</span></li>
+                  ))}
+                </ul>
+              </div>
+              {canAttr && <button className="btn sm danger" onClick={() => { unmerge(mergeRec.id); fitAll(); }}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
+            </div>
+          )}
+        </Section>
+
         <Section title={t('sec.summary', lang)}>
           {summary ? <p className="d-summary">{summary}</p> : <p className="d-summary muted">{lang === 'ar' ? 'لا يوجد وصف بعد.' : 'No overview yet.'}</p>}
         </Section>
@@ -120,27 +141,6 @@ export function DetailPanel({
               return <Cell key={fld.key} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
             })}
           </div>
-        </Section>
-
-        <Section title={t('sec.ownership', lang)}>
-          <div className="own-row">
-            <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
-            <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
-          </div>
-          <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date || '—'}</b></div>
-          {mergeRec && (
-            <div className="own-merge">
-              <div className="merge-contains">
-                <div className="mc-title"><IconMerge size={13} /> {t('merged.contains', lang)} <span className="mc-count">{mergeRec.codes.length}</span></div>
-                <ul className="mc-list">
-                  {mergeRec.codes.map((c) => (
-                    <li key={c}><span className="mc-name">{nameOfConstituent(c, projects, splits, lang)}</span><span className="mc-code mono">{c}</span></li>
-                  ))}
-                </ul>
-              </div>
-              {canAttr && <button className="btn sm danger" onClick={() => { unmerge(mergeRec.id); fitAll(); }}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
-            </div>
-          )}
         </Section>
 
         <Section title={t('sec.project', lang)}>

@@ -154,7 +154,7 @@
 .plan-legend{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:16px;padding:0 2px}
 .pl-item{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--kec-muted)}
 .pl-dash{width:15px;height:3px;border-radius:2px;flex:none}
-.pl-plan-sw{width:14px;height:14px;border-radius:4px;flex:none;background:#9A8A1E;border:2px solid #143D1E;box-shadow:0 1px 3px rgba(20,61,30,.25)}
+.pl-plan-sw{width:14px;height:14px;border-radius:4px;flex:none;background:#2F6B3E;border:2px solid #9A8A1E;box-shadow:0 1px 3px rgba(20,61,30,.25)}
 .dp-manage{display:flex;gap:8px;padding:8px 12px 2px}
 .dp-manage .btn{flex:1}
 

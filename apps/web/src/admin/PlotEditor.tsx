@@ -103,6 +103,18 @@ export function PlotEditor({
           <button className="ic-btn" onClick={onClose}>×</button>
         </div>
         <div className="editor-body">
+          {/* Ownership — first, matching the card */}
+          <div className="ed-sec">{t('a.ownership', lang)}</div>
+          <div className="ed-grid">
+            <Field label={t('a.owner', lang)}><input value={f.owner} onChange={(e) => up('owner', e.target.value)} /></Field>
+            <Field label={t('d.ownership', lang)}>
+              <select value={f.ownership} onChange={(e) => up('ownership', e.target.value)}>
+                {Object.values(OWNERSHIP_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
+              </select>
+            </Field>
+            <Field label={t('d.purchase', lang)} full><DateField value={f.purchase_date} onChange={(v) => up('purchase_date', v)} /></Field>
+          </div>
+
           {/* Overview — matches the card's Summary + Gallery */}
           <div className="ed-sec">{t('a.projectInfo', lang)}</div>
           <div className="ed-grid">
@@ -178,18 +190,6 @@ export function PlotEditor({
                 <NumberField value={inv[fld.key] ?? ''} onChange={(v) => setInvField(fld.key, v)} />
               </Field>
             ))}
-          </div>
-
-          {/* Ownership */}
-          <div className="ed-sec">{t('a.ownership', lang)}</div>
-          <div className="ed-grid">
-            <Field label={t('a.owner', lang)}><input value={f.owner} onChange={(e) => up('owner', e.target.value)} /></Field>
-            <Field label={t('d.ownership', lang)}>
-              <select value={f.ownership} onChange={(e) => up('ownership', e.target.value)}>
-                {Object.values(OWNERSHIP_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
-              </select>
-            </Field>
-            <Field label={t('d.purchase', lang)} full><DateField value={f.purchase_date} onChange={(v) => up('purchase_date', v)} /></Field>
           </div>
 
           {/* Status & permits */}

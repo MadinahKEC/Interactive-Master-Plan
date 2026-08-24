@@ -25,8 +25,9 @@ export function landUseColor(colors?: Record<string, { color: string }>): Expres
   return expr as ExpressionSpecification;
 }
 
-/** KEC-identity fill for development-plan plots: gold body + green outline (below). */
-export const PLAN_FILL = '#9A8A1E';
+/** KEC-identity fill for development-plan plots: green body + gold outline, with a
+ *  status-coloured glow (below) so the plan state stays readable. */
+export const PLAN_FILL = '#2F6B3E';
 /** Fill a plot by its land use, but flip to the plan colour when it's in the plan. */
 export function plotFillColor(colors?: Record<string, { color: string }>): ExpressionSpecification {
   return ['case', ['has', 'planStatus'], PLAN_FILL, landUseColor(colors)] as ExpressionSpecification;
@@ -132,14 +133,16 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
       },
       // development-plan plots: soft glow + dashed status-coloured outline (always on)
       {
+        // status-coloured glow (Completed / UnderConstruction / Future / Partner)
         id: 'plan-glow', type: 'line', source: 'plots', ...srcLayer,
         filter: ['has', 'planStatus'],
-        paint: { 'line-color': '#2F6B3E', 'line-width': 7, 'line-opacity': 0.24, 'line-blur': 3 },
+        paint: { 'line-color': planStatusColor(), 'line-width': 9, 'line-opacity': 0.5, 'line-blur': 3.5 },
       },
       {
+        // constant gold identity border
         id: 'plan-outline', type: 'line', source: 'plots', ...srcLayer,
         filter: ['has', 'planStatus'],
-        paint: { 'line-color': '#143D1E', 'line-width': 2.4, 'line-opacity': 0.95, 'line-dasharray': [2, 1.4] },
+        paint: { 'line-color': '#9A8A1E', 'line-width': 2.6, 'line-opacity': 1, 'line-dasharray': [2, 1.4] },
       },
       {
         id: 'plots-multi', type: 'fill', source: 'plots', ...srcLayer,
