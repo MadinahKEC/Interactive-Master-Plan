@@ -5,12 +5,15 @@ import { Sidebar } from './components/Sidebar';
 import { ControlPanel } from './components/ControlPanel';
 import { DetailPanel } from './components/DetailPanel';
 import { MultiSelectPanel } from './components/MultiSelectPanel';
+import { ShortlistBar } from './components/ShortlistBar';
 import { AdminConsole } from './admin/AdminConsole';
 import { DevPlanView } from './components/DevPlanView';
 import { AnnotateToolbar } from './components/AnnotateToolbar';
 import { ReportView } from './components/ReportView';
 import { SubdivideModal } from './components/SubdivideModal';
 import { Login } from './components/Login';
+import { DialogHost, useDialog } from './lib/dialog';
+import { useUrlSync } from './lib/urlState';
 import { usePlots } from './lib/usePlots';
 import { useProjects, t } from './lib/domain';
 import { can } from '@kec/types';
@@ -37,6 +40,26 @@ export default function App() {
   const data = useMemo(() => effectiveCollection(baseData, plotAttrs, plotGeom, merges, projects, splits), [baseData, plotAttrs, plotGeom, merges, projects, splits]);
   const landUses = useMemo(() => effectiveLandUses(luOver), [luOver]);
 
+  useUrlSync(data);
+
+  // Esc closes the top-most open overlay (dialogs & local modals handle their own).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || useDialog.getState().spec) return;
+      const a = useApp.getState();
+      if (a.reportImage !== null) { a.setReportImage(null); return; }
+      if (subdivideCode) { setSubdivideCode(null); return; }
+      if (adminOpen) { setAdminOpen(false); setEditCode(null); a.reveal(); return; }
+      if (devOpen) { setDevOpen(false); a.reveal(); return; }
+      if (a.editGeom) { a.setEditGeom(null); return; }
+      if (a.measuring) { a.setMeasuring(false); return; }
+      if (a.multi.length) { a.clearMulti(); return; }
+      if (a.selected) { a.select(null); return; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [subdivideCode, adminOpen, devOpen]);
+
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -53,6 +76,7 @@ export default function App() {
       {data && <ControlPanel data={data} landUses={landUses} projects={projects} />}
       <DetailPanel projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
       {data && <MultiSelectPanel data={data} projects={projects} />}
+      {data && <ShortlistBar data={data} projects={projects} landUses={landUses} />}
       <AnnotateToolbar />
       <ReportView data={data} landUses={landUses} projects={projects} />
       {subdivideCode && <SubdivideModal parentCode={subdivideCode} data={data} onClose={() => setSubdivideCode(null)} />}
@@ -75,6 +99,7 @@ export default function App() {
       )}
       {error && (<div className="loading"><p>{lang === 'ar' ? 'تعذّر تحميل البيانات' : 'Failed to load data'}: {error}</p></div>)}
       {status !== 'in' && <Login />}
+      <DialogHost />
     </>
   );
 }

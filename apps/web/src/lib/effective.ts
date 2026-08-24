@@ -44,6 +44,36 @@ export function effectiveCollection(
   };
 
   const features: PlotFeature[] = [];
+
+  // 1) sub-plot features (from splits), with attribute + geometry overrides applied.
+  //    Built first and indexed so they can also feed merges (an investor buying
+  //    several adjacent sub-plots), not just render on their own.
+  const subFeatures: PlotFeature[] = [];
+  const subByCode = new Map<string, PlotFeature>();
+  for (const parent of Object.keys(splits)) {
+    const sector = byCode.get(parent)?.properties.sector ?? 'Other';
+    for (const part of splits[parent]) {
+      const ps = planStatusOf(part.code);
+      const patch = attrs[part.code];
+      const g = geom[part.code];
+      const feat: PlotFeature = {
+        type: 'Feature',
+        properties: {
+          code: part.code, name: part.name_en || part.name_ar || part.code,
+          land_use: part.land_use, sector,
+          gfa: part.gfa ?? null, area: part.area ?? null, floors: part.floors ?? null,
+          height: part.height ?? null, coverage: part.coverage ?? null, far: part.far ?? null, style: null,
+          ...(patch ?? {}),
+          ...(ps ? { planStatus: ps } : {}),
+        } as PlotProps,
+        geometry: g ? ({ type: g.type, coordinates: g.coordinates } as any) : (part.geometry as any),
+      };
+      subFeatures.push(feat);
+      subByCode.set(part.code, feat);
+    }
+  }
+
+  // 2) base plots (skip merged / subdivided-parent).
   for (const f of base.features) {
     if (hidden.has(f.properties.code)) continue;
     const patch = attrs[f.properties.code];
@@ -60,9 +90,14 @@ export function effectiveCollection(
     features.push(feat);
   }
 
-  // merged ownership units
+  // 3) sub-plots that are not themselves merged away.
+  for (const f of subFeatures) if (!hidden.has(f.properties.code)) features.push(f);
+
+  // 4) merged ownership units — resolve each code from base OR sub-plots, so a merge
+  //    of subdivided pieces becomes a single unit carrying the summed figures.
+  const resolve = (c: string): PlotFeature | undefined => byCode.get(c) ?? subByCode.get(c);
   for (const m of merges) {
-    const src = m.codes.map((c) => byCode.get(c)).filter(Boolean) as PlotFeature[];
+    const src = m.codes.map(resolve).filter(Boolean) as PlotFeature[];
     if (!src.length) continue;
     const polys: any[] = [];
     let area = 0, gfa = 0;
@@ -84,26 +119,6 @@ export function effectiveCollection(
       } as PlotProps,
       geometry: { type: 'MultiPolygon', coordinates: polys } as any,
     });
-  }
-
-  // subdivided plots: each part becomes its own plot (parent hidden above)
-  for (const parent of Object.keys(splits)) {
-    const parentFeat = byCode.get(parent);
-    const sector = parentFeat?.properties.sector ?? 'Other';
-    for (const part of splits[parent]) {
-      const ps = planStatusOf(part.code);
-      features.push({
-        type: 'Feature',
-        properties: {
-          code: part.code, name: part.name_en || part.name_ar || part.code,
-          land_use: part.land_use, sector,
-          gfa: part.gfa ?? null, area: part.area ?? null, floors: part.floors ?? null,
-          height: part.height ?? null, coverage: part.coverage ?? null, far: part.far ?? null, style: null,
-          ...(ps ? { planStatus: ps } : {}),
-        } as PlotProps,
-        geometry: part.geometry as any,
-      });
-    }
   }
 
   return { ...base, features };

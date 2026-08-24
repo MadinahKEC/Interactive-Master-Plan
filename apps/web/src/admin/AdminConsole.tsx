@@ -3,11 +3,12 @@ import { SECTORS, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useOverrides, SUPER_ADMIN_EMAIL } from '../lib/overrides';
 import { createUserSecondary } from '../lib/firebase';
-import { STATUS_META, resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { Chart } from './Chart';
 import { PlotEditor } from './PlotEditor';
-import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar } from '../components/icons';
+import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel } from '../components/icons';
 
 type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'audit' | 'settings';
 const TABS: { id: Tab; Icon: (p: { size?: number }) => JSX.Element }[] = [
@@ -51,7 +52,7 @@ export function AdminConsole({
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
           {tab === 'users' && <UsersTab />}
           {tab === 'audit' && <AuditTab />}
-          {tab === 'settings' && <SettingsTab />}
+          {tab === 'settings' && <SettingsTab data={data} projects={projects} />}
         </section>
       </div>
       {editing && <PlotEditor code={editing} data={data} projects={projects} landUses={landUses} onClose={() => setEditing(null)} />}
@@ -63,48 +64,63 @@ export function AdminConsole({
 function Dashboard({ data, projects, landUses }: { data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse> }) {
   const { lang } = useApp();
   const txt = '#16221B';
+  const fmt = (x: number) => (x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : x >= 1e3 ? Math.round(x / 1e3) + 'K' : String(Math.round(x)));
   const stats = useMemo(() => {
-    const lu: Record<string, number> = {}; const sec: Record<string, number> = {}; const st: Record<string, number> = {};
-    let gfa = 0;
+    const luArea: Record<string, number> = {}; const st: Record<string, number> = {};
+    const secGfa: Record<string, number> = {}; const lic: Record<string, number> = {};
+    let gfa = 0, area = 0, farW = 0, developable = 0, planCount = 0, licensed = 0;
     for (const f of data.features) {
       const p = f.properties;
-      lu[p.land_use ?? '—'] = (lu[p.land_use ?? '—'] || 0) + 1;
-      sec[p.sector] = (sec[p.sector] || 0) + 1;
+      luArea[p.land_use ?? '—'] = (luArea[p.land_use ?? '—'] || 0) + (p.area || 0);
+      secGfa[p.sector] = (secGfa[p.sector] || 0) + (p.gfa || 0);
       const pr = resolveProject(p.code, p.land_use, projects);
       st[pr.status.key] = (st[pr.status.key] || 0) + 1;
-      gfa += p.gfa || 0;
+      gfa += p.gfa || 0; area += p.area || 0;
+      if (p.far) farW += (p.far || 0) * (p.area || 0);
+      if ((p.far || 0) > 0) developable += p.area || 0;
+      if ((p as any).planStatus) planCount++;
+      const lk = pr.overlay.license; if (lk) { lic[lk] = (lic[lk] || 0) + 1; licensed++; }
     }
-    return { lu, sec, st, gfa };
+    return { luArea, st, secGfa, lic, gfa, area, avgFar: area ? farW / area : 0, developable, planCount, licensed, uses: Object.keys(luArea).length };
   }, [data, projects]);
   const named = Object.values(projects).filter((p) => p.name_ar || p.name_en).length;
-  const edited = Object.keys(useOverrides.getState().plotAttrs).length;
 
-  const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string) => ({
+  const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
     title: { text: title, left: 'center', textStyle: { color: txt, fontSize: 13, fontFamily: 'Readex Pro' } },
-    tooltip: { trigger: 'item' },
+    tooltip: { trigger: 'item', valueFormatter: (v: number) => (valFmt ? valFmt(v) : String(v)) },
     series: [{ type: 'pie', radius: ['42%', '68%'], center: ['50%', '56%'], avoidLabelOverlap: true,
-      label: { show: false }, data: Object.keys(obj).sort((a, b) => obj[b] - obj[a]).map((k) => ({ value: obj[k], name: labelOf(k), itemStyle: { color: colorOf(k) } })) }],
+      label: { show: false }, data: Object.keys(obj).filter((k) => obj[k] > 0).sort((a, b) => obj[b] - obj[a]).map((k) => ({ value: Math.round(obj[k]), name: labelOf(k), itemStyle: { color: colorOf(k) } })) }],
   });
+  const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
+    title: { text: title, left: 'center', textStyle: { color: txt, fontSize: 13, fontFamily: 'Readex Pro' } },
+    tooltip: { trigger: 'axis', valueFormatter: (v: number) => (valFmt ? valFmt(v) : String(v)) }, grid: { left: 48, right: 16, top: 44, bottom: 40 },
+    xAxis: { type: 'category', data: keys.map(labelOf), axisLabel: { color: txt, interval: 0, rotate: keys.length > 4 ? 24 : 0, fontSize: 10 } },
+    yAxis: { type: 'value', axisLabel: { color: txt, formatter: (v: number) => (v >= 1e6 ? v / 1e6 + 'M' : v >= 1e3 ? v / 1e3 + 'K' : v) } },
+    series: [{ type: 'bar', data: vals.map((v) => Math.round(v)), itemStyle: { color, borderRadius: [6, 6, 0, 0] } }],
+  });
+
+  const secKeys = Object.keys(stats.secGfa).filter((k) => stats.secGfa[k] > 0);
+  const licKeys = LICENSE_STAGES.map((x) => x.key).filter((k) => stats.lic[k]);
 
   return (
     <div className="dash">
       <div className="dash-kpis">
         <KpiCard v="958" l={t('a.plots', lang)} />
-        <KpiCard v={String(Object.keys(stats.lu).length)} l={t('cp.uses', lang)} />
-        <KpiCard v={(stats.gfa / 1e6).toFixed(1) + 'M'} l={t('kpi.gfa', lang)} />
+        <KpiCard v={fmt(stats.area)} l={`${t('kpi.area', lang)} (m²)`} />
+        <KpiCard v={fmt(stats.gfa)} l={`${t('kpi.gfa', lang)} (m²)`} />
+        <KpiCard v={fmt(stats.developable)} l={t('report.developable', lang)} />
+        <KpiCard v={stats.avgFar.toFixed(2)} l={t('report.avgFar', lang)} />
+        <KpiCard v={String(stats.planCount)} l={t('cp.planTitle', lang)} />
         <KpiCard v={String(named)} l={t('a.named', lang)} />
-        <KpiCard v={String(edited)} l={t('a.edited', lang)} />
+        <KpiCard v={String(stats.licensed)} l={t('sec.license', lang)} />
       </div>
       <div className="dash-charts">
-        <div className="chart-card"><Chart option={donut(t('a.byLandUse', lang), stats.lu, (k) => landUses[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? landUses[k]?.labelAr ?? k : landUses[k]?.labelEn ?? k))} /></div>
+        <div className="chart-card"><Chart option={donut(t('report.luMix', lang), stats.luArea, (k) => landUses[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? landUses[k]?.labelAr ?? k : landUses[k]?.labelEn ?? k), (v) => fmt(v) + ' m²')} /></div>
         <div className="chart-card"><Chart option={donut(t('a.byStatus', lang), stats.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
-        <div className="chart-card"><Chart option={{
-          title: { text: t('a.bySector', lang), left: 'center', textStyle: { color: txt, fontSize: 13, fontFamily: 'Readex Pro' } },
-          tooltip: { trigger: 'axis' }, grid: { left: 40, right: 16, top: 44, bottom: 28 },
-          xAxis: { type: 'category', data: Object.keys(stats.sec).map((k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k)), axisLabel: { color: txt } },
-          yAxis: { type: 'value', axisLabel: { color: txt } },
-          series: [{ type: 'bar', data: Object.keys(stats.sec).map((k) => stats.sec[k]), itemStyle: { color: '#2F6B3E', borderRadius: [6, 6, 0, 0] } }],
-        }} /></div>
+        <div className="chart-card"><Chart option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => stats.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v) => fmt(v) + ' m²')} /></div>
+        {licKeys.length > 0
+          ? <div className="chart-card"><Chart option={bar(t('dash.permits', lang), licKeys, licKeys.map((k) => stats.lic[k]), '#2E7D6B', (k) => (lang === 'ar' ? LICENSE_STAGES.find((x) => x.key === k)?.ar ?? k : LICENSE_STAGES.find((x) => x.key === k)?.en ?? k))} /></div>
+          : <div className="chart-card dash-empty">{t('dash.noPermits', lang)}</div>}
       </div>
     </div>
   );
@@ -282,15 +298,28 @@ function UsersTab() {
 /* ---------------- Audit ---------------- */
 function AuditTab() {
   const { lang } = useApp();
-  const { audit } = useOverrides();
+  const { audit, revertTo } = useOverrides();
   if (!audit.length) return <div className="empty">{t('a.noEdits', lang)}</div>;
+  const doRevert = async (id: string) => {
+    const ok = await confirmDialog({
+      title: t('audit.revertTitle', lang), body: t('audit.revertBody', lang),
+      confirmLabel: t('audit.revert', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr',
+    });
+    if (ok) revertTo(id);
+  };
   return (
     <div className="table-scroll">
       <table className="admin-table">
-        <thead><tr><th>{t('a.time', lang)}</th><th>{t('a.action', lang)}</th><th>{t('a.target', lang)}</th><th>{t('a.detail', lang)}</th></tr></thead>
+        <thead><tr><th>{t('a.time', lang)}</th><th>{t('a.action', lang)}</th><th>{t('a.target', lang)}</th><th>{t('a.detail', lang)}</th><th></th></tr></thead>
         <tbody>
-          {audit.map((e, i) => (
-            <tr key={i}><td className="mono">{new Date(e.at).toLocaleString()}</td><td>{e.action}</td><td className="mono">{e.target ?? '—'}</td><td className="dim">{e.detail}</td></tr>
+          {audit.map((e) => (
+            <tr key={e.id}>
+              <td className="mono">{new Date(e.at).toLocaleString()}</td>
+              <td>{e.action}</td>
+              <td className="mono">{e.target ?? '—'}</td>
+              <td className="dim">{e.detail}</td>
+              <td>{e.before && <button className="btn sm danger" onClick={() => doRevert(e.id)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>}</td>
+            </tr>
           ))}
         </tbody>
       </table>
@@ -299,7 +328,7 @@ function AuditTab() {
 }
 
 /* ---------------- Settings ---------------- */
-function SettingsTab() {
+function SettingsTab({ data, projects }: { data: PlotCollection | null; projects: Record<string, ProjectInfo> }) {
   const { lang, toggleLang } = useApp();
   const { exportAll, importAll, reset } = useOverrides();
   const doExport = () => {
@@ -310,13 +339,32 @@ function SettingsTab() {
     const file = e.target.files?.[0]; if (!file) return;
     file.text().then((txt) => importAll(txt));
   };
+  const doExcel = () => {
+    if (!data) return;
+    const licLabel = (k?: string) => LICENSE_STAGES.find((x) => x.key === k)?.en ?? k ?? '';
+    const stgLabel = (k?: string) => PROGRESS_STAGES.find((x) => x.key === k)?.en ?? k ?? '';
+    const headers = ['Code', 'Name (AR)', 'Name (EN)', 'Land Use', 'Sector', 'Type', 'Status', 'Plan Status', 'Ownership', 'Owner', 'Purchase Date', 'Area (m²)', 'GFA', 'Floors', 'Height (m)', 'Coverage', 'FAR', 'Construction Stage', 'Latest Permit'];
+    const esc = (v: any) => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const rows = data.features.map((f) => {
+      const p = f.properties as any; const pr = resolveProject(p.code, p.land_use, projects); const o = pr.overlay;
+      return [
+        p.code, o.name_ar || '', o.name_en || '', p.land_use, p.sector, pr.type.en, pr.status.en, p.planStatus || '',
+        pr.ownership.en, pr.owner || '', o.purchase_date || '', p.area, p.gfa, p.floors, p.height, p.coverage, p.far,
+        stgLabel(o.stage), licLabel(o.license),
+      ];
+    });
+    const csv = [headers, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kec-plots-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  };
   return (
     <div className="tab-settings">
       <div className="set-row"><span>اللغة / Language</span>
         <button className="btn" onClick={toggleLang}>{lang === 'ar' ? 'English' : 'العربية'}</button></div>
-      <div className="set-row"><span>{t('a.export', lang)}</span><button className="btn primary" onClick={doExport}>⬇ {t('a.export', lang)}</button></div>
+      <div className="set-row"><span>{t('a.excel', lang)}</span><button className="btn primary" onClick={doExcel}><IconExcel size={15} /> {t('a.excel', lang)} ({data?.features.length ?? 0})</button></div>
+      <div className="set-row"><span>{t('a.export', lang)}</span><button className="btn" onClick={doExport}>⬇ {t('a.export', lang)}</button></div>
       <div className="set-row"><span>{t('a.import', lang)}</span><label className="btn">⬆ {t('a.import', lang)}<input type="file" accept="application/json" hidden onChange={doImport} /></label></div>
-      <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={() => { if (confirm(t('a.resetConfirm', lang))) reset(); }}>{t('a.reset', lang)}</button></div>
+      <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button></div>
     </div>
   );
 }

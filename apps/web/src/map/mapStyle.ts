@@ -45,7 +45,10 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
 
   return {
     version: 8,
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    // Self-hosted glyphs (the public demo font CDN is unreachable/blocked in some
+    // networks, which silently breaks ALL map text). The vendored 'Open Sans Regular'
+    // 0–255 range covers every plot code.
+    glyphs: import.meta.env.BASE_URL + 'fonts/{fontstack}/{range}.pbf',
     sources: {
       carto: {
         type: 'raster',
@@ -150,9 +153,20 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         },
       },
       {
-        id: 'plots-label', type: 'symbol', source: 'plots', ...srcLayer, minzoom: 15.2,
-        layout: { 'text-field': ['get', 'code'], 'text-font': ['Open Sans Regular'], 'text-size': 10 },
-        paint: { 'text-color': '#143D1E', 'text-halo-color': '#FBFCFA', 'text-halo-width': 1.4 },
+        // plot-code labels — hidden by default, toggled from the panel. Collision is
+        // on (allow-overlap:false) so only non-overlapping codes show → clean at any
+        // zoom; larger plots win the collision via symbol-sort-key.
+        id: 'plots-label', type: 'symbol', source: 'plots', ...srcLayer, minzoom: 11.5,
+        layout: {
+          visibility: 'none',
+          'text-field': ['get', 'code'],
+          'text-font': ['Open Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 11.5, 9.5, 14, 11.5, 17, 13.5],
+          'text-allow-overlap': false,
+          'text-padding': 6,
+          'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'area'], 0]],
+        },
+        paint: { 'text-color': '#143D1E', 'text-halo-color': '#FBFCFA', 'text-halo-width': 1.7, 'text-halo-blur': 0.3 },
       },
       // place/street labels ON TOP of everything
       { id: 'labels-light', type: 'raster', source: 'cartoLabels', paint: { 'raster-opacity': 0.9 } },

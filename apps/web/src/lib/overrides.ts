@@ -9,13 +9,19 @@ import type { ProjectInfo } from './domain';
  * stays the same.
  */
 export interface AuditEntry {
+  id: string;
   at: number;
   actor: string;
   action: string;   // 'plot.attr' | 'plot.project' | 'landuse.color' | 'user.add' | ...
   target?: string;  // plot code / land-use key / user email
   detail: string;
+  before?: RevertSnapshot;  // data slices just before this change (session-only, enables revert)
 }
+/** The revertible data slices captured before a change. */
+type RevertSnapshot = Pick<OverridesState, 'plotAttrs' | 'projects' | 'landUses' | 'plotGeom' | 'merges' | 'splits' | 'annotations' | 'users' | 'optionLists'>;
 export interface LandUseOverride { color?: string; labelAr?: string; labelEn?: string }
+/** An admin-added dropdown choice (persisted and reused across sessions). */
+export interface OptionItem { value: string; ar?: string; en?: string }
 export interface AdminUser { id: string; name: string; email: string; role: string; active: boolean }
 export type PlotAttrOverride = Partial<Record<'land_use' | 'sector' | 'gfa' | 'area' | 'floors' | 'height' | 'coverage' | 'far' | 'name', string | number | null>>;
 /** GeoJSON geometry override for a plot (from the shape editor). */
@@ -53,6 +59,7 @@ interface OverridesState {
   splits: Record<string, SubPlotRecord[]>;
   annotations: Annotation[];
   users: AdminUser[];
+  optionLists: Record<string, OptionItem[]>;   // admin-added choices per dropdown
   audit: AuditEntry[];
 
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
@@ -71,11 +78,21 @@ interface OverridesState {
   addUser: (u: Omit<AdminUser, 'id'>, actor?: string) => void;
   updateUser: (id: string, patch: Partial<AdminUser>) => void;
   removeUser: (id: string) => void;
-  log: (e: Omit<AuditEntry, 'at'>) => void;
+  addOption: (listKey: string, opt: OptionItem, actor?: string) => void;
+  log: (e: Omit<AuditEntry, 'at' | 'id' | 'before'>) => void;
+  revertTo: (id: string) => void;
   exportAll: () => string;
   importAll: (json: string) => boolean;
   reset: () => void;
 }
+
+const snap = (s: OverridesState): RevertSnapshot => ({
+  plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom,
+  merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists,
+});
+// Prepend an audit entry (with a pre-change snapshot for revert) and cap the log.
+const pushAudit = (s: OverridesState, e: Omit<AuditEntry, 'at' | 'id' | 'before'>): AuditEntry[] =>
+  [{ ...e, at: Date.now(), id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), before: snap(s) }, ...s.audit].slice(0, 120);
 
 export const SUPER_ADMIN_EMAIL = 'shamdan@madinahkec.com';
 export const seedUsers: AdminUser[] = [
@@ -93,35 +110,46 @@ export const useOverrides = create<OverridesState>()(
       splits: {},
       annotations: [],
       users: seedUsers,
+      optionLists: {},
       audit: [],
 
-      log: (e) => set((s) => ({ audit: [{ ...e, at: Date.now() }, ...s.audit].slice(0, 500) })),
+      addOption: (listKey, opt, actor = 'admin') =>
+        set((s) => {
+          const list = s.optionLists[listKey] ?? [];
+          if (list.some((o) => o.value === opt.value)) return {} as any;
+          return {
+            optionLists: { ...s.optionLists, [listKey]: [...list, opt] },
+            audit: pushAudit(s, { actor, action: 'option.add', target: listKey, detail: opt.en || opt.ar || opt.value }),
+          };
+        }),
+
+      log: (e) => set((s) => ({ audit: pushAudit(s, e) })),
 
       setPlotAttr: (code, patch, actor = 'admin') =>
         set((s) => {
           const detail = Object.entries(patch).map(([k, v]) => `${k}=${v}`).join(', ');
           return {
             plotAttrs: { ...s.plotAttrs, [code]: { ...s.plotAttrs[code], ...patch } },
-            audit: [{ at: Date.now(), actor, action: 'plot.attr', target: code, detail }, ...s.audit].slice(0, 500),
+            audit: pushAudit(s, { actor, action: 'plot.attr', target: code, detail }),
           };
         }),
 
       setProject: (code, patch, actor = 'admin') =>
         set((s) => ({
           projects: { ...s.projects, [code]: { ...s.projects[code], ...patch } },
-          audit: [{ at: Date.now(), actor, action: 'plot.project', target: code, detail: patch.name_ar || patch.name_en || 'updated' }, ...s.audit].slice(0, 500),
+          audit: pushAudit(s, { actor, action: 'plot.project', target: code, detail: patch.name_ar || patch.name_en || 'updated' }),
         })),
 
       setLandUse: (key, patch, actor = 'admin') =>
         set((s) => ({
           landUses: { ...s.landUses, [key]: { ...s.landUses[key], ...patch } },
-          audit: [{ at: Date.now(), actor, action: 'landuse.edit', target: key, detail: JSON.stringify(patch) }, ...s.audit].slice(0, 500),
+          audit: pushAudit(s, { actor, action: 'landuse.edit', target: key, detail: JSON.stringify(patch) }),
         })),
 
       setGeometry: (code, geom, actor = 'admin') =>
         set((s) => ({
           plotGeom: { ...s.plotGeom, [code]: geom },
-          audit: [{ at: Date.now(), actor, action: 'plot.geometry', target: code, detail: 'shape edited' }, ...s.audit].slice(0, 500),
+          audit: pushAudit(s, { actor, action: 'plot.geometry', target: code, detail: 'shape edited' }),
         })),
       resetGeometry: (code) =>
         set((s) => { const g = { ...s.plotGeom }; delete g[code]; return { plotGeom: g }; }),
@@ -132,7 +160,7 @@ export const useOverrides = create<OverridesState>()(
           merges: [...s.merges, { id, codes, ...patch }],
           // a merged unit is, by definition, owned — seed its project overlay
           projects: { ...s.projects, [id]: { name_ar: patch.name_ar, name_en: patch.name_en, owner: patch.owner, ownership: patch.owner ? 'owned' : 'reserved' } },
-          audit: [{ at: Date.now(), actor, action: 'plots.merge', target: id, detail: codes.join(' + ') }, ...s.audit].slice(0, 500),
+          audit: pushAudit(s, { actor, action: 'plots.merge', target: id, detail: codes.join(' + ') }),
         }));
         return id;
       },
@@ -147,7 +175,7 @@ export const useOverrides = create<OverridesState>()(
           return {
             splits: { ...s.splits, [parentCode]: parts },
             projects,
-            audit: [{ at: Date.now(), actor, action: 'plot.subdivide', target: parentCode, detail: `${parts.length} parts` }, ...s.audit].slice(0, 500),
+            audit: pushAudit(s, { actor, action: 'plot.subdivide', target: parentCode, detail: `${parts.length} parts` }),
           };
         }),
       unsubdivide: (parentCode) => set((s) => { const sp = { ...s.splits }; delete sp[parentCode]; return { splits: sp }; }),
@@ -164,12 +192,12 @@ export const useOverrides = create<OverridesState>()(
       addUser: (u, actor = 'admin') =>
         set((s) => ({
           users: [...s.users, { ...u, id: 'u' + Date.now() }],
-          audit: [{ at: Date.now(), actor, action: 'user.add', target: u.email, detail: `${u.name} · ${u.role}` }, ...s.audit].slice(0, 500),
+          audit: pushAudit(s, { actor, action: 'user.add', target: u.email, detail: `${u.name} · ${u.role}` }),
         })),
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -182,6 +210,7 @@ export const useOverrides = create<OverridesState>()(
             splits: o.splits ?? s.splits,
             annotations: o.annotations ?? s.annotations,
             users: o.users ?? s.users,
+            optionLists: o.optionLists ?? s.optionLists,
             audit: o.audit ?? s.audit,
           }));
           return true;
@@ -189,8 +218,15 @@ export const useOverrides = create<OverridesState>()(
           return false;
         }
       },
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, audit: [] }),
+      revertTo: (id) => set((s) => {
+        const idx = s.audit.findIndex((e) => e.id === id);
+        if (idx < 0 || !s.audit[idx].before) return {} as any;
+        // restore the snapshot taken before this edit; drop this edit and every newer one
+        return { ...s.audit[idx].before, audit: s.audit.slice(idx + 1) } as any;
+      }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, audit: [] }),
     }),
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, audit: s.audit }) as any },
+    // `before` snapshots stay in memory only — persisting them would bloat storage/sync.
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, audit: s.audit.map(({ before, ...e }) => e) }) as any },
   ),
 );

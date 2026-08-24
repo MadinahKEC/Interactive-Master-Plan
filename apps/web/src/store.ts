@@ -5,6 +5,18 @@ import type { Lang } from './lib/domain';
 export type Basemap = 'light' | 'satellite';
 export type Dim = '2d' | '3d';
 
+/** Numeric-range + status filters (investor toolkit). Undefined bound = open. */
+export interface AdvFilter {
+  areaMin?: number; areaMax?: number;
+  gfaMin?: number; gfaMax?: number;
+  farMin?: number; farMax?: number;
+  floorsMin?: number; floorsMax?: number;
+  statuses: string[];   // planStatus values to keep; empty = any
+}
+export const emptyAdv: AdvFilter = { statuses: [] };
+export const advActive = (a: AdvFilter): boolean =>
+  a.statuses.length > 0 || [a.areaMin, a.areaMax, a.gfaMin, a.gfaMax, a.farMin, a.farMax, a.floorsMin, a.floorsMax].some((v) => v != null);
+
 export interface AppState {
   lang: Lang;
   basemap: Basemap;
@@ -12,6 +24,7 @@ export interface AppState {
   sector: SectorKey | 'all';
   uses: Set<string>;
   planOnly: boolean;              // show only plots that are in the development plan
+  adv: AdvFilter;                 // advanced numeric/status filters
   search: string;
   searchCodes: string[] | null;   // computed match set (search-anything)
   selected: PlotProps | null;     // single selection
@@ -20,6 +33,8 @@ export interface AppState {
   editGeom: string | null;        // plot code currently in shape-edit mode
   annotateMode: 'off' | 'text' | 'arrow' | 'rect';
   annotateColor: string;
+  measuring: boolean;             // map measurement tool active
+  labels: boolean;                // force plot-code labels on the map
   zoomCode: string | null;        // plot to zoom to
   zoomToken: number;              // bump to trigger a zoom to zoomCode
   revealToken: number;            // bump to force a map resize+repaint (after overlays close)
@@ -32,6 +47,8 @@ export interface AppState {
   setDim: (d: Dim) => void;
   setSector: (s: SectorKey | 'all') => void;
   togglePlanOnly: () => void;
+  setAdv: (patch: Partial<AdvFilter>) => void;
+  resetAdv: () => void;
   toggleUse: (k: string) => void;
   setSearch: (s: string) => void;
   setSearchCodes: (c: string[] | null) => void;
@@ -42,6 +59,9 @@ export interface AppState {
   setEditGeom: (code: string | null) => void;
   setAnnotateMode: (m: AppState['annotateMode']) => void;
   setAnnotateColor: (c: string) => void;
+  toggleMeasure: () => void;
+  setMeasuring: (v: boolean) => void;
+  toggleLabels: () => void;
   requestZoom: (code: string) => void;
   reveal: () => void;
   requestExport: () => void;
@@ -56,6 +76,7 @@ export const useApp = create<AppState>((set) => ({
   sector: 'all',
   uses: new Set(Object.keys(LAND_USES)),
   planOnly: false,
+  adv: emptyAdv,
   search: '',
   searchCodes: null,
   selected: null,
@@ -64,6 +85,8 @@ export const useApp = create<AppState>((set) => ({
   editGeom: null,
   annotateMode: 'off',
   annotateColor: '#B5462F',
+  measuring: false,
+  labels: false,
   zoomCode: null,
   zoomToken: 0,
   revealToken: 0,
@@ -76,6 +99,8 @@ export const useApp = create<AppState>((set) => ({
   setDim: (dim) => set({ dim }),
   setSector: (sector) => set({ sector }),
   togglePlanOnly: () => set((s) => ({ planOnly: !s.planOnly })),
+  setAdv: (patch) => set((s) => ({ adv: { ...s.adv, ...patch } })),
+  resetAdv: () => set({ adv: { statuses: [] } }),
   toggleUse: (k) =>
     set((s) => { const uses = new Set(s.uses); uses.has(k) ? uses.delete(k) : uses.add(k); return { uses }; }),
   setSearch: (search) => set({ search }),
@@ -92,12 +117,22 @@ export const useApp = create<AppState>((set) => ({
   setEditGeom: (editGeom) => set({ editGeom }),
   setAnnotateMode: (annotateMode) => set({ annotateMode }),
   setAnnotateColor: (annotateColor) => set({ annotateColor }),
+  toggleMeasure: () => set((s) => ({ measuring: !s.measuring, annotateMode: 'off' })),
+  setMeasuring: (measuring) => set({ measuring }),
+  toggleLabels: () => set((s) => ({ labels: !s.labels })),
   requestZoom: (code) => set((s) => ({ zoomCode: code, zoomToken: s.zoomToken + 1 })),
   reveal: () => set((s) => ({ revealToken: s.revealToken + 1 })),
   requestExport: () => set((s) => ({ exportToken: s.exportToken + 1 })),
   setReportImage: (reportImage) => set({ reportImage }),
-  reset: () => set((s) => ({ sector: 'all', uses: new Set(Object.keys(LAND_USES)), search: '', searchCodes: null, selected: null, multi: [], fitToken: s.fitToken + 1 })),
+  reset: () => set((s) => ({ sector: 'all', uses: new Set(Object.keys(LAND_USES)), planOnly: false, adv: { statuses: [] }, search: '', searchCodes: null, selected: null, multi: [], fitToken: s.fitToken + 1 })),
 }));
+
+const inRange = (v: number | null | undefined, min?: number, max?: number): boolean => {
+  const n = v ?? 0;
+  if (min != null && n < min) return false;
+  if (max != null && n > max) return false;
+  return true;
+};
 
 /** Client-side predicate mirrored from the MapLibre filter (for KPI recompute). */
 export function matchPlot(p: PlotProps, s: AppState): boolean {
@@ -105,5 +140,11 @@ export function matchPlot(p: PlotProps, s: AppState): boolean {
   if (!s.uses.has(p.land_use ?? '')) return false;
   if (s.planOnly && !p.planStatus) return false;
   if (s.searchCodes && !s.searchCodes.includes(p.code)) return false;
+  const a = s.adv;
+  if (!inRange(p.area, a.areaMin, a.areaMax)) return false;
+  if (!inRange(p.gfa, a.gfaMin, a.gfaMax)) return false;
+  if (!inRange(p.far, a.farMin, a.farMax)) return false;
+  if (!inRange(p.floors, a.floorsMin, a.floorsMax)) return false;
+  if (a.statuses.length && !a.statuses.includes((p as any).planStatus ?? '')) return false;
   return true;
 }

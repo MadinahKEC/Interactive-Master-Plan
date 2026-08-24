@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { SECTORS, type PlotCollection, type SectorKey } from '@kec/types';
-import { useApp, matchPlot } from '../store';
+import { useApp, matchPlot, advActive } from '../store';
 import { resolveProject, STATUS_META, t, type ProjectInfo } from '../lib/domain';
+import { IconFilter, IconLabel } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -10,8 +11,9 @@ const fmtBig = (x: number) =>
 
 export function ControlPanel({ data, landUses, projects }: { data: PlotCollection; landUses: Record<string, EffLandUse>; projects: Record<string, ProjectInfo> }) {
   const state = useApp();
-  const { lang, sector, uses, planOnly, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
+  const { lang, sector, uses, planOnly, adv, labels, toggleLabels, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
   const plannedCount = useMemo(() => data.features.filter((f) => f.properties.planStatus).length, [data]);
+  const [advOpen, setAdvOpen] = useState(false);
 
   const sectorCounts = useMemo(() => {
     const c: Record<string, number> = { all: 0 };
@@ -82,6 +84,40 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
           <Kpi v={fmtBig(kpis.area)} l={t('kpi.area', lang)} />
         </div>
 
+        <label className={`plan-toggle ${labels ? 'on' : ''}`}>
+          <input type="checkbox" checked={labels} onChange={toggleLabels} />
+          <span className="pt-switch" /><span className="pt-label"><IconLabel size={14} /> {t('cp.labels', lang)}</span>
+        </label>
+
+        <button className={`af-toggle ${advActive(adv) ? 'on' : ''}`} onClick={() => setAdvOpen((o) => !o)}>
+          <IconFilter size={14} /> {t('af.title', lang)}
+          {advActive(adv) && <span className="af-badge">{nf.format(kpis.n)}</span>}
+          <span className={`af-caret ${advOpen ? 'open' : ''}`}>▾</span>
+        </button>
+        {advOpen && (
+          <div className="af-panel">
+            <Range lang={lang} label={t('af.area', lang)} min={adv.areaMin} max={adv.areaMax} onMin={(v) => setAdv({ areaMin: v })} onMax={(v) => setAdv({ areaMax: v })} />
+            <Range lang={lang} label={t('af.gfa', lang)} min={adv.gfaMin} max={adv.gfaMax} onMin={(v) => setAdv({ gfaMin: v })} onMax={(v) => setAdv({ gfaMax: v })} />
+            <Range lang={lang} label={t('af.far', lang)} step="0.1" min={adv.farMin} max={adv.farMax} onMin={(v) => setAdv({ farMin: v })} onMax={(v) => setAdv({ farMax: v })} />
+            <Range lang={lang} label={t('af.floors', lang)} min={adv.floorsMin} max={adv.floorsMax} onMin={(v) => setAdv({ floorsMin: v })} onMax={(v) => setAdv({ floorsMax: v })} />
+            <div className="af-status">
+              <div className="af-lbl">{t('af.status', lang)}</div>
+              <div className="af-status-chips">
+                {['Completed', 'UnderConstruction', 'Future', 'Partner'].map((k) => {
+                  const on = adv.statuses.includes(k);
+                  return (
+                    <button key={k} className={`af-st ${on ? 'on' : ''}`} style={on ? { background: STATUS_META[k].color, borderColor: STATUS_META[k].color } : undefined}
+                      onClick={() => setAdv({ statuses: on ? adv.statuses.filter((x) => x !== k) : [...adv.statuses, k] })}>
+                      {lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {advActive(adv) && <button className="btn sm af-reset" onClick={resetAdv}>{t('af.reset', lang)}</button>}
+          </div>
+        )}
+
         {plannedCount > 0 && (
           <>
             <div className="sect-title">{t('cp.planTitle', lang)} <span className="mini">{plannedCount} {t('cp.planned', lang)}</span></div>
@@ -114,4 +150,20 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
 
 function Kpi({ v, l }: { v: string; l: string }) {
   return (<div className="kpi"><div className="v">{v}</div><div className="l">{l}</div></div>);
+}
+
+function Range({ lang, label, min, max, step, onMin, onMax }: {
+  lang: 'ar' | 'en'; label: string; min?: number; max?: number; step?: string; onMin: (v?: number) => void; onMax: (v?: number) => void;
+}) {
+  const num = (s: string): number | undefined => (s === '' ? undefined : Number(s));
+  return (
+    <div className="af-row">
+      <div className="af-lbl">{label}</div>
+      <div className="af-inputs">
+        <input type="number" step={step} placeholder={t('af.min', lang)} value={min ?? ''} onChange={(e) => onMin(num(e.target.value))} />
+        <span className="af-dash">–</span>
+        <input type="number" step={step} placeholder={t('af.max', lang)} value={max ?? ''} onChange={(e) => onMax(num(e.target.value))} />
+      </div>
+    </div>
+  );
 }

@@ -1,11 +1,15 @@
-import { type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { SECTORS, can } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, t, type ProjectInfo } from '../lib/domain';
+import { useShortlist } from '../lib/shortlist';
+import { shareUrl } from '../lib/urlState';
 import { StageBar } from './StageBar';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, TypeIcon } from './icons';
+import { ShareModal } from './ShareModal';
+import { PlotFactsheet } from './PlotFactsheet';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, TypeIcon } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
@@ -21,6 +25,9 @@ export function DetailPanel({
   const splits = useOverrides((s) => s.splits);
   const canAttr = can(role as any, 'plot:attr:update');
   const canGeom = can(role as any, 'plot:geometry:update');
+  const shortlist = useShortlist();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [pdfOpen, setPdfOpen] = useState(false);
   if (!selected) return null;
   const p = selected;
   const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
@@ -47,6 +54,11 @@ export function DetailPanel({
     <div className="panel" id="detail">
       <div className="d-head">
         <button className="d-close" onClick={fitAll} title={t('d.fullPlan', lang)}><IconClose size={17} /></button>
+        <div className="d-quick">
+          <button className={`dq-btn ${shortlist.codes.includes(p.code) ? 'on' : ''}`} onClick={() => shortlist.toggle(p.code)} title={t(shortlist.codes.includes(p.code) ? 'd.unfavorite' : 'd.favorite', lang)}><IconStar size={15} /></button>
+          <button className="dq-btn" onClick={() => setPdfOpen(true)} title={t('d.pdf', lang)}><IconDownload size={15} /></button>
+          <button className="dq-btn" onClick={() => setShareOpen(true)} title={t('d.share', lang)}><IconShare size={15} /></button>
+        </div>
         <div className="d-type"><TypeIcon typeKey={pr.type.key} size={14} />{typeLabel}</div>
         <div className="d-title">{title}</div>
         <div className="d-sub">
@@ -65,7 +77,14 @@ export function DetailPanel({
           {pr.overlay.purchase_date && <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date}</b></div>}
           {mergeRec && (
             <div className="own-merge">
-              <div className="own-date">{t('merged.of', lang)}: <b className="mono">{mergeRec.codes.join(' + ')}</b></div>
+              <div className="merge-contains">
+                <div className="mc-title"><IconMerge size={13} /> {t('merged.contains', lang)} <span className="mc-count">{mergeRec.codes.length}</span></div>
+                <ul className="mc-list">
+                  {mergeRec.codes.map((c) => (
+                    <li key={c}><span className="mc-name">{nameOfConstituent(c, projects, splits, lang)}</span><span className="mc-code mono">{c}</span></li>
+                  ))}
+                </ul>
+              </div>
               {canAttr && <button className="btn sm danger" onClick={() => { unmerge(mergeRec.id); fitAll(); }}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
             </div>
           )}
@@ -76,7 +95,6 @@ export function DetailPanel({
             <Timeline phases={phases} lang={lang} />
             {canAttr && (
               <div className="dp-manage">
-                <button className="btn sm" onClick={() => onEdit(p.code)}><IconEdit size={13} /> {t('d.editAttrs', lang)}</button>
                 <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
               </div>
             )}
@@ -89,12 +107,13 @@ export function DetailPanel({
         )}
 
         <Section title={t('sec.project', lang)}>
+          <div className="sb-caption">{t('sec.stage', lang)}</div>
           <StageBar lang={lang} stageKey={pr.overlay.stage} />
+          <div className="sb-caption">{t('sec.license', lang)}</div>
+          <StageBar lang={lang} stageKey={pr.overlay.license} stages={LICENSE_STAGES} variant="license" />
           {summary && <p className="d-summary">{summary}</p>}
           {pr.overlay.gallery && pr.overlay.gallery.length > 0 && (
-            <div className="d-gallery">
-              {pr.overlay.gallery.map((src, i) => <img key={i} className="d-photo" src={src} alt="" loading="lazy" />)}
-            </div>
+            <Carousel images={pr.overlay.gallery} />
           )}
         </Section>
 
@@ -118,6 +137,63 @@ export function DetailPanel({
           <button className="btn icon-only" onClick={() => requestZoom(p.code)} title={t('d.zoom', lang)}><IconZoom size={15} /></button>
         </div>
       </div>
+      {shareOpen && <ShareModal url={shareUrl()} title={title} onClose={() => setShareOpen(false)} />}
+      {pdfOpen && <PlotFactsheet plot={p} projects={projects} landUses={landUses} onClose={() => setPdfOpen(false)} />}
+    </div>
+  );
+}
+
+// Auto-rotating image carousel. Cross-fades between images every few seconds;
+// hovering the stage pauses rotation and reveals the current image in full.
+function Carousel({ images }: { images: string[] }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const single = images.length <= 1;
+
+  useEffect(() => {
+    if (single || paused) return;
+    timer.current = setInterval(() => setIdx((i) => (i + 1) % images.length), 3400);
+    return () => { if (timer.current) clearInterval(timer.current); };
+  }, [single, paused, images.length]);
+
+  useEffect(() => { if (idx >= images.length) setIdx(0); }, [images.length, idx]);
+
+  return (
+    <div className="d-carousel">
+      <div
+        className="dc-stage"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onClick={() => !single && setIdx((i) => (i + 1) % images.length)}
+      >
+        {images.map((src, i) => (
+          <img key={i} className={`dc-slide ${i === idx ? 'active' : ''}`} src={src} alt="" loading="lazy" draggable={false} />
+        ))}
+        {!single && <span className="dc-count">{idx + 1}/{images.length}</span>}
+      </div>
+      {!single && (
+        <>
+          <div className="dc-dots">
+            {images.map((_, i) => (
+              <button key={i} className={`dc-dot ${i === idx ? 'on' : ''}`} aria-label={`${i + 1}`} onClick={() => setIdx(i)} />
+            ))}
+          </div>
+          <div className="dc-thumbs">
+            {images.map((src, i) => (
+              <img
+                key={i}
+                className={`dc-thumb ${i === idx ? 'on' : ''}`}
+                src={src}
+                alt=""
+                loading="lazy"
+                onMouseEnter={() => setIdx(i)}
+                onClick={() => setIdx(i)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -148,6 +224,17 @@ function Timeline({ phases, lang }: { phases: import('../lib/domain').Phase[]; l
       })}
     </div>
   );
+}
+
+/** Friendly name of a merged constituent (base plot or sub-plot). */
+function nameOfConstituent(code: string, projects: Record<string, ProjectInfo>, splits: Record<string, { code: string; name_ar?: string; name_en?: string }[]>, lang: 'ar' | 'en'): string {
+  const pj = projects[code];
+  if (pj?.name_ar || pj?.name_en) return (lang === 'ar' ? pj.name_ar || pj.name_en : pj.name_en || pj.name_ar) as string;
+  for (const parent of Object.keys(splits)) {
+    const rec = splits[parent].find((r) => r.code === code);
+    if (rec && (rec.name_ar || rec.name_en)) return (lang === 'ar' ? rec.name_ar || rec.name_en : rec.name_en || rec.name_ar) as string;
+  }
+  return code;
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

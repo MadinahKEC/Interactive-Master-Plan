@@ -3,11 +3,11 @@ import { can } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { t } from '../lib/domain';
-import { IconHome, IconCalendar, IconAdmin, IconLayers, IconSatellite, IconCube, IconPower, IconTag, IconExport } from './icons';
+import { IconHome, IconCalendar, IconAdmin, IconLayers, IconSatellite, IconCube, IconPower, IconTag, IconExport, IconRuler } from './icons';
 
 /** Vertical icon rail: primary navigation + map tools. */
 export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => void; onOpenDevPlan: () => void }) {
-  const { lang, basemap, dim, annotateMode, setAnnotateMode, setBasemap, setDim, fitAll, toggleLang, requestExport } = useApp();
+  const { lang, basemap, dim, annotateMode, measuring, toggleMeasure, setAnnotateMode, setBasemap, setDim, fitAll, toggleLang, requestExport } = useApp();
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const canAdmin = can(user?.role as any, 'plot:attr:update');
@@ -34,6 +34,7 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => voi
         <RailBtn tip={dim === '2d' ? '3D' : '2D'} active={dim === '3d'} onClick={() => setDim(dim === '2d' ? '3d' : '2d')}>
           <IconCube size={20} />
         </RailBtn>
+        <RailBtn tip={t('tb.measure', lang)} active={measuring} onClick={toggleMeasure}><IconRuler size={20} /></RailBtn>
         <RailBtn tip={t('tb.export', lang)} onClick={requestExport}><IconExport size={20} /></RailBtn>
       </div>
 

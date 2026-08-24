@@ -138,12 +138,75 @@ export const DICT: Record<string, Entry> = {
   'sub.preset':      { ar: 'تحميل قالب Multaqa', en: 'Load Multaqa preset' },
   'sub.addPart':     { ar: 'إضافة قطعة', en: 'Add part' },
   'sub.apply':       { ar: 'تنفيذ التقسيم', en: 'Apply subdivision' },
-  'sub.undo':        { ar: 'إلغاء التقسيم', en: 'Undo subdivision' },
+  'sub.undo':        { ar: 'إعادة الدمج كقطعة واحدة', en: 'Merge back to one plot' },
   'sub.targetArea':  { ar: 'المساحة المستهدفة (م²)', en: 'Target area (m²)' },
   'sub.parts':       { ar: 'القطع', en: 'Parts' },
   'sub.hint':        { ar: 'تُقسَّم الأرض بأشكال متناسبة مع المساحات المدخلة، والبيانات تُحسب حسب شكل كل قطعة.', en: 'The plot is split into shapes proportional to the entered areas; data is scaled to each piece.' },
+  'sub.presetHint':  { ar: 'الأشكال الخمسة مطابقة تماماً لمخطط Multaqa Park Side الرسمي.', en: 'The five shapes match the official Multaqa Park Side plan exactly.' },
   'sub.already':     { ar: 'هذه الأرض مقسّمة حالياً', en: 'This plot is currently subdivided' },
+  'sub.mergeInfo':   { ar: 'ستعود الأرض برقمها الأصلي مع الحفاظ على جميع التفاصيل والصور المُضافة.', en: 'The plot returns under its original code with all its details and images preserved.' },
   'sub.needParts':   { ar: 'أضف قطعتين على الأقل', en: 'Add at least two parts' },
+  'shape.title':     { ar: 'تحديث مساحة البلوت بعد تعديل الشكل', en: 'Update plot area after reshaping' },
+  'shape.intro':     { ar: 'بعد تعديل شكل البلوت أصبحت مساحته المحسوبة كالتالي. يمكنك تطبيق القيم الجديدة، أو تعديلها يدوياً، أو الإبقاء على المساحة الحالية.', en: 'After reshaping, the recomputed figures are shown below. You can apply the new values, edit them, or keep the current area.' },
+  'shape.current':   { ar: 'الحالية', en: 'Current' },
+  'shape.new':       { ar: 'الجديدة', en: 'New' },
+  'shape.apply':     { ar: 'تطبيق القيم', en: 'Apply values' },
+  'shape.keep':      { ar: 'المحافظة على الحالية', en: 'Keep current' },
+  'audit.revert':    { ar: 'تراجع', en: 'Revert' },
+  'audit.revertTitle': { ar: 'التراجع عن التعديل', en: 'Revert this change' },
+  'audit.revertBody':  { ar: 'سيعود المشروع إلى حالته قبل هذا التعديل مباشرةً، مع إلغاء هذا التعديل وكل ما تلاه. هل تريد المتابعة؟', en: 'The project returns to its state just before this change; this change and everything after it are undone. Continue?' },
+  'audit.reverted':  { ar: 'تم التراجع', en: 'Reverted' },
+  'g.addPoint':      { ar: 'انقر على أي ضلع لإضافة نقطة · اسحب النقاط لتعديل الشكل · نقرة مزدوجة لحذف نقطة', en: 'Click an edge to add a point · drag points to reshape · double-click a point to remove it' },
+  'share.title':     { ar: 'مشاركة', en: 'Share' },
+  'share.hint':      { ar: 'رابط يفتح هذه الوجهة مباشرةً على الخريطة، أو امسح رمز QR.', en: 'A link that opens this view directly on the map, or scan the QR code.' },
+  'share.copy':      { ar: 'نسخ الرابط', en: 'Copy link' },
+  'share.copied':    { ar: 'تم النسخ ✓', en: 'Copied ✓' },
+  'share.qr':        { ar: 'تنزيل رمز QR', en: 'Download QR' },
+  'd.share':         { ar: 'مشاركة', en: 'Share' },
+  'd.favorite':      { ar: 'إضافة للمفضّلة', en: 'Add to shortlist' },
+  'd.unfavorite':    { ar: 'إزالة من المفضّلة', en: 'Remove from shortlist' },
+  'sl.title':        { ar: 'المفضّلة', en: 'Shortlist' },
+  'sl.compare':      { ar: 'مقارنة', en: 'Compare' },
+  'sl.clear':        { ar: 'مسح الكل', en: 'Clear all' },
+  'cmp.title':       { ar: 'مقارنة البلوتات', en: 'Plot comparison' },
+  'd.status':        { ar: 'الحالة', en: 'Status' },
+  'tb.measure':      { ar: 'القياس', en: 'Measure' },
+  'tb.labels':       { ar: 'إظهار أرقام البلوتات', en: 'Show plot numbers' },
+  'cp.labels':       { ar: 'إظهار أرقام القطع على الخريطة', en: 'Show plot numbers on map' },
+  'd.pdf':           { ar: 'بطاقة PDF', en: 'PDF factsheet' },
+  'pf.title':        { ar: 'بطاقة بلوت', en: 'Plot Factsheet' },
+  'dash.gfaSector':  { ar: 'إجمالي GFA حسب القطاع', en: 'Total GFA by sector' },
+  'dash.permits':    { ar: 'التراخيص الصادرة', en: 'Permits issued' },
+  'dash.noPermits':  { ar: 'لا توجد تراخيص مُسجّلة بعد', en: 'No permits recorded yet' },
+  'meas.title':      { ar: 'أداة القياس', en: 'Measurement' },
+  'meas.hint':       { ar: 'انقر لإضافة نقاط · انقر نقرة مزدوجة للإنهاء', en: 'Click to add points · double-click to finish' },
+  'meas.distance':   { ar: 'المسافة', en: 'Distance' },
+  'meas.area':       { ar: 'المساحة', en: 'Area' },
+  'meas.clear':      { ar: 'مسح', en: 'Clear' },
+  'meas.done':       { ar: 'إنهاء', en: 'Done' },
+  'af.title':        { ar: 'فلترة متقدمة', en: 'Advanced filters' },
+  'af.area':         { ar: 'المساحة (م²)', en: 'Area (m²)' },
+  'af.gfa':          { ar: 'GFA', en: 'GFA' },
+  'af.far':          { ar: 'معامل البناء FAR', en: 'FAR' },
+  'af.floors':       { ar: 'الأدوار', en: 'Floors' },
+  'af.min':          { ar: 'من', en: 'Min' },
+  'af.max':          { ar: 'إلى', en: 'Max' },
+  'af.status':       { ar: 'الحالة', en: 'Status' },
+  'af.reset':        { ar: 'إعادة تعيين', en: 'Reset' },
+  'af.matches':      { ar: 'مطابقة', en: 'matches' },
+  'report.scope':    { ar: 'نطاق التقرير', en: 'Report scope' },
+  'report.developable': { ar: 'مساحة قابلة للتطوير', en: 'Developable area' },
+  'report.avgFar':   { ar: 'متوسط معامل البناء', en: 'Avg. FAR' },
+  'report.luMix':    { ar: 'مزيج الاستخدامات (حسب المساحة)', en: 'Land-use mix (by area)' },
+  'merged.contains': { ar: 'تحتوي على', en: 'Contains' },
+  'a.excel':         { ar: 'تصدير إكسل (كل الأراضي)', en: 'Export Excel (all plots)' },
+  'sec.stage':       { ar: 'مرحلة الإنشاء', en: 'Construction stage' },
+  'sec.license':     { ar: 'حالة التراخيص', en: 'Permits & licenses' },
+  'd.license':       { ar: 'آخر رخصة', en: 'Latest permit' },
+  'opt.add':         { ar: 'إضافة خيار جديد', en: 'Add new option' },
+  'opt.addTitle':    { ar: 'إضافة خيار جديد للقائمة', en: 'Add a new option to the list' },
+  'opt.ar':          { ar: 'الاسم بالعربية', en: 'Arabic label' },
+  'opt.en':          { ar: 'الاسم بالإنجليزية', en: 'English label' },
   'merged.of':       { ar: 'مدموجة من', en: 'Merged from' },
   'd.unmerge':       { ar: 'إلغاء الدمج', en: 'Unmerge' },
   'd.copyLink':      { ar: 'نسخ رابط القطعة', en: 'Copy plot link' },
@@ -240,6 +303,17 @@ export const PROGRESS_STAGES: { key: string; ar: string; en: string }[] = [
   { key: 'completed', ar: 'مكتمل', en: 'Completed' },
 ];
 
+// Regulatory permit pipeline, ordered per the Saudi development lifecycle
+// (MISA investment → Baladiyah excavation/building → completion → Civil Defense → operating).
+export const LICENSE_STAGES: { key: string; ar: string; en: string }[] = [
+  { key: 'investment', ar: 'رخصة الاستثمار', en: 'Investment License' },
+  { key: 'excavation', ar: 'رخصة الحفر', en: 'Excavation Permit' },
+  { key: 'building', ar: 'رخصة البناء', en: 'Building Permit' },
+  { key: 'completion', ar: 'رخصة إكمال البناء', en: 'Completion Certificate' },
+  { key: 'civil_defense', ar: 'رخصة الدفاع المدني', en: 'Civil Defense (Safety)' },
+  { key: 'operation', ar: 'رخصة التشغيل', en: 'Operating License' },
+];
+
 // ---------- Ownership ----------
 export interface OwnershipMeta { key: string; ar: string; en: string; color: string }
 export const OWNERSHIP_META: Record<string, OwnershipMeta> = {
@@ -286,6 +360,7 @@ export interface ProjectInfo {
   purchase_date?: string;
   phases?: Phase[];    // development-plan timeline
   stage?: string;      // PROGRESS_STAGES key (current construction stage)
+  license?: string;    // LICENSE_STAGES key (latest permit obtained)
 }
 
 export function useProjects() {

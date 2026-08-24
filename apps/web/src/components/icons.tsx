@@ -12,6 +12,17 @@ export const IconClose = ({ size }: P) => (<svg {...S(size)}><path d="M6 6l12 12
 export const IconEdit = ({ size }: P) => (<svg {...S(size)}><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>);
 export const IconShape = ({ size }: P) => (<svg {...S(size)}><path d="M5 6l7-3 7 4-2 9-8 3-5-6 1-7Z" /><circle cx="5" cy="6" r="1.6" fill="currentColor" stroke="none" /><circle cx="12" cy="3" r="1.6" fill="currentColor" stroke="none" /><circle cx="19" cy="7" r="1.6" fill="currentColor" stroke="none" /><circle cx="17" cy="16" r="1.6" fill="currentColor" stroke="none" /><circle cx="9" cy="19" r="1.6" fill="currentColor" stroke="none" /></svg>);
 export const IconMerge = ({ size }: P) => (<svg {...S(size)}><path d="M7 4v4a4 4 0 0 0 4 4h6" /><path d="M17 4v4a4 4 0 0 1-4 4H7" /><path d="M14 9l3 3-3 3" /></svg>);
+export const IconUndo = ({ size }: P) => (<svg {...S(size)}><path d="M9 7 4 12l5 5" /><path d="M4 12h11a5 5 0 0 1 0 10h-1" /></svg>);
+export const IconShare = ({ size }: P) => (<svg {...S(size)}><circle cx="18" cy="5" r="2.6" /><circle cx="6" cy="12" r="2.6" /><circle cx="18" cy="19" r="2.6" /><path d="M8.3 10.8 15.7 6.2M8.3 13.2l7.4 4.6" /></svg>);
+export const IconCopy = ({ size }: P) => (<svg {...S(size)}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h8" /></svg>);
+export const IconStar = ({ size }: P) => (<svg {...S(size)}><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9L12 3.5Z" /></svg>);
+export const IconRuler = ({ size }: P) => (<svg {...S(size)}><rect x="2.5" y="7" width="19" height="10" rx="1.6" transform="rotate(0 12 12)" /><path d="M6 7v3M10 7v4M14 7v3M18 7v4" /></svg>);
+export const IconCompare = ({ size }: P) => (<svg {...S(size)}><rect x="3" y="4" width="7" height="16" rx="1.5" /><rect x="14" y="4" width="7" height="16" rx="1.5" /><path d="M12 2v20" /></svg>);
+export const IconFilter = ({ size }: P) => (<svg {...S(size)}><path d="M3 5h18l-7 8v5l-4 2v-9L3 5Z" /></svg>);
+export const IconDownload = ({ size }: P) => (<svg {...S(size)}><path d="M12 3v12M7 10l5 5 5-5" /><path d="M4 21h16" /></svg>);
+export const IconLabel = ({ size }: P) => (<svg {...S(size)}><path d="M3 8a2 2 0 0 1 2-2h9l6 6-6 6H5a2 2 0 0 1-2-2V8Z" /><path d="M7.5 12h.01" /></svg>);
+export const IconLicense = ({ size }: P) => (<svg {...S(size)}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M8 10h4M8 14h8" /><circle cx="16.5" cy="10" r="1.6" /></svg>);
+export const IconExcel = ({ size }: P) => (<svg {...S(size)}><path d="M6 3h8l4 4v14H6Z" /><path d="M14 3v4h4" /><path d="m9 12 4 5M13 12l-4 5" /></svg>);
 export const IconSearch = ({ size }: P) => (<svg {...S(size)}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>);
 export const IconZoom = ({ size }: P) => (<svg {...S(size)}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3M11 8v6M8 11h6" /></svg>);
 export const IconBuilding = ({ size }: P) => (<svg {...S(size)}><rect x="5" y="3" width="14" height="18" rx="1.5" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3" /></svg>);

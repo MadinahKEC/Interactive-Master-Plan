@@ -1,11 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl, { type FilterSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { LAND_USES, type PlotCollection, type PlotProps } from '@kec/types';
 import { buildStyle, landUseColor, KEC_BOUNDS, KEC_CENTER } from './mapStyle';
-import { useApp } from '../store';
+import { useApp, type AdvFilter } from '../store';
 import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { geomArea } from '../lib/subdivide';
+import { useDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 
 const TILES_URL = import.meta.env.VITE_TILES_URL || undefined;
@@ -13,12 +15,23 @@ const FILTERED_LAYERS = ['plots-fill', 'plots-line', 'plots-3d', 'plots-label'];
 const fs = (id: string | number) => ({ source: 'plots', id, ...(TILES_URL ? { sourceLayer: 'plots' } : {}) });
 const PAD = { top: 90, bottom: 60, left: 360, right: 340 };
 
-function buildFilter(sector: string, uses: Set<string>, codes: string[] | null, planOnly: boolean): FilterSpecification | null {
+function buildFilter(sector: string, uses: Set<string>, codes: string[] | null, planOnly: boolean, adv?: AdvFilter): FilterSpecification | null {
   const parts: any[] = ['all'];
   if (sector !== 'all') parts.push(['==', ['get', 'sector'], sector]);
   if (uses.size < Object.keys(LAND_USES).length) parts.push(['in', ['get', 'land_use'], ['literal', [...uses]]]);
   if (planOnly) parts.push(['has', 'planStatus']);
   if (codes) parts.push(['in', ['get', 'code'], ['literal', codes]]);
+  if (adv) {
+    const rng = (key: string, min?: number, max?: number) => {
+      if (min != null) parts.push(['>=', ['coalesce', ['get', key], 0], min]);
+      if (max != null) parts.push(['<=', ['coalesce', ['get', key], 0], max]);
+    };
+    rng('area', adv.areaMin, adv.areaMax);
+    rng('gfa', adv.gfaMin, adv.gfaMax);
+    rng('far', adv.farMin, adv.farMax);
+    rng('floors', adv.floorsMin, adv.floorsMax);
+    if (adv.statuses.length) parts.push(['in', ['coalesce', ['get', 'planStatus'], ''], ['literal', adv.statuses]]);
+  }
   return parts.length === 1 ? null : (parts as unknown as FilterSpecification);
 }
 
@@ -81,6 +94,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       zoom: 13.4, maxZoom: 19, attributionControl: { compact: true }, preserveDrawingBuffer: true,
     });
     mapRef.current = map;
+    if (import.meta.env.DEV) (window as any).__map = map;
     map.doubleClickZoom.disable();
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-left');
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
@@ -139,7 +153,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
     // single = details only; ctrl = multi; double = zoom
     map.on('click', HIT, (e) => {
-      if (useApp.getState().editGeom || modeRef.current !== 'off') return;
+      if (useApp.getState().editGeom || useApp.getState().measuring || modeRef.current !== 'off') return;
       const p = e.features?.[0]?.properties as PlotProps | undefined; if (!p) return;
       const ctrl = (e.originalEvent as MouseEvent).ctrlKey || (e.originalEvent as MouseEvent).metaKey;
       if (ctrl) { if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; } useApp.getState().toggleMulti(p.code); return; }
@@ -187,7 +201,8 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, uses, searchCodes, planOnly, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor } = useApp();
+  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, labels } = useApp();
+  const [measure, setMeasure] = useState<{ dist: number; area: number; n: number }>({ dist: 0, area: 0, n: 0 });
 
   // capture a map snapshot for the report
   useEffect(() => {
@@ -217,9 +232,9 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
-    const apply = () => { const f = buildFilter(sector, uses, searchCodes, planOnly); FILTERED_LAYERS.forEach((l) => map.getLayer(l) && map.setFilter(l, f)); };
+    const apply = () => { const f = buildFilter(sector, uses, searchCodes, planOnly, adv); FILTERED_LAYERS.forEach((l) => map.getLayer(l) && map.setFilter(l, f)); };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
-  }, [sector, uses, searchCodes, planOnly]);
+  }, [sector, uses, searchCodes, planOnly, adv]);
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
@@ -248,6 +263,13 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [basemap]);
+
+  // plot-code labels toggle — just flip visibility; styling/collision live in the style
+  useEffect(() => {
+    const map = mapRef.current; if (!map) return;
+    const apply = () => { if (map.getLayer('plots-label')) map.setLayoutProperty('plots-label', 'visibility', labels ? 'visible' : 'none'); };
+    map.isStyleLoaded() ? apply() : map.once('idle', apply);
+  }, [labels]);
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
@@ -300,6 +322,14 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const closed = [...ring, ring[0]];
     (map.getSource('ed-poly') as maplibregl.GeoJSONSource)?.setData({ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [closed] } } as any);
     (map.getSource('ed-verts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: ring.map((pt, i) => ({ type: 'Feature', id: i, properties: { i }, geometry: { type: 'Point', coordinates: pt } })) } as any);
+    // midpoint "add" handles — one per edge; clicking inserts a new point there
+    (map.getSource('ed-mid') as maplibregl.GeoJSONSource)?.setData({
+      type: 'FeatureCollection',
+      features: ring.map((pt, i) => {
+        const nxt = ring[(i + 1) % ring.length];
+        return { type: 'Feature', id: i, properties: { i }, geometry: { type: 'Point', coordinates: [(pt[0] + nxt[0]) / 2, (pt[1] + nxt[1]) / 2] } };
+      }),
+    } as any);
   };
 
   useEffect(() => {
@@ -314,8 +344,12 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
     map.addSource('ed-poly', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
     map.addSource('ed-verts', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
+    map.addSource('ed-mid', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
     map.addLayer({ id: 'ed-fill', type: 'fill', source: 'ed-poly', paint: { 'fill-color': '#9A8A1E', 'fill-opacity': 0.15 } });
     map.addLayer({ id: 'ed-line', type: 'line', source: 'ed-poly', paint: { 'line-color': '#9A8A1E', 'line-width': 2, 'line-dasharray': [2, 1] } });
+    // midpoint "+" handles (hollow gold), shown between vertices to add a new point
+    map.addLayer({ id: 'ed-mid-l', type: 'circle', source: 'ed-mid', paint: { 'circle-radius': 5, 'circle-color': '#9A8A1E', 'circle-opacity': 0.9, 'circle-stroke-color': '#FBFCFA', 'circle-stroke-width': 1.6 } });
+    map.addLayer({ id: 'ed-mid-plus', type: 'symbol', source: 'ed-mid', layout: { 'text-field': '+', 'text-size': 13, 'text-font': ['Open Sans Regular'], 'text-allow-overlap': true }, paint: { 'text-color': '#FBFCFA' } });
     map.addLayer({ id: 'ed-verts-l', type: 'circle', source: 'ed-verts', paint: { 'circle-radius': 6, 'circle-color': '#FBFCFA', 'circle-stroke-color': '#2F6B3E', 'circle-stroke-width': 2.4 } });
     refreshEdit();
     zoomTo(editGeom);
@@ -325,8 +359,18 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const onUp = () => { if (dragIdx.current != null) { dragIdx.current = null; map.dragPan.enable(); map.getCanvas().style.cursor = ''; } };
     const onVertEnter = () => { if (dragIdx.current == null) map.getCanvas().style.cursor = 'grab'; };
     const onVertDbl = (e: any) => { e.preventDefault(); const i = e.features?.[0]?.id; if (i == null || editRing.current.length <= 3) return; editRing.current.splice(i, 1); refreshEdit(); };
+    const insertAt = (segIdx: number, c: [number, number]) => { editRing.current.splice(segIdx + 1, 0, c); refreshEdit(); };
+    // click a "+" midpoint handle: insert a new point on that exact edge, then start dragging it
+    const onMidDown = (e: any) => {
+      e.preventDefault();
+      const i = e.features?.[0]?.id; if (i == null) return;
+      const c: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+      insertAt(i, c);
+      dragIdx.current = i + 1; map.dragPan.disable(); map.getCanvas().style.cursor = 'grabbing';
+    };
+    const onMidEnter = () => { if (dragIdx.current == null) map.getCanvas().style.cursor = 'copy'; };
     const onLineClick = (e: any) => {
-      // insert a vertex at the nearest segment
+      // also allow clicking anywhere on an edge to add a vertex at the nearest segment
       const c: [number, number] = [e.lngLat.lng, e.lngLat.lat];
       const r = editRing.current; let best = 0, bestD = Infinity;
       for (let i = 0; i < r.length; i++) {
@@ -334,26 +378,74 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
         const d = distToSeg(c, a as [number, number], b as [number, number]);
         if (d < bestD) { bestD = d; best = i; }
       }
-      r.splice(best + 1, 0, c); refreshEdit();
+      insertAt(best, c);
     };
 
     map.on('mousedown', 'ed-verts-l', onDown);
+    map.on('mousedown', 'ed-mid-l', onMidDown);
     map.on('mousemove', onMove);
     map.on('mouseup', onUp);
     map.on('mouseenter', 'ed-verts-l', onVertEnter);
+    map.on('mouseenter', 'ed-mid-l', onMidEnter);
     map.on('dblclick', 'ed-verts-l', onVertDbl);
     map.on('click', 'ed-fill', onLineClick);
 
     return () => {
-      map.off('mousedown', 'ed-verts-l', onDown); map.off('mousemove', onMove); map.off('mouseup', onUp);
-      map.off('mouseenter', 'ed-verts-l', onVertEnter); map.off('dblclick', 'ed-verts-l', onVertDbl); map.off('click', 'ed-fill', onLineClick);
-      ['ed-fill', 'ed-line', 'ed-verts-l'].forEach((l) => map.getLayer(l) && map.removeLayer(l));
-      ['ed-poly', 'ed-verts'].forEach((s) => map.getSource(s) && map.removeSource(s));
+      map.off('mousedown', 'ed-verts-l', onDown); map.off('mousedown', 'ed-mid-l', onMidDown); map.off('mousemove', onMove); map.off('mouseup', onUp);
+      map.off('mouseenter', 'ed-verts-l', onVertEnter); map.off('mouseenter', 'ed-mid-l', onMidEnter); map.off('dblclick', 'ed-verts-l', onVertDbl); map.off('click', 'ed-fill', onLineClick);
+      ['ed-fill', 'ed-line', 'ed-mid-l', 'ed-mid-plus', 'ed-verts-l'].forEach((l) => map.getLayer(l) && map.removeLayer(l));
+      ['ed-poly', 'ed-verts', 'ed-mid'].forEach((s) => map.getSource(s) && map.removeSource(s));
       map.dragPan.enable();
     };
   }, [editGeom]);
 
-  const saveShape = () => {
+  // ---------- measurement tool (distance + area) ----------
+  const measurePts = useRef<number[][]>([]);
+  useEffect(() => {
+    const map = mapRef.current; if (!map) return;
+    if (!measuring) { measurePts.current = []; setMeasure({ dist: 0, area: 0, n: 0 }); return; }
+
+    map.addSource('ms-line', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
+    map.addSource('ms-pts', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
+    map.addLayer({ id: 'ms-fill', type: 'fill', source: 'ms-line', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#2E7D6B', 'fill-opacity': 0.14 } });
+    map.addLayer({ id: 'ms-line-l', type: 'line', source: 'ms-line', paint: { 'line-color': '#2E7D6B', 'line-width': 2.4, 'line-dasharray': [2, 1] } });
+    map.addLayer({ id: 'ms-pts-l', type: 'circle', source: 'ms-pts', paint: { 'circle-radius': 4.5, 'circle-color': '#FBFCFA', 'circle-stroke-color': '#2E7D6B', 'circle-stroke-width': 2 } });
+    map.getCanvas().style.cursor = 'crosshair';
+
+    const hav = (a: number[], b: number[]) => {
+      const R = 6371000, toR = Math.PI / 180;
+      const dLat = (b[1] - a[1]) * toR, dLon = (b[0] - a[0]) * toR;
+      const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * toR) * Math.cos(b[1] * toR) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    };
+    const refresh = () => {
+      const pts = measurePts.current;
+      let dist = 0; for (let i = 1; i < pts.length; i++) dist += hav(pts[i - 1], pts[i]);
+      let area = 0; if (pts.length >= 3) area = geomArea({ type: 'Polygon', coordinates: [[...pts, pts[0]]] });
+      const lineGeom = pts.length >= 3
+        ? { type: 'Polygon', coordinates: [[...pts, pts[0]]] }
+        : { type: 'LineString', coordinates: pts.length ? pts : [] };
+      (map.getSource('ms-line') as maplibregl.GeoJSONSource)?.setData(pts.length ? { type: 'Feature', properties: {}, geometry: lineGeom } as any : { type: 'FeatureCollection', features: [] } as any);
+      (map.getSource('ms-pts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: pts.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } })) } as any);
+      setMeasure({ dist, area, n: pts.length });
+    };
+    const onClick = (e: any) => { measurePts.current.push([e.lngLat.lng, e.lngLat.lat]); refresh(); };
+    const onDbl = (e: any) => { e.preventDefault(); };
+    map.on('click', onClick);
+    map.on('dblclick', onDbl);
+    refresh();
+
+    return () => {
+      map.off('click', onClick); map.off('dblclick', onDbl);
+      ['ms-fill', 'ms-line-l', 'ms-pts-l'].forEach((l) => map.getLayer(l) && map.removeLayer(l));
+      ['ms-line', 'ms-pts'].forEach((s) => map.getSource(s) && map.removeSource(s));
+      map.getCanvas().style.cursor = '';
+    };
+  }, [measuring]);
+
+  const clearMeasure = () => { measurePts.current = []; const map = mapRef.current; if (map) { (map.getSource('ms-line') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any); (map.getSource('ms-pts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any); } setMeasure({ dist: 0, area: 0, n: 0 }); };
+
+  const saveShape = async () => {
     const meta = editMeta.current; if (!meta) return;
     const ring = [...editRing.current, editRing.current[0]];
     let geom: any;
@@ -361,6 +453,52 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     else { const coords = meta.rest.coordinates.map((p: any) => p); coords[0] = [ring]; geom = { type: 'MultiPolygon', coordinates: coords }; }
     useOverrides.getState().setGeometry(meta.code, geom);
     useApp.getState().setEditGeom(null);
+
+    // Ask what to do with the area: apply the recomputed value, edit it, or keep current.
+    const cur = dataRef.current?.features.find((f) => f.properties.code === meta.code)?.properties as PlotProps | undefined;
+    const far = cur?.far ?? null;
+    const oldArea = Math.round(cur?.area ?? 0), oldGfa = Math.round(cur?.gfa ?? 0);
+    const newArea = Math.round(geomArea(geom));
+    const newGfa = far ? Math.round(far * newArea) : oldGfa;
+    const lang = useApp.getState().lang;
+    const nf = new Intl.NumberFormat('en-US');
+    const delta = newArea - oldArea;
+    const body = (
+      <div>
+        <p style={{ margin: '0 0 4px' }}>{t('shape.intro', lang)}</p>
+        <div className="dlg-cmp">
+          <div className="dlg-cmp-row">
+            <span className="l">{t('d.area', lang)} (m²)</span>
+            <span className="old">{nf.format(oldArea)}</span>
+            <span className={`new ${delta > 0 ? 'up' : delta < 0 ? 'down' : ''}`}>{nf.format(newArea)}{delta ? ` (${delta > 0 ? '+' : ''}${nf.format(delta)})` : ''}</span>
+          </div>
+          <div className="dlg-cmp-row">
+            <span className="l">GFA</span>
+            <span className="old">{nf.format(oldGfa)}</span>
+            <span className="new">{nf.format(newGfa)}</span>
+          </div>
+        </div>
+      </div>
+    );
+    const r = await useDialog.getState().open({
+      title: t('shape.title', lang),
+      body,
+      dir: lang === 'ar' ? 'rtl' : 'ltr',
+      fields: [
+        { key: 'area', label: `${t('d.area', lang)} (m²)`, value: newArea, type: 'number' },
+        { key: 'gfa', label: 'GFA', value: newGfa, type: 'number' },
+      ],
+      buttons: [
+        { label: t('shape.keep', lang), value: 'keep' },
+        { label: t('shape.apply', lang), value: 'apply', variant: 'primary' },
+      ],
+    });
+    if (r.value === 'apply') {
+      const a = Math.round(Number(r.fields.area)) || newArea;
+      const g = Math.round(Number(r.fields.gfa)) || newGfa;
+      useOverrides.getState().setPlotAttr(meta.code, { area: a, gfa: g } as any);
+    }
+    // 'keep' or dismissed → geometry updated, area/GFA left unchanged
   };
   const resetShape = () => {
     const meta = editMeta.current; const map = mapRef.current; if (!meta || !map) return;
@@ -426,11 +564,25 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       <div ref={ref} style={{ position: 'absolute', top: 0, bottom: 0, insetInlineStart: 'var(--rail-w)', insetInlineEnd: 0 }} />
       {editGeom && (
         <div className="geo-toolbar">
-          <span className="geo-hint">{t('g.hint', lang)}</span>
+          <span className="geo-hint">{t('g.addPoint', lang)}</span>
           <div className="geo-actions">
             <button className="btn" onClick={resetShape}>{t('g.reset', lang)}</button>
             <button className="btn" onClick={() => useApp.getState().setEditGeom(null)}>{t('g.cancel', lang)}</button>
             <button className="btn primary" onClick={saveShape}>{t('g.save', lang)}</button>
+          </div>
+        </div>
+      )}
+      {measuring && (
+        <div className="meas-panel" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+          <div className="meas-title">{t('meas.title', lang)}</div>
+          <div className="meas-readout">
+            <div className="meas-stat"><span className="meas-l">{t('meas.distance', lang)}</span><b>{measure.dist >= 1000 ? `${(measure.dist / 1000).toFixed(2)} km` : `${Math.round(measure.dist)} m`}</b></div>
+            <div className="meas-stat"><span className="meas-l">{t('meas.area', lang)}</span><b>{measure.area >= 1e4 ? `${(measure.area / 1e4).toFixed(2)} ha` : `${Math.round(measure.area)} m²`}</b></div>
+          </div>
+          <div className="meas-hint">{t('meas.hint', lang)}</div>
+          <div className="meas-acts">
+            <button className="btn sm" onClick={clearMeasure}>{t('meas.clear', lang)}</button>
+            <button className="btn sm primary" onClick={() => useApp.getState().setMeasuring(false)}>{t('meas.done', lang)}</button>
           </div>
         </div>
       )}

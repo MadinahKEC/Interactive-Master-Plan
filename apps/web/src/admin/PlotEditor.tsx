@@ -1,9 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PROGRESS_STAGES, resolveProject, inferType, t, type ProjectInfo, type Phase } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PROGRESS_STAGES, LICENSE_STAGES, resolveProject, inferType, t, type ProjectInfo, type Phase } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { uploadPlotImage } from '../lib/firebase';
+import { DateField } from '../components/DateField';
+import { EditableSelect } from '../components/EditableSelect';
 import { IconPlus, IconTrash } from '../components/icons';
 import type { EffLandUse } from '../lib/effective';
 
@@ -30,6 +32,7 @@ export function PlotEditor({
     summary_ar: overlay.summary_ar ?? '',
     summary_en: overlay.summary_en ?? '',
     stage: overlay.stage ?? '',
+    license: overlay.license ?? '',
     owner: overlay.owner ?? '',
     ownership: overlay.ownership ?? pr.ownership.key,
     purchase_date: overlay.purchase_date ?? '',
@@ -74,6 +77,7 @@ export function PlotEditor({
       type: f.type, status: f.status, progress: Number(f.progress),
       summary_ar: f.summary_ar || undefined, summary_en: f.summary_en || undefined,
       stage: f.stage || undefined,
+      license: f.license || undefined,
       gallery: gallery.length ? gallery : undefined,
       owner: f.owner || undefined, ownership: f.ownership, purchase_date: f.purchase_date || undefined,
       phases: phases.length ? phases : undefined,
@@ -104,7 +108,7 @@ export function PlotEditor({
                 {Object.values(OWNERSHIP_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
               </select>
             </Field>
-            <Field label={t('d.purchase', lang)} full><input type="date" value={f.purchase_date} onChange={(e) => up('purchase_date', e.target.value)} /></Field>
+            <Field label={t('d.purchase', lang)} full><DateField value={f.purchase_date} onChange={(v) => up('purchase_date', v)} /></Field>
           </div>
 
           <div className="ed-sec">{t('a.projectInfo', lang)}</div>
@@ -112,20 +116,20 @@ export function PlotEditor({
             <Field label={t('a.nameAr', lang)}><input value={f.name_ar} onChange={(e) => up('name_ar', e.target.value)} /></Field>
             <Field label={t('a.nameEn', lang)}><input value={f.name_en} onChange={(e) => up('name_en', e.target.value)} /></Field>
             <Field label={t('a.type', lang)}>
-              <select value={f.type} onChange={(e) => up('type', e.target.value)}>
-                {Object.values(PROJECT_TYPES).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
-              </select>
+              <EditableSelect listKey="project_type" value={f.type} onChange={(v) => up('type', v)}
+                options={Object.values(PROJECT_TYPES).map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
             </Field>
             <Field label={t('a.status', lang)}>
-              <select value={f.status} onChange={(e) => up('status', e.target.value)}>
-                {Object.values(STATUS_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
-              </select>
+              <EditableSelect listKey="status" value={f.status} onChange={(v) => up('status', v)}
+                options={Object.values(STATUS_META).map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
             </Field>
-            <Field label={t('a.stage', lang)} full>
-              <select value={f.stage} onChange={(e) => up('stage', e.target.value)}>
-                <option value="">{t('a.stageNone', lang)}</option>
-                {PROGRESS_STAGES.map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
-              </select>
+            <Field label={t('a.stage', lang)}>
+              <EditableSelect listKey="stage" value={f.stage} onChange={(v) => up('stage', v)} allowNone noneLabel={t('a.stageNone', lang)}
+                options={PROGRESS_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
+            </Field>
+            <Field label={t('sec.license', lang)}>
+              <EditableSelect listKey="license" value={f.license} onChange={(v) => up('license', v)} allowNone noneLabel={t('a.stageNone', lang)}
+                options={LICENSE_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
             </Field>
             <Field label={t('a.summaryAr', lang)} full><textarea rows={2} value={f.summary_ar} onChange={(e) => up('summary_ar', e.target.value)} /></Field>
             <Field label={t('a.summaryEn', lang)} full><textarea rows={2} value={f.summary_en} onChange={(e) => up('summary_en', e.target.value)} /></Field>
@@ -154,8 +158,8 @@ export function PlotEditor({
                   <option value="">{t('dp.phaseName', lang)}…</option>
                   {STANDARD_PHASES.map((sp) => <option key={sp.key} value={sp.key}>{lang === 'ar' ? sp.ar : sp.en}</option>)}
                 </select>
-                <input type="date" value={ph.start ?? ''} onChange={(e) => setPhase(i, { start: e.target.value })} title={t('dp.start', lang)} />
-                <input type="date" value={ph.end ?? ''} onChange={(e) => setPhase(i, { end: e.target.value })} title={t('dp.end', lang)} />
+                <DateField value={ph.start ?? ''} onChange={(v) => setPhase(i, { start: v })} title={t('dp.start', lang)} />
+                <DateField value={ph.end ?? ''} onChange={(v) => setPhase(i, { end: v })} title={t('dp.end', lang)} />
                 <select value={ph.status ?? 'Future'} onChange={(e) => setPhase(i, { status: e.target.value })}>
                   {Object.values(STATUS_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
                 </select>
@@ -167,9 +171,8 @@ export function PlotEditor({
           <div className="ed-sec">{t('a.plotAttrs', lang)}</div>
           <div className="ed-grid">
             <Field label={t('a.landuse', lang)}>
-              <select value={f.land_use} onChange={(e) => up('land_use', e.target.value)}>
-                {Object.keys(landUses).map((k) => <option key={k} value={k}>{lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}</option>)}
-              </select>
+              <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)}
+                options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))} />
             </Field>
             <Field label={t('a.sector', lang)}>
               <select value={f.sector} onChange={(e) => up('sector', e.target.value)}>
