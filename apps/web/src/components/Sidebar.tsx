@@ -3,7 +3,7 @@ import { can } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { t } from '../lib/domain';
-import { IconHome, IconCalendar, IconAdmin, IconLayers, IconSatellite, IconCube, IconPower, IconTag, IconExport, IconRuler, IconPlus } from './icons';
+import { IconHome, IconCalendar, IconAdmin, IconLayers, IconSatellite, IconCube, IconGlobe, IconPower, IconTag, IconExport, IconRuler, IconPlus } from './icons';
 
 /** Vertical icon rail: primary navigation + map tools. */
 export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => void; onOpenDevPlan: () => void }) {
@@ -32,8 +32,11 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => voi
           onClick={() => setBasemap(basemap === 'light' ? 'satellite' : 'light')}>
           {basemap === 'light' ? <IconSatellite size={20} /> : <IconLayers size={20} />}
         </RailBtn>
-        <RailBtn tip={dim === '2d' ? '3D' : '2D'} active={dim === '3d'} onClick={() => setDim(dim === '2d' ? '3d' : '2d')}>
+        <RailBtn tip={dim === '3d' ? '2D' : '3D'} active={dim === '3d'} onClick={() => setDim(dim === '3d' ? '2d' : '3d')}>
           <IconCube size={20} />
+        </RailBtn>
+        <RailBtn tip={t('tb.earth', lang)} active={dim === 'earth'} onClick={() => setDim(dim === 'earth' ? '2d' : 'earth')}>
+          <IconGlobe size={20} />
         </RailBtn>
         <RailBtn tip={t('tb.measure', lang)} active={measuring} onClick={toggleMeasure}><IconRuler size={20} /></RailBtn>
         <RailBtn tip={t('tb.export', lang)} onClick={requestExport}><IconExport size={20} /></RailBtn>

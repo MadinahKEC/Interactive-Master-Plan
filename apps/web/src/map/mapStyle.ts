@@ -74,6 +74,16 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         tileSize: 256,
         attribution: '© Esri World Imagery',
       },
+      // Free global DEM (AWS open-data terrarium tiles) for the Google-Earth-style
+      // 3D view: real satellite imagery draped over real terrain. CORS-enabled.
+      terrainDEM: {
+        type: 'raster-dem',
+        tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+        encoding: 'terrarium',
+        tileSize: 256,
+        maxzoom: 14,
+        attribution: '© Mapzen / AWS Terrain Tiles',
+      },
       // labels-only overlays (drawn ABOVE the plots so place/street names stay legible)
       cartoLabels: {
         type: 'raster',

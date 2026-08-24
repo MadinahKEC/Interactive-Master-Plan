@@ -3,14 +3,14 @@ import { SECTORS, can } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
 import { StageBar } from './StageBar';
 import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, TypeIcon } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
@@ -43,6 +43,10 @@ export function DetailPanel({
   const summary = lang === 'ar' ? pr.overlay.summary_ar : pr.overlay.summary_en;
   const mergeRec = merges.find((m) => m.id === p.code);
   const phases = pr.overlay.phases ?? [];
+  const devDesc = (lang === 'ar' ? pr.overlay.devplan_ar : pr.overlay.devplan_en)?.trim();
+  const hasDevDesc = Boolean(devDesc);
+  const inv = pr.overlay.investment;
+  const invEntries = inv ? INVEST_FIELDS.filter((fld) => { const v = inv[fld.key]; return v != null && !Number.isNaN(v); }) : [];
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
   const addToPlan = () => {
@@ -93,19 +97,31 @@ export function DetailPanel({
           )}
         </Section>
 
-        {phases.length > 0 && (
+        {(phases.length > 0 || hasDevDesc || canAttr) && (
           <Section title={t('sec.devplan', lang)}>
-            <Timeline phases={phases} lang={lang} />
-            {canAttr && (
+            {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
+            {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
+            {phases.length === 0 && !hasDevDesc && canAttr && (
+              <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
+            )}
+            {canAttr && phases.length > 0 && (
               <div className="dp-manage">
                 <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
               </div>
             )}
           </Section>
         )}
-        {phases.length === 0 && canAttr && (
-          <Section title={t('sec.devplan', lang)}>
-            <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
+
+        {invEntries.length > 0 && (
+          <Section title={t('sec.invest', lang)}>
+            <div className="inv-grid">
+              {invEntries.map((fld) => (
+                <div className="inv-cell" key={fld.key}>
+                  <div className="inv-v">{fmtInvest(inv![fld.key]!, fld.unit, lang)}</div>
+                  <div className="inv-l">{lang === 'ar' ? fld.ar : fld.en}</div>
+                </div>
+              ))}
+            </div>
           </Section>
         )}
 
@@ -289,8 +305,17 @@ function Comments({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (<div className="d-section"><div className="d-sec-title">{title}</div>{children}</div>);
+function Section({ title, children, defaultOpen = true }: { title: string; children: ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className={`d-section ${open ? '' : 'collapsed'}`}>
+      <button type="button" className="d-sec-title" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span>{title}</span>
+        <IconChevron size={16} />
+      </button>
+      {open && <div className="d-sec-body">{children}</div>}
+    </div>
+  );
 }
 function Cell({ l, v, sm, chip }: { l: string; v: string; sm?: boolean; chip?: string }) {
   return (

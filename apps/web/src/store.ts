@@ -3,7 +3,7 @@ import { LAND_USES, type PlotProps, type SectorKey } from '@kec/types';
 import type { Lang } from './lib/domain';
 
 export type Basemap = 'light' | 'satellite';
-export type Dim = '2d' | '3d';
+export type Dim = '2d' | '3d' | 'earth';
 
 /** Numeric-range + status filters (investor toolkit). Undefined bound = open. */
 export interface AdvFilter {
@@ -35,6 +35,7 @@ export interface AppState {
   annotateColor: string;
   measuring: boolean;             // map measurement tool active
   labels: boolean;                // force plot-code labels on the map
+  landmarks: boolean;             // show Madinah city landmarks
   creating: boolean;              // draw-a-new-plot mode
   zoomCode: string | null;        // plot to zoom to
   zoomToken: number;              // bump to trigger a zoom to zoomCode
@@ -63,6 +64,7 @@ export interface AppState {
   toggleMeasure: () => void;
   setMeasuring: (v: boolean) => void;
   toggleLabels: () => void;
+  toggleLandmarks: () => void;
   setCreating: (v: boolean) => void;
   requestZoom: (code: string) => void;
   reveal: () => void;
@@ -89,6 +91,7 @@ export const useApp = create<AppState>((set) => ({
   annotateColor: '#B5462F',
   measuring: false,
   labels: false,
+  landmarks: true,
   creating: false,
   zoomCode: null,
   zoomToken: 0,
@@ -123,6 +126,7 @@ export const useApp = create<AppState>((set) => ({
   toggleMeasure: () => set((s) => ({ measuring: !s.measuring, annotateMode: 'off' })),
   setMeasuring: (measuring) => set({ measuring }),
   toggleLabels: () => set((s) => ({ labels: !s.labels })),
+  toggleLandmarks: () => set((s) => ({ landmarks: !s.landmarks })),
   setCreating: (creating) => set({ creating, measuring: false, annotateMode: 'off' }),
   requestZoom: (code) => set((s) => ({ zoomCode: code, zoomToken: s.zoomToken + 1 })),
   reveal: () => set((s) => ({ revealToken: s.revealToken + 1 })),

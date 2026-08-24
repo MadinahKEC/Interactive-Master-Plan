@@ -171,7 +171,15 @@ export const DICT: Record<string, Entry> = {
   'cmp.title':       { ar: 'مقارنة البلوتات', en: 'Plot comparison' },
   'd.status':        { ar: 'الحالة', en: 'Status' },
   'tb.measure':      { ar: 'القياس', en: 'Measure' },
+  'tb.earth':        { ar: 'عرض ثلاثي الأبعاد (Earth)', en: '3D Earth view' },
   'tb.labels':       { ar: 'إظهار أرقام البلوتات', en: 'Show plot numbers' },
+  'cp.landmarks':    { ar: 'إظهار معالم المدينة المنورة', en: 'Show Madinah landmarks' },
+  'sec.invest':      { ar: 'أبرز المؤشرات الاستثمارية', en: 'Investment highlights' },
+  'a.invest':        { ar: 'المؤشرات الاستثمارية', en: 'Investment highlights' },
+  'dp.desc':         { ar: 'وصف خطة التطوير', en: 'Development plan overview' },
+  'dp.descAr':       { ar: 'خطة التطوير (عربي)', en: 'Development plan (Arabic)' },
+  'dp.descEn':       { ar: 'خطة التطوير (إنجليزي)', en: 'Development plan (English)' },
+  'sec.collapse':    { ar: 'طيّ / إظهار', en: 'Collapse / expand' },
   'cp.labels':       { ar: 'إظهار أرقام القطع على الخريطة', en: 'Show plot numbers on map' },
   'd.pdf':           { ar: 'بطاقة PDF', en: 'PDF factsheet' },
   'pf.title':        { ar: 'بطاقة بلوت', en: 'Plot Factsheet' },
@@ -198,6 +206,11 @@ export const DICT: Record<string, Entry> = {
   'meas.area':       { ar: 'المساحة', en: 'Area' },
   'meas.clear':      { ar: 'مسح', en: 'Clear' },
   'meas.done':       { ar: 'إنهاء', en: 'Done' },
+  'meas.time':       { ar: 'الزمن المُقدَّر', en: 'Estimated time' },
+  'meas.walk':       { ar: 'مشياً', en: 'Walking' },
+  'meas.drive':      { ar: 'بالسيارة', en: 'Driving' },
+  'meas.est':        { ar: 'تقديري', en: 'est.' },
+  'meas.twoPts':     { ar: 'انقر نقطتين لقياس المسافة والزمن بينهما', en: 'Click two points for distance & time between them' },
   'af.title':        { ar: 'فلترة متقدمة', en: 'Advanced filters' },
   'af.area':         { ar: 'المساحة (م²)', en: 'Area (m²)' },
   'af.gfa':          { ar: 'GFA', en: 'GFA' },
@@ -361,6 +374,63 @@ export interface Phase {
   status?: string;  // STATUS_META key
 }
 
+// ---------- Investment highlights ----------
+/** Financial / investment KPIs shown on the plot card and edited in the editor. */
+export interface InvestmentInfo {
+  totalValue?: number;   // Total value of the project (SAR)
+  devCost?: number;      // Total development cost (SAR)
+  npv?: number;          // Net present value (SAR)
+  tenure?: number;       // Project tenure (years)
+  gsa?: number;          // Gross saleable area (sqm)
+  units?: number;        // Number of units
+  hotelRooms?: number;   // No. of hotel rooms
+  projectIRR?: number;   // Project IRR (%)
+  equityIRR?: number;    // Equity IRR (%)
+  roi?: number;          // Return on investment (%)
+  moic?: number;         // Multiple on invested capital (x)
+  capRate?: number;      // Capitalisation rate / yield (%)
+  payback?: number;      // Payback period (years)
+}
+
+type InvUnit = 'sar' | 'sqm' | 'num' | 'pct' | 'yr' | 'x';
+export interface InvestField { key: keyof InvestmentInfo; ar: string; en: string; unit: InvUnit }
+/** Ordered list of investment KPIs (scale → returns → physical). */
+export const INVEST_FIELDS: InvestField[] = [
+  { key: 'totalValue', ar: 'إجمالي قيمة المشروع', en: 'Total project value', unit: 'sar' },
+  { key: 'devCost',    ar: 'إجمالي تكلفة التطوير', en: 'Total development cost', unit: 'sar' },
+  { key: 'npv',        ar: 'صافي القيمة الحالية NPV', en: 'NPV', unit: 'sar' },
+  { key: 'projectIRR', ar: 'العائد الداخلي للمشروع IRR', en: 'Project IRR', unit: 'pct' },
+  { key: 'equityIRR',  ar: 'العائد الداخلي للملكية', en: 'Equity IRR', unit: 'pct' },
+  { key: 'roi',        ar: 'العائد على الاستثمار ROI', en: 'ROI', unit: 'pct' },
+  { key: 'moic',       ar: 'مضاعف رأس المال MOIC', en: 'MOIC', unit: 'x' },
+  { key: 'capRate',    ar: 'معدل الرسملة Cap Rate', en: 'Cap rate / yield', unit: 'pct' },
+  { key: 'payback',    ar: 'فترة الاسترداد', en: 'Payback period', unit: 'yr' },
+  { key: 'tenure',     ar: 'مدة المشروع', en: 'Project tenure', unit: 'yr' },
+  { key: 'gsa',        ar: 'المساحة القابلة للبيع', en: 'Gross saleable area', unit: 'sqm' },
+  { key: 'units',      ar: 'عدد الوحدات', en: 'Number of units', unit: 'num' },
+  { key: 'hotelRooms', ar: 'عدد الغرف الفندقية', en: 'Hotel rooms', unit: 'num' },
+];
+
+const nfInv = new Intl.NumberFormat('en-US');
+const nfCompact = (v: number) =>
+  Math.abs(v) >= 1e9 ? (v / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'
+  : Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M'
+  : Math.abs(v) >= 1e3 ? (v / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'K'
+  : nfInv.format(v);
+/** Format an investment value with a compact unit suffix, for the card KPI grid. */
+export function fmtInvest(v: number, unit: InvUnit, lang: Lang): string {
+  const sar = lang === 'ar' ? 'ر.س' : 'SAR';
+  switch (unit) {
+    case 'sar': return `${nfCompact(v)} ${sar}`;
+    case 'sqm': return `${nfInv.format(Math.round(v))} ${lang === 'ar' ? 'م²' : 'm²'}`;
+    case 'num': return nfInv.format(Math.round(v));
+    case 'pct': return `${(+v.toFixed(2)).toString()}%`;
+    case 'yr': return `${(+v.toFixed(1)).toString()} ${lang === 'ar' ? 'سنة' : 'yrs'}`;
+    case 'x': return `${(+v.toFixed(2)).toString()}×`;
+    default: return String(v);
+  }
+}
+
 // ---------- Project overlay (per-plot, editable via admin; Firebase-ready) ----------
 export interface ProjectInfo {
   name_ar?: string; name_en?: string;
@@ -373,6 +443,8 @@ export interface ProjectInfo {
   owner?: string;      // investor / owner name
   purchase_date?: string;
   phases?: Phase[];    // development-plan timeline
+  devplan_ar?: string; devplan_en?: string;  // development-plan narrative
+  investment?: InvestmentInfo;               // investment highlights
   stage?: string;      // PROGRESS_STAGES key (current construction stage)
   license?: string;    // LICENSE_STAGES key (latest permit obtained)
 }

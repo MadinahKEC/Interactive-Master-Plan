@@ -8,7 +8,19 @@ import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { geomArea } from '../lib/subdivide';
 import { useDialog } from '../lib/dialog';
+import { MEDINA_LANDMARKS } from '../lib/landmarks';
+import { IconWalk, IconCar } from '../components/icons';
 import type { EffLandUse } from '../lib/effective';
+
+/** Human-readable travel time from seconds (e.g. "12 min", "1 h 5 min"). */
+function fmtDuration(sec: number, lang: 'ar' | 'en'): string {
+  const min = Math.max(1, Math.round(sec / 60));
+  const mLbl = lang === 'ar' ? 'د' : 'min';
+  const hLbl = lang === 'ar' ? 'س' : 'h';
+  if (min < 60) return `${min} ${mLbl}`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h} ${hLbl} ${m} ${mLbl}` : `${h} ${hLbl}`;
+}
 
 const TILES_URL = import.meta.env.VITE_TILES_URL || undefined;
 const FILTERED_LAYERS = ['plots-fill', 'plots-line', 'plots-3d', 'plots-label'];
@@ -91,7 +103,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     if (!ref.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: ref.current, style: buildStyle(TILES_URL, luRef.current), center: KEC_CENTER,
-      zoom: 13.4, maxZoom: 19, attributionControl: { compact: true }, preserveDrawingBuffer: true,
+      zoom: 13.4, maxZoom: 19, maxPitch: 80, attributionControl: { compact: true }, preserveDrawingBuffer: true,
     });
     mapRef.current = map;
     if (import.meta.env.DEV) (window as any).__map = map;
@@ -201,7 +213,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, labels, creating } = useApp();
+  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, labels, landmarks, creating } = useApp();
   const [measure, setMeasure] = useState<{ dist: number; area: number; n: number }>({ dist: 0, area: 0, n: 0 });
 
   // capture a map snapshot for the report
@@ -250,6 +262,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const sat = basemap === 'satellite';
+    ref.current?.classList.toggle('map-sat', sat);
     const apply = () => {
       map.setLayoutProperty('base-sat', 'visibility', sat ? 'visible' : 'none');
       map.setLayoutProperty('base-light', 'visibility', sat ? 'none' : 'visible');
@@ -271,15 +284,69 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [labels]);
 
+  // ---------- Madinah city landmarks (premium bilingual DOM markers) ----------
+  const lmMarkers = useRef<maplibregl.Marker[]>([]);
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
-    const is3d = dim === '3d';
+    // clear any existing markers
+    lmMarkers.current.forEach((m) => m.remove()); lmMarkers.current = [];
+    if (!landmarks) return;
+    const L = langRef.current;
+    for (const lm of MEDINA_LANDMARKS) {
+      const el = document.createElement('div');
+      el.className = `lm-marker ${lm.tier === 1 ? 'flag' : ''} lm-${lm.icon ?? 'city'}`;
+      el.dataset.tier = String(lm.tier);
+      const dot = document.createElement('span'); dot.className = 'lm-dot';
+      const label = document.createElement('span'); label.className = 'lm-label';
+      label.textContent = L === 'ar' ? lm.name_ar : lm.name_en;
+      el.append(dot, label);
+      const mk = new maplibregl.Marker({ element: el, anchor: 'left' }).setLngLat([lm.lon, lm.lat]).addTo(map);
+      lmMarkers.current.push(mk);
+    }
+    // zoom-aware clutter control: tier-2 landmarks appear only when zoomed in a bit
+    const applyZoom = () => {
+      const z = map.getZoom();
+      for (const m of lmMarkers.current) {
+        const el = m.getElement();
+        const tier = Number(el.dataset.tier);
+        el.style.display = tier === 1 ? '' : z >= 12.6 ? '' : 'none';
+      }
+    };
+    applyZoom();
+    map.on('zoom', applyZoom);
+    return () => { map.off('zoom', applyZoom); lmMarkers.current.forEach((m) => m.remove()); lmMarkers.current = []; };
+  }, [landmarks, lang]);
+
+  useEffect(() => {
+    const map = mapRef.current; if (!map) return;
+    const massing = dim === '3d';   // extruded plot volumes
+    const earth = dim === 'earth';  // satellite draped on real terrain (Google-Earth-like)
     const apply = () => {
-      map.setLayoutProperty('plots-3d', 'visibility', is3d ? 'visible' : 'none');
-      map.setLayoutProperty('plots-fill', 'visibility', is3d ? 'none' : 'visible');
-      map.easeTo({ pitch: is3d ? 55 : 0, bearing: is3d ? -18 : 0, duration: 700 });
+      map.setLayoutProperty('plots-3d', 'visibility', massing ? 'visible' : 'none');
+      map.setLayoutProperty('plots-fill', 'visibility', massing ? 'none' : 'visible');
+      // 3D terrain + atmospheric sky only in Earth mode
+      try {
+        if (earth) {
+          map.setTerrain({ source: 'terrainDEM', exaggeration: 1.4 });
+          map.setSky({
+            'sky-color': '#8fbce8', 'sky-horizon-blend': 0.6,
+            'horizon-color': '#e9f1f8', 'horizon-fog-blend': 0.5,
+            'fog-color': '#dde8f1', 'fog-ground-blend': 0.7,
+          } as any);
+        } else {
+          map.setTerrain(null);
+        }
+      } catch { /* terrain tiles unreachable → stay flat */ }
+      // Earth view reads best on imagery — switch the basemap for the user.
+      if (earth && useApp.getState().basemap !== 'satellite') useApp.getState().setBasemap('satellite');
     };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
+    // camera tilt animates immediately, independent of tile loading
+    map.easeTo({
+      pitch: earth ? 68 : massing ? 55 : 0,
+      bearing: earth ? -22 : massing ? -18 : 0,
+      duration: 900,
+    });
   }, [dim]);
 
   // single-selection highlight (fill + outline; no auto zoom)
@@ -646,7 +713,20 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
             <div className="meas-stat"><span className="meas-l">{t('meas.distance', lang)}</span><b>{measure.dist >= 1000 ? `${(measure.dist / 1000).toFixed(2)} km` : `${Math.round(measure.dist)} m`}</b></div>
             <div className="meas-stat"><span className="meas-l">{t('meas.area', lang)}</span><b>{measure.area >= 1e4 ? `${(measure.area / 1e4).toFixed(2)} ha` : `${Math.round(measure.area)} m²`}</b></div>
           </div>
-          <div className="meas-hint">{t('meas.hint', lang)}</div>
+          {measure.dist > 0 && (
+            <div className="meas-time">
+              <div className="meas-time-h">{t('meas.time', lang)} <span className="meas-est">({t('meas.est', lang)})</span></div>
+              <div className="meas-time-row">
+                <span className="mt-mode"><IconWalk size={14} /> {t('meas.walk', lang)}</span>
+                <b>{fmtDuration(measure.dist / 1.39, lang)}</b>
+              </div>
+              <div className="meas-time-row">
+                <span className="mt-mode"><IconCar size={14} /> {t('meas.drive', lang)}</span>
+                <b>{fmtDuration(measure.dist / 11.1, lang)}</b>
+              </div>
+            </div>
+          )}
+          <div className="meas-hint">{measure.n < 2 ? t('meas.twoPts', lang) : t('meas.hint', lang)}</div>
           <div className="meas-acts">
             <button className="btn sm" onClick={clearMeasure}>{t('meas.clear', lang)}</button>
             <button className="btn sm primary" onClick={() => useApp.getState().setMeasuring(false)}>{t('meas.done', lang)}</button>

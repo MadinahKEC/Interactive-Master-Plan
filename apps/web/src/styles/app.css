@@ -184,6 +184,22 @@
 html[lang="ar"] .al-text:empty::before{content:'اكتب هنا…';color:var(--kec-muted);font-weight:400}
 html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);font-weight:400}
 
+/* ---- Madinah city landmarks (premium map markers) ---- */
+.lm-marker{display:inline-flex;align-items:center;gap:7px;pointer-events:none;user-select:none;transform:translateX(-4px);white-space:nowrap}
+.lm-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--kec-gold);
+  box-shadow:0 0 0 3px rgba(154,138,30,.22),0 1px 4px rgba(20,61,30,.35)}
+.lm-label{font-size:11.5px;font-weight:600;color:var(--kec-green-deep,#143D1E);
+  background:rgba(251,252,250,.92);backdrop-filter:blur(5px);border:1px solid rgba(154,138,30,.35);
+  border-radius:8px;padding:2.5px 8px;box-shadow:0 3px 12px rgba(20,61,30,.14);letter-spacing:.01em}
+.lm-marker.flag .lm-dot{width:11px;height:11px;background:var(--kec-green);
+  box-shadow:0 0 0 3px rgba(47,107,62,.24),0 0 0 6px rgba(47,107,62,.12),0 1px 5px rgba(20,61,30,.4)}
+.lm-marker.flag .lm-label{font-size:12.5px;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--kec-green),var(--kec-green-deep,#143D1E));
+  border-color:rgba(154,138,30,.5);box-shadow:0 4px 16px rgba(20,61,30,.3)}
+/* on the satellite / earth basemap, brighten labels for legibility */
+.map-sat .lm-label{background:rgba(16,34,27,.72);color:#fff;border-color:rgba(154,138,30,.55)}
+.map-sat .lm-marker.flag .lm-label{background:linear-gradient(135deg,rgba(47,107,62,.95),rgba(20,61,30,.95))}
+
 /* ---- Subdivide modal ---- */
 .modal-wrap{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{background:var(--kec-paper);border:1px solid var(--kec-hairline);border-radius:16px;box-shadow:var(--shadow-lg);width:660px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;animation:slideIn .25s}
@@ -315,6 +331,13 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);
 .meas-hint{font-size:11px;color:var(--kec-muted);line-height:1.5;margin:10px 0}
 .meas-acts{display:flex;gap:8px}
 .meas-acts .btn.sm{flex:1;justify-content:center}
+.meas-time{margin-top:10px;padding-top:10px;border-top:1px solid var(--kec-hairline)}
+.meas-time-h{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.05em;text-transform:uppercase;margin-bottom:7px}
+.meas-est{color:var(--kec-muted);font-weight:500;text-transform:none;letter-spacing:0}
+.meas-time-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+.mt-mode{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--kec-muted)}
+.mt-mode svg{color:var(--kec-green)}
+.meas-time-row b{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--kec-title)}
 
 /* ---- Advanced filters ---- */
 .af-toggle{width:100%;display:flex;align-items:center;gap:7px;margin-top:10px;padding:9px 11px;border:1px solid var(--kec-hairline);border-radius:10px;background:var(--kec-surface);cursor:pointer;font-size:12.5px;color:var(--kec-ink);font-weight:500}
@@ -526,7 +549,18 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);
 /* ---- Card sections + ownership ---- */
 .d-section{border-top:1px solid var(--kec-hairline)}
 .d-section:first-child{border-top:0}
-.d-sec-title{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.07em;text-transform:uppercase;padding:12px 14px 2px}
+.d-sec-title{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.07em;text-transform:uppercase;padding:12px 14px 6px;background:none;border:0;cursor:pointer;text-align:start;font-family:inherit}
+.d-sec-title:hover{color:var(--kec-green)}
+.d-sec-title svg{color:var(--kec-muted);transition:transform .2s ease;flex:0 0 auto}
+.d-section.collapsed .d-sec-title svg{transform:rotate(-90deg)}
+.d-section.collapsed .d-sec-title{padding-bottom:12px}
+/* development-plan narrative */
+.dp-desc{font-size:12.5px;color:var(--kec-ink);line-height:1.65;padding:2px 14px 8px;margin:0;white-space:pre-line}
+/* investment highlights grid */
+.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 14px 12px}
+.inv-cell{background:linear-gradient(155deg,var(--kec-surface),var(--kec-surface-2));border:1px solid var(--kec-hairline);border-radius:11px;padding:10px 11px;min-width:0}
+.inv-v{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--kec-title);line-height:1.2;overflow-wrap:break-word}
+.inv-l{font-size:10.5px;color:var(--kec-muted);margin-top:4px;line-height:1.35}
 .d-actions .btn{display:flex;align-items:center;justify-content:center;gap:6px}
 .btn.icon-only{flex:0 0 auto;width:44px;padding:10px}
 .own-row{display:flex;align-items:center;gap:10px;padding:8px 14px 4px;flex-wrap:wrap}

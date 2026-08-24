@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PROGRESS_STAGES, LICENSE_STAGES, resolveProject, inferType, t, type ProjectInfo, type Phase } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, resolveProject, inferType, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { uploadPlotImage } from '../lib/firebase';
@@ -31,6 +31,8 @@ export function PlotEditor({
     progress: overlay.progress ?? pr.progress,
     summary_ar: overlay.summary_ar ?? '',
     summary_en: overlay.summary_en ?? '',
+    devplan_ar: overlay.devplan_ar ?? '',
+    devplan_en: overlay.devplan_en ?? '',
     stage: overlay.stage ?? '',
     license: overlay.license ?? '',
     owner: overlay.owner ?? '',
@@ -47,6 +49,8 @@ export function PlotEditor({
   });
   const up = (k: keyof typeof f, v: any) => setF((s) => ({ ...s, [k]: v }));
   const numOrNull = (v: any) => (v === '' || v === null ? null : Number(v));
+  const [inv, setInv] = useState<InvestmentInfo>(overlay.investment ?? {});
+  const setInvField = (k: keyof InvestmentInfo, v: string) => setInv((s) => ({ ...s, [k]: v === '' ? undefined : Number(v) }));
   const [phases, setPhases] = useState<Phase[]>(overlay.phases ?? []);
   const setPhase = (i: number, patch: Partial<Phase>) => setPhases((ps) => ps.map((p, j) => (j === i ? { ...p, ...patch } : p)));
   const addPhase = () => setPhases((ps) => [...ps, { name_ar: '', start: '', end: '', status: 'Future' }]);
@@ -81,6 +85,8 @@ export function PlotEditor({
       gallery: gallery.length ? gallery : undefined,
       owner: f.owner || undefined, ownership: f.ownership, purchase_date: f.purchase_date || undefined,
       phases: phases.length ? phases : undefined,
+      devplan_ar: f.devplan_ar || undefined, devplan_en: f.devplan_en || undefined,
+      investment: Object.values(inv).some((v) => v != null) ? inv : undefined,
     });
     setPlotAttr(code, {
       land_use: f.land_use || null, sector: f.sector,
@@ -149,6 +155,10 @@ export function PlotEditor({
           <div className="ed-sec ed-sec-row">{t('sec.devplan', lang)}
             <button className="mini-btn" onClick={addPhase}><IconPlus size={13} /> {t('dp.addPhase', lang)}</button>
           </div>
+          <div className="ed-grid">
+            <Field label={t('dp.descAr', lang)} full><textarea rows={2} value={f.devplan_ar} onChange={(e) => up('devplan_ar', e.target.value)} /></Field>
+            <Field label={t('dp.descEn', lang)} full><textarea rows={2} value={f.devplan_en} onChange={(e) => up('devplan_en', e.target.value)} /></Field>
+          </div>
           <div className="phases-edit">
             {phases.length === 0 && <div className="ph-empty">{t('dp.noPlan', lang)}</div>}
             {phases.map((ph, i) => (
@@ -165,6 +175,15 @@ export function PlotEditor({
                 </select>
                 <button className="mini-btn danger" onClick={() => removePhase(i)}><IconTrash size={13} /></button>
               </div>
+            ))}
+          </div>
+
+          <div className="ed-sec">{t('a.invest', lang)}</div>
+          <div className="ed-grid">
+            {INVEST_FIELDS.map((fld) => (
+              <Field key={fld.key} label={lang === 'ar' ? fld.ar : fld.en}>
+                <input type="number" step="any" value={inv[fld.key] ?? ''} onChange={(e) => setInvField(fld.key, e.target.value)} />
+              </Field>
             ))}
           </div>
 
