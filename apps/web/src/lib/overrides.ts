@@ -72,6 +72,7 @@ interface OverridesState {
   optionLists: Record<string, OptionItem[]>;   // admin-added choices per dropdown
   createdPlots: Record<string, CreatedPlot>;   // new plots drawn by admins
   comments: Record<string, PlotComment[]>;     // notes per plot code
+  hiddenLandmarks: string[];                   // landmark ids removed by curators
   audit: AuditEntry[];
 
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
@@ -95,6 +96,8 @@ interface OverridesState {
   removeCreatedPlot: (code: string) => void;
   addComment: (code: string, text: string, author: string) => void;
   removeComment: (code: string, id: string) => void;
+  hideLandmark: (id: string, actor?: string) => void;
+  showAllLandmarks: () => void;
   log: (e: Omit<AuditEntry, 'at' | 'id' | 'before'>) => void;
   revertTo: (id: string) => void;
   exportAll: () => string;
@@ -129,6 +132,7 @@ export const useOverrides = create<OverridesState>()(
       optionLists: {},
       createdPlots: {},
       comments: {},
+      hiddenLandmarks: [],
       audit: [],
 
       addOption: (listKey, opt, actor = 'admin') =>
@@ -154,6 +158,13 @@ export const useOverrides = create<OverridesState>()(
           return { comments: { ...s.comments, [code]: [...(s.comments[code] ?? []), c] } };
         }),
       removeComment: (code, id) => set((s) => ({ comments: { ...s.comments, [code]: (s.comments[code] ?? []).filter((c) => c.id !== id) } })),
+
+      hideLandmark: (id, actor = 'admin') =>
+        set((s) => (s.hiddenLandmarks.includes(id) ? ({} as any) : {
+          hiddenLandmarks: [...s.hiddenLandmarks, id],
+          audit: pushAudit(s, { actor, action: 'landmark.hide', target: id, detail: 'removed' }),
+        })),
+      showAllLandmarks: () => set({ hiddenLandmarks: [] }),
 
       log: (e) => set((s) => ({ audit: pushAudit(s, e) })),
 
@@ -229,7 +240,7 @@ export const useOverrides = create<OverridesState>()(
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -245,6 +256,7 @@ export const useOverrides = create<OverridesState>()(
             optionLists: o.optionLists ?? s.optionLists,
             createdPlots: o.createdPlots ?? s.createdPlots,
             comments: o.comments ?? s.comments,
+            hiddenLandmarks: o.hiddenLandmarks ?? s.hiddenLandmarks,
             audit: o.audit ?? s.audit,
           }));
           return true;
@@ -258,9 +270,9 @@ export const useOverrides = create<OverridesState>()(
         // restore the snapshot taken before this edit; drop this edit and every newer one
         return { ...s.audit[idx].before, audit: s.audit.slice(idx + 1) } as any;
       }),
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, audit: [] }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], audit: [] }),
     }),
     // `before` snapshots stay in memory only — persisting them would bloat storage/sync.
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, audit: s.audit.map(({ before, ...e }) => e) }) as any },
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, audit: s.audit.map(({ before, ...e }) => e) }) as any },
   ),
 );

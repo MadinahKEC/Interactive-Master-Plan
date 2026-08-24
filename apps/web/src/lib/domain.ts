@@ -244,6 +244,9 @@ export const DICT: Record<string, Entry> = {
   'a.excel':         { ar: 'تصدير إكسل (كل الأراضي)', en: 'Export Excel (all plots)' },
   'sec.stage':       { ar: 'مرحلة الإنشاء', en: 'Construction stage' },
   'sec.license':     { ar: 'حالة التراخيص', en: 'Permits & licenses' },
+  'perm.issued':     { ar: 'صادرة', en: 'Issued' },
+  'perm.current':    { ar: 'قيد الإصدار', en: 'In process' },
+  'perm.pending':    { ar: 'لم تُصدر', en: 'Pending' },
   'd.license':       { ar: 'آخر رخصة', en: 'Latest permit' },
   'opt.add':         { ar: 'إضافة خيار جديد', en: 'Add new option' },
   'opt.addTitle':    { ar: 'إضافة خيار جديد للقائمة', en: 'Add a new option to the list' },
@@ -331,7 +334,16 @@ export const STATUS_META: Record<string, StatusMeta> = {
   UnderConstruction: { key: 'UnderConstruction', ar: 'تحت الإنشاء', en: 'Under construction', color: '#9A8A1E' },
   Future:            { key: 'Future',            ar: 'مستقبلي',     en: 'Future',             color: '#5C6B60' },
   Partner:           { key: 'Partner',           ar: 'مشروع شريك',  en: 'Partner',            color: '#7E6F1B' },
+  OnHold:            { key: 'OnHold',            ar: 'متوقف مؤقتاً', en: 'On hold',            color: '#B5462F' },
 };
+
+/** Development-plan phase states (plan-appropriate; no "partner"). */
+export const PHASE_STATUSES: { key: string; ar: string; en: string; color: string }[] = [
+  { key: 'Future',            ar: 'مستقبلي',     en: 'Planned',     color: '#5C6B60' },
+  { key: 'UnderConstruction', ar: 'قيد التنفيذ', en: 'In progress', color: '#9A8A1E' },
+  { key: 'Completed',         ar: 'منتهي',       en: 'Completed',   color: '#2F6B3E' },
+  { key: 'OnHold',            ar: 'متوقف مؤقتاً', en: 'On hold',     color: '#B5462F' },
+];
 
 export const STAGES = ['stage.foundation', 'stage.structure', 'stage.facade', 'stage.handover'] as const;
 

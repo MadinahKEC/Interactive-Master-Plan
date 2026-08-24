@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl, { type FilterSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { LAND_USES, type PlotCollection, type PlotProps } from '@kec/types';
-import { buildStyle, landUseColor, KEC_BOUNDS, KEC_CENTER } from './mapStyle';
+import { buildStyle, plotFillColor, KEC_BOUNDS, KEC_CENTER } from './mapStyle';
 import { useApp, type AdvFilter } from '../store';
 import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
@@ -252,7 +252,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const apply = () => {
-      const expr = landUseColor(landUses);
+      const expr = plotFillColor(landUses);
       if (map.getLayer('plots-fill')) map.setPaintProperty('plots-fill', 'fill-color', expr);
       if (map.getLayer('plots-3d')) map.setPaintProperty('plots-3d', 'fill-extrusion-color', expr);
     };
@@ -292,9 +292,13 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   const lmPool = useRef<Map<string, maplibregl.Marker>>(new Map());
   const lmCatsRef = useRef(lmCats);
   useEffect(() => { lmCatsRef.current = lmCats; }, [lmCats]);
+  const hiddenLm = useOverrides((s) => s.hiddenLandmarks);
+  const hiddenLmRef = useRef(hiddenLm);
+  useEffect(() => { hiddenLmRef.current = hiddenLm; }, [hiddenLm]);
   const lmId = (lm: Landmark) => `${lm.c}:${lm.lat},${lm.lon}`;
   const makeLmEl = (lm: Landmark, L: 'ar' | 'en') => {
     const meta = LM_CAT_MAP[lm.c];
+    const id = lmId(lm);
     const el = document.createElement('div');
     el.className = `lm-marker ${lm.t === 1 ? 'flag' : ''} lm-${lm.c}`;
     el.style.setProperty('--lm-color', meta?.color ?? '#5C6B60');
@@ -303,6 +307,14 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const label = document.createElement('span'); label.className = 'lm-label';
     label.textContent = L === 'ar' ? lm.na : lm.ne;
     el.append(dot, label);
+    // curators can remove an unwanted landmark (persisted) via a hover × button
+    if (canAnnotRef.current) {
+      el.classList.add('editable');
+      const del = document.createElement('button'); del.className = 'lm-del'; del.type = 'button'; del.textContent = '×';
+      del.title = L === 'ar' ? 'إزالة هذا المعلم' : 'Remove this landmark';
+      del.onclick = (ev) => { ev.stopPropagation(); useOverrides.getState().hideLandmark(id); };
+      el.append(del);
+    }
     return el;
   };
   const renderLandmarks = () => {
@@ -314,9 +326,10 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const tierMax = z < 11.5 ? 1 : z < 13 ? 2 : 3;
     const b = map.getBounds();
     const cats = lmCatsRef.current;
+    const hidden = new Set(hiddenLmRef.current);
     const c = map.getCenter();
     const visible = lmData
-      .filter((lm) => lm.t <= tierMax && cats.has(lm.c) && b.contains([lm.lon, lm.lat] as [number, number]))
+      .filter((lm) => lm.t <= tierMax && cats.has(lm.c) && !hidden.has(lmId(lm)) && b.contains([lm.lon, lm.lat] as [number, number]))
       .sort((a, d) => a.t - d.t || (Math.hypot(a.lon - c.lng, a.lat - c.lat) - Math.hypot(d.lon - c.lng, d.lat - c.lat)))
       .slice(0, 90);
     const keep = new Set<string>();
@@ -335,7 +348,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.on('moveend', onMove);
     renderLandmarks();
     return () => { map.off('moveend', onMove); lmPool.current.forEach((m) => m.remove()); lmPool.current.clear(); };
-  }, [landmarks, lmData, lang, lmCats]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [landmarks, lmData, lang, lmCats, hiddenLm, canAnnotate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;

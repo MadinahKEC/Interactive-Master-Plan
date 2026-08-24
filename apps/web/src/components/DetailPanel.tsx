@@ -108,23 +108,19 @@ export function DetailPanel({
         </Section>
 
         <Section title={t('sec.invest', lang)}>
-          <div className="inv-grid">
+          <div className="d-grid">
             {INVEST_FIELDS.map((fld) => {
               const v = inv?.[fld.key];
               const has = v != null && !Number.isNaN(v);
-              return (
-                <div className={`inv-cell ${has ? '' : 'empty'}`} key={fld.key}>
-                  <div className="inv-v">{has ? fmtInvest(v!, fld.unit, lang) : '—'}</div>
-                  <div className="inv-l">{lang === 'ar' ? fld.ar : fld.en}</div>
-                </div>
-              );
+              return <Cell key={fld.key} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
             })}
           </div>
         </Section>
 
         <Section title={t('sec.devplan', lang)}>
-          {hasDevDesc ? <p className="dp-desc">{devDesc}</p> : <p className="dp-desc muted">{t('dp.noPlan', lang)}</p>}
+          {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
           {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
+          {phases.length === 0 && !hasDevDesc && !canAttr && <p className="dp-desc muted">{t('dp.noPlan', lang)}</p>}
           {canAttr && phases.length === 0 && !hasDevDesc && (
             <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
           )}

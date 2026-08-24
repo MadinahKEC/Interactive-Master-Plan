@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, resolveProject, inferType, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, resolveProject, inferType, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { uploadPlotImage } from '../lib/firebase';
@@ -31,8 +31,6 @@ export function PlotEditor({
     progress: overlay.progress ?? pr.progress,
     summary_ar: overlay.summary_ar ?? '',
     summary_en: overlay.summary_en ?? '',
-    devplan_ar: overlay.devplan_ar ?? '',
-    devplan_en: overlay.devplan_en ?? '',
     stage: overlay.stage ?? '',
     license: overlay.license ?? '',
     owner: overlay.owner ?? '',
@@ -85,7 +83,6 @@ export function PlotEditor({
       gallery: gallery.length ? gallery : undefined,
       owner: f.owner || undefined, ownership: f.ownership, purchase_date: f.purchase_date || undefined,
       phases: phases.length ? phases : undefined,
-      devplan_ar: f.devplan_ar || undefined, devplan_en: f.devplan_en || undefined,
       investment: Object.values(inv).some((v) => v != null) ? inv : undefined,
     });
     setPlotAttr(code, {
@@ -155,10 +152,6 @@ export function PlotEditor({
           <div className="ed-sec ed-sec-row">{t('sec.devplan', lang)}
             <button className="mini-btn" onClick={addPhase}><IconPlus size={13} /> {t('dp.addPhase', lang)}</button>
           </div>
-          <div className="ed-grid">
-            <Field label={t('dp.descAr', lang)} full><textarea rows={2} value={f.devplan_ar} onChange={(e) => up('devplan_ar', e.target.value)} /></Field>
-            <Field label={t('dp.descEn', lang)} full><textarea rows={2} value={f.devplan_en} onChange={(e) => up('devplan_en', e.target.value)} /></Field>
-          </div>
           <div className="phases-edit">
             {phases.length === 0 && <div className="ph-empty">{t('dp.noPlan', lang)}</div>}
             {phases.map((ph, i) => (
@@ -171,7 +164,7 @@ export function PlotEditor({
                 <DateField value={ph.start ?? ''} onChange={(v) => setPhase(i, { start: v })} title={t('dp.start', lang)} />
                 <DateField value={ph.end ?? ''} onChange={(v) => setPhase(i, { end: v })} title={t('dp.end', lang)} />
                 <select value={ph.status ?? 'Future'} onChange={(e) => setPhase(i, { status: e.target.value })}>
-                  {Object.values(STATUS_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
+                  {PHASE_STATUSES.map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
                 </select>
                 <button className="mini-btn danger" onClick={() => removePhase(i)}><IconTrash size={13} /></button>
               </div>
@@ -182,7 +175,7 @@ export function PlotEditor({
           <div className="ed-grid">
             {INVEST_FIELDS.map((fld) => (
               <Field key={fld.key} label={lang === 'ar' ? fld.ar : fld.en}>
-                <input type="number" step="any" value={inv[fld.key] ?? ''} onChange={(e) => setInvField(fld.key, e.target.value)} />
+                <NumberField value={inv[fld.key] ?? ''} onChange={(v) => setInvField(fld.key, v)} />
               </Field>
             ))}
           </div>
@@ -198,12 +191,12 @@ export function PlotEditor({
                 {Object.values(SECTORS).map((s) => <option key={s.key} value={s.key}>{lang === 'ar' ? s.labelAr : s.key}</option>)}
               </select>
             </Field>
-            <Field label={t('d.floors', lang)}><input type="number" value={f.floors} onChange={(e) => up('floors', e.target.value)} /></Field>
-            <Field label={t('d.height', lang)}><input type="number" value={f.height} onChange={(e) => up('height', e.target.value)} /></Field>
-            <Field label={t('d.area', lang)}><input type="number" value={f.area} onChange={(e) => up('area', e.target.value)} /></Field>
-            <Field label={t('d.gfa', lang)}><input type="number" value={f.gfa} onChange={(e) => up('gfa', e.target.value)} /></Field>
-            <Field label={t('d.coverage', lang)}><input type="number" step="0.01" value={f.coverage} onChange={(e) => up('coverage', e.target.value)} /></Field>
-            <Field label={t('d.far', lang)}><input type="number" step="0.01" value={f.far} onChange={(e) => up('far', e.target.value)} /></Field>
+            <Field label={t('d.floors', lang)}><NumberField value={f.floors} onChange={(v) => up('floors', v)} /></Field>
+            <Field label={t('d.height', lang)}><NumberField value={f.height} onChange={(v) => up('height', v)} /></Field>
+            <Field label={t('d.area', lang)}><NumberField value={f.area} onChange={(v) => up('area', v)} /></Field>
+            <Field label={t('d.gfa', lang)}><NumberField value={f.gfa} onChange={(v) => up('gfa', v)} /></Field>
+            <Field label={t('d.coverage', lang)}><NumberField value={f.coverage} onChange={(v) => up('coverage', v)} /></Field>
+            <Field label={t('d.far', lang)}><NumberField value={f.far} onChange={(v) => up('far', v)} /></Field>
           </div>
         </div>
         <div className="editor-foot">
@@ -217,4 +210,28 @@ export function PlotEditor({
 
 function Field({ label, children, full }: { label: string; children: ReactNode; full?: boolean }) {
   return (<label className={`field ${full ? 'full' : ''}`}><span>{label}</span>{children}</label>);
+}
+
+/** Show the raw number with thousands separators as the user types (stores a clean string). */
+function fmtNum(raw: string): string {
+  if (raw === '' || raw === '-' || raw === '.') return raw;
+  const neg = raw.startsWith('-');
+  const s = neg ? raw.slice(1) : raw;
+  const dot = s.indexOf('.');
+  const intPart = dot >= 0 ? s.slice(0, dot) : s;
+  const decPart = dot >= 0 ? s.slice(dot + 1) : null;
+  const intF = intPart === '' ? '' : Number(intPart).toLocaleString('en-US');
+  const body = decPart !== null ? `${intF === '' ? '0' : intF}.${decPart}` : intF;
+  return (neg ? '-' : '') + body;
+}
+function NumberField({ value, onChange }: { value: string | number | ''; onChange: (raw: string) => void }) {
+  const raw = value === '' || value == null ? '' : String(value);
+  const onIn = (e: { target: { value: string } }) => {
+    let s = e.target.value.replace(/,/g, '').replace(/[^0-9.\-]/g, '');
+    s = s.replace(/(?!^)-/g, '');           // only a leading minus
+    const i = s.indexOf('.');
+    if (i >= 0) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, ''); // only one dot
+    onChange(s);
+  };
+  return <input type="text" inputMode="decimal" value={fmtNum(raw)} onChange={onIn} />;
 }

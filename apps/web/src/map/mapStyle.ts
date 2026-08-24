@@ -10,7 +10,7 @@ export const KEC_BOUNDS: [[number, number], [number, number]] = [
 /** Colour a development-plan plot outline by its project status. */
 export function planStatusColor(): ExpressionSpecification {
   return ['match', ['get', 'planStatus'],
-    'Completed', '#2F6B3E', 'UnderConstruction', '#9A8A1E', 'Future', '#5C6B60', 'Partner', '#7E6F1B',
+    'Completed', '#2F6B3E', 'UnderConstruction', '#9A8A1E', 'Future', '#5C6B60', 'Partner', '#7E6F1B', 'OnHold', '#B5462F',
     '#5C6B60'] as ExpressionSpecification;
 }
 
@@ -23,6 +23,13 @@ export function landUseColor(colors?: Record<string, { color: string }>): Expres
   }
   expr.push(LAND_USE_FALLBACK);
   return expr as ExpressionSpecification;
+}
+
+/** Distinct, unused-in-the-palette fill for plots that are in the development plan. */
+export const PLAN_FILL = '#6A4C93';
+/** Fill a plot by its land use, but flip to the plan colour when it's in the plan. */
+export function plotFillColor(colors?: Record<string, { color: string }>): ExpressionSpecification {
+  return ['case', ['has', 'planStatus'], PLAN_FILL, landUseColor(colors)] as ExpressionSpecification;
 }
 
 /**
@@ -111,7 +118,7 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
       {
         id: 'plots-fill', type: 'fill', source: 'plots', ...srcLayer,
         paint: {
-          'fill-color': landUseColor(colors),
+          'fill-color': plotFillColor(colors),
           'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.9, 0.58],
         },
       },
@@ -158,7 +165,7 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         id: 'plots-3d', type: 'fill-extrusion', source: 'plots', ...srcLayer,
         layout: { visibility: 'none' },
         paint: {
-          'fill-extrusion-color': landUseColor(colors),
+          'fill-extrusion-color': plotFillColor(colors),
           'fill-extrusion-height': height,
           'fill-extrusion-base': 0,
           'fill-extrusion-opacity': 0.94,
