@@ -75,6 +75,53 @@ export function DetailPanel({
       </div>
 
       <div className="d-scroll">
+        <Section title={t('sec.summary', lang)}>
+          {summary ? <p className="d-summary">{summary}</p> : <p className="d-summary muted">{lang === 'ar' ? 'لا يوجد وصف بعد.' : 'No overview yet.'}</p>}
+        </Section>
+
+        {pr.overlay.gallery && pr.overlay.gallery.length > 0 && (
+          <Section title={t('sec.gallery', lang)}>
+            <Carousel images={pr.overlay.gallery} />
+          </Section>
+        )}
+
+        <Section title={t('sec.land', lang)}>
+          <div className="d-grid">
+            <Cell l={t('d.landuse', lang)} v={luLabel} chip={lu.color} sm />
+            <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} sm />
+            <Cell l={t('d.area', lang)} v={num(p.area, 2)} />
+            <Cell l={t('d.gfa', lang)} v={num(p.gfa, 1)} />
+            <Cell l={t('d.floors', lang)} v={num(p.floors)} />
+            <Cell l={t('d.height', lang)} v={num(p.height)} />
+            <Cell l={t('d.coverage', lang)} v={num(p.coverage, 2)} />
+            <Cell l={t('d.far', lang)} v={num(p.far, 2)} />
+          </div>
+        </Section>
+
+        <Section title={t('sec.devplan', lang)}>
+          {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
+          {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
+          {phases.length === 0 && !hasDevDesc && !canAttr && <p className="dp-desc muted">{t('dp.noPlan', lang)}</p>}
+          {canAttr && phases.length === 0 && !hasDevDesc && (
+            <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
+          )}
+          {canAttr && phases.length > 0 && (
+            <div className="dp-manage">
+              <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
+            </div>
+          )}
+        </Section>
+
+        <Section title={t('sec.invest', lang)}>
+          <div className="d-grid">
+            {INVEST_FIELDS.map((fld) => {
+              const v = inv?.[fld.key];
+              const has = v != null && !Number.isNaN(v);
+              return <Cell key={fld.key} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
+            })}
+          </div>
+        </Section>
+
         <Section title={t('sec.ownership', lang)}>
           <div className="own-row">
             <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
@@ -101,47 +148,6 @@ export function DetailPanel({
           <StageBar lang={lang} stageKey={pr.overlay.stage} />
           <div className="sb-caption">{t('sec.license', lang)}</div>
           <StageBar lang={lang} stageKey={pr.overlay.license} stages={LICENSE_STAGES} variant="license" />
-          {summary && <p className="d-summary">{summary}</p>}
-          {pr.overlay.gallery && pr.overlay.gallery.length > 0 && (
-            <Carousel images={pr.overlay.gallery} />
-          )}
-        </Section>
-
-        <Section title={t('sec.invest', lang)}>
-          <div className="d-grid">
-            {INVEST_FIELDS.map((fld) => {
-              const v = inv?.[fld.key];
-              const has = v != null && !Number.isNaN(v);
-              return <Cell key={fld.key} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
-            })}
-          </div>
-        </Section>
-
-        <Section title={t('sec.devplan', lang)}>
-          {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
-          {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
-          {phases.length === 0 && !hasDevDesc && !canAttr && <p className="dp-desc muted">{t('dp.noPlan', lang)}</p>}
-          {canAttr && phases.length === 0 && !hasDevDesc && (
-            <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
-          )}
-          {canAttr && phases.length > 0 && (
-            <div className="dp-manage">
-              <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
-            </div>
-          )}
-        </Section>
-
-        <Section title={t('sec.land', lang)}>
-          <div className="d-grid">
-            <Cell l={t('d.landuse', lang)} v={luLabel} chip={lu.color} sm />
-            <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} sm />
-            <Cell l={t('d.area', lang)} v={num(p.area, 2)} />
-            <Cell l={t('d.gfa', lang)} v={num(p.gfa, 1)} />
-            <Cell l={t('d.floors', lang)} v={num(p.floors)} />
-            <Cell l={t('d.height', lang)} v={num(p.height)} />
-            <Cell l={t('d.coverage', lang)} v={num(p.coverage, 2)} />
-            <Cell l={t('d.far', lang)} v={num(p.far, 2)} />
-          </div>
         </Section>
 
         <Section title={t('sec.comments', lang)}>

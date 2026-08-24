@@ -103,36 +103,14 @@ export function PlotEditor({
           <button className="ic-btn" onClick={onClose}>×</button>
         </div>
         <div className="editor-body">
-          <div className="ed-sec">{t('a.ownership', lang)}</div>
-          <div className="ed-grid">
-            <Field label={t('a.owner', lang)}><input value={f.owner} onChange={(e) => up('owner', e.target.value)} /></Field>
-            <Field label={t('d.ownership', lang)}>
-              <select value={f.ownership} onChange={(e) => up('ownership', e.target.value)}>
-                {Object.values(OWNERSHIP_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
-              </select>
-            </Field>
-            <Field label={t('d.purchase', lang)} full><DateField value={f.purchase_date} onChange={(v) => up('purchase_date', v)} /></Field>
-          </div>
-
+          {/* Overview — matches the card's Summary + Gallery */}
           <div className="ed-sec">{t('a.projectInfo', lang)}</div>
           <div className="ed-grid">
             <Field label={t('a.nameAr', lang)}><input value={f.name_ar} onChange={(e) => up('name_ar', e.target.value)} /></Field>
             <Field label={t('a.nameEn', lang)}><input value={f.name_en} onChange={(e) => up('name_en', e.target.value)} /></Field>
-            <Field label={t('a.type', lang)}>
+            <Field label={t('a.type', lang)} full>
               <EditableSelect listKey="project_type" value={f.type} onChange={(v) => up('type', v)}
                 options={Object.values(PROJECT_TYPES).map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
-            </Field>
-            <Field label={t('a.status', lang)}>
-              <EditableSelect listKey="status" value={f.status} onChange={(v) => up('status', v)}
-                options={Object.values(STATUS_META).map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
-            </Field>
-            <Field label={t('a.stage', lang)}>
-              <EditableSelect listKey="stage" value={f.stage} onChange={(v) => up('stage', v)} allowNone noneLabel={t('a.stageNone', lang)}
-                options={PROGRESS_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
-            </Field>
-            <Field label={t('sec.license', lang)}>
-              <EditableSelect listKey="license" value={f.license} onChange={(v) => up('license', v)} allowNone noneLabel={t('a.stageNone', lang)}
-                options={LICENSE_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
             </Field>
             <Field label={t('a.summaryAr', lang)} full><textarea rows={2} value={f.summary_ar} onChange={(e) => up('summary_ar', e.target.value)} /></Field>
             <Field label={t('a.summaryEn', lang)} full><textarea rows={2} value={f.summary_en} onChange={(e) => up('summary_en', e.target.value)} /></Field>
@@ -149,6 +127,27 @@ export function PlotEditor({
             </Field>
           </div>
 
+          {/* Land data */}
+          <div className="ed-sec">{t('a.plotAttrs', lang)}</div>
+          <div className="ed-grid">
+            <Field label={t('a.landuse', lang)}>
+              <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)}
+                options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))} />
+            </Field>
+            <Field label={t('a.sector', lang)}>
+              <select value={f.sector} onChange={(e) => up('sector', e.target.value)}>
+                {Object.values(SECTORS).map((s) => <option key={s.key} value={s.key}>{lang === 'ar' ? s.labelAr : s.key}</option>)}
+              </select>
+            </Field>
+            <Field label={t('d.floors', lang)}><NumberField value={f.floors} onChange={(v) => up('floors', v)} /></Field>
+            <Field label={t('d.height', lang)}><NumberField value={f.height} onChange={(v) => up('height', v)} /></Field>
+            <Field label={t('d.area', lang)}><NumberField value={f.area} onChange={(v) => up('area', v)} /></Field>
+            <Field label={t('d.gfa', lang)}><NumberField value={f.gfa} onChange={(v) => up('gfa', v)} /></Field>
+            <Field label={t('d.coverage', lang)}><NumberField value={f.coverage} onChange={(v) => up('coverage', v)} /></Field>
+            <Field label={t('d.far', lang)}><NumberField value={f.far} onChange={(v) => up('far', v)} /></Field>
+          </div>
+
+          {/* Development plan */}
           <div className="ed-sec ed-sec-row">{t('sec.devplan', lang)}
             <button className="mini-btn" onClick={addPhase}><IconPlus size={13} /> {t('dp.addPhase', lang)}</button>
           </div>
@@ -171,6 +170,7 @@ export function PlotEditor({
             ))}
           </div>
 
+          {/* Investment highlights */}
           <div className="ed-sec">{t('a.invest', lang)}</div>
           <div className="ed-grid">
             {INVEST_FIELDS.map((fld) => (
@@ -180,23 +180,33 @@ export function PlotEditor({
             ))}
           </div>
 
-          <div className="ed-sec">{t('a.plotAttrs', lang)}</div>
+          {/* Ownership */}
+          <div className="ed-sec">{t('a.ownership', lang)}</div>
           <div className="ed-grid">
-            <Field label={t('a.landuse', lang)}>
-              <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)}
-                options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))} />
-            </Field>
-            <Field label={t('a.sector', lang)}>
-              <select value={f.sector} onChange={(e) => up('sector', e.target.value)}>
-                {Object.values(SECTORS).map((s) => <option key={s.key} value={s.key}>{lang === 'ar' ? s.labelAr : s.key}</option>)}
+            <Field label={t('a.owner', lang)}><input value={f.owner} onChange={(e) => up('owner', e.target.value)} /></Field>
+            <Field label={t('d.ownership', lang)}>
+              <select value={f.ownership} onChange={(e) => up('ownership', e.target.value)}>
+                {Object.values(OWNERSHIP_META).map((x) => <option key={x.key} value={x.key}>{lang === 'ar' ? x.ar : x.en}</option>)}
               </select>
             </Field>
-            <Field label={t('d.floors', lang)}><NumberField value={f.floors} onChange={(v) => up('floors', v)} /></Field>
-            <Field label={t('d.height', lang)}><NumberField value={f.height} onChange={(v) => up('height', v)} /></Field>
-            <Field label={t('d.area', lang)}><NumberField value={f.area} onChange={(v) => up('area', v)} /></Field>
-            <Field label={t('d.gfa', lang)}><NumberField value={f.gfa} onChange={(v) => up('gfa', v)} /></Field>
-            <Field label={t('d.coverage', lang)}><NumberField value={f.coverage} onChange={(v) => up('coverage', v)} /></Field>
-            <Field label={t('d.far', lang)}><NumberField value={f.far} onChange={(v) => up('far', v)} /></Field>
+            <Field label={t('d.purchase', lang)} full><DateField value={f.purchase_date} onChange={(v) => up('purchase_date', v)} /></Field>
+          </div>
+
+          {/* Status & permits */}
+          <div className="ed-sec">{t('sec.project', lang)}</div>
+          <div className="ed-grid">
+            <Field label={t('a.status', lang)}>
+              <EditableSelect listKey="status" value={f.status} onChange={(v) => up('status', v)}
+                options={Object.values(STATUS_META).map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
+            </Field>
+            <Field label={t('a.stage', lang)}>
+              <EditableSelect listKey="stage" value={f.stage} onChange={(v) => up('stage', v)} allowNone noneLabel={t('a.stageNone', lang)}
+                options={PROGRESS_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
+            </Field>
+            <Field label={t('sec.license', lang)} full>
+              <EditableSelect listKey="license" value={f.license} onChange={(v) => up('license', v)} allowNone noneLabel={t('a.stageNone', lang)}
+                options={LICENSE_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
+            </Field>
           </div>
         </div>
         <div className="editor-foot">

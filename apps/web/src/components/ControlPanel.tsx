@@ -121,9 +121,7 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
               <span className="pt-switch" /><span className="pt-label">{t('cp.planOnly', lang)}</span>
             </label>
             <div className="plan-legend">
-              {['Completed', 'UnderConstruction', 'Future', 'Partner'].map((k) => (
-                <span className="pl-item" key={k}><span className="pl-dash" style={{ background: STATUS_META[k].color }} />{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}</span>
-              ))}
+              <span className="pl-item"><span className="pl-plan-sw" />{t('cp.planned', lang)}</span>
             </div>
           </>
         )}
