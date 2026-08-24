@@ -98,6 +98,9 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
       },
+      // OpenFreeMap planet vector tiles (free, no key) — supplies real building
+      // footprints with heights for the Google-Earth-style 3D view.
+      ofm: { type: 'vector' as const, url: 'https://tiles.openfreemap.org/planet', attribution: 'OpenFreeMap © OpenMapTiles · OpenStreetMap' },
       plots: plotsSource,
     },
     layers: [
@@ -159,6 +162,22 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
           'fill-extrusion-height': height,
           'fill-extrusion-base': 0,
           'fill-extrusion-opacity': 0.94,
+          'fill-extrusion-vertical-gradient': true,
+        },
+      },
+      // real OSM buildings extruded — the "clear 3D objects" of the Earth view
+      {
+        id: 'ofm-3d-buildings', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building',
+        minzoom: 13, layout: { visibility: 'none' },
+        filter: ['!=', ['get', 'hide_3d'], true],
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 6],
+            0, '#efe9df', 25, '#e2dccf', 80, '#cfc6b4', 200, '#b9ad96',
+          ],
+          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6],
+          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+          'fill-extrusion-opacity': 0.92,
           'fill-extrusion-vertical-gradient': true,
         },
       },

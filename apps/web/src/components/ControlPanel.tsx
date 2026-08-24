@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { SECTORS, type PlotCollection, type SectorKey } from '@kec/types';
 import { useApp, matchPlot, advActive } from '../store';
 import { resolveProject, STATUS_META, t, type ProjectInfo } from '../lib/domain';
-import { IconFilter, IconLabel, IconLandmark } from './icons';
+import { IconFilter } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -11,7 +11,7 @@ const fmtBig = (x: number) =>
 
 export function ControlPanel({ data, landUses, projects }: { data: PlotCollection; landUses: Record<string, EffLandUse>; projects: Record<string, ProjectInfo> }) {
   const state = useApp();
-  const { lang, sector, uses, planOnly, adv, labels, toggleLabels, landmarks, toggleLandmarks, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
+  const { lang, sector, uses, planOnly, adv, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
   const plannedCount = useMemo(() => data.features.filter((f) => f.properties.planStatus).length, [data]);
   const [advOpen, setAdvOpen] = useState(false);
 
@@ -83,15 +83,6 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
           <Kpi v={fmtBig(kpis.gfa)} l={t('kpi.gfa', lang)} />
           <Kpi v={fmtBig(kpis.area)} l={t('kpi.area', lang)} />
         </div>
-
-        <label className={`plan-toggle ${labels ? 'on' : ''}`}>
-          <input type="checkbox" checked={labels} onChange={toggleLabels} />
-          <span className="pt-switch" /><span className="pt-label"><IconLabel size={14} /> {t('cp.labels', lang)}</span>
-        </label>
-        <label className={`plan-toggle ${landmarks ? 'on' : ''}`}>
-          <input type="checkbox" checked={landmarks} onChange={toggleLandmarks} />
-          <span className="pt-switch" /><span className="pt-label"><IconLandmark size={14} /> {t('cp.landmarks', lang)}</span>
-        </label>
 
         <button className={`af-toggle ${advActive(adv) ? 'on' : ''}`} onClick={() => setAdvOpen((o) => !o)}>
           <IconFilter size={14} /> {t('af.title', lang)}

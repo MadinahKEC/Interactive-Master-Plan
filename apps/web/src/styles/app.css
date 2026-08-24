@@ -171,34 +171,35 @@
 .an-actions .btn.sm{flex:none}
 .an-actions .btn.sm.primary{background:var(--kec-green);color:#fff;border-color:var(--kec-green)}
 /* elegant draggable label (tag) */
-.annot-label{display:inline-flex;align-items:center;gap:7px;background:rgba(251,252,250,.97);backdrop-filter:blur(6px);
-  border:1px solid var(--kec-hairline);border-inline-start:3px solid var(--al-color,#B5462F);border-radius:10px;
-  padding:5px 9px;box-shadow:0 5px 16px rgba(20,61,30,.16);font-size:12.5px;font-weight:600;color:var(--kec-ink);white-space:nowrap;user-select:none}
+/* labels match the flagship landmark pill: coloured gradient, white text */
+.annot-label{display:inline-flex;align-items:center;gap:7px;background:var(--al-color,#2F6B3E);
+  background-image:linear-gradient(135deg,rgba(255,255,255,.16),rgba(0,0,0,.22));
+  border:1px solid rgba(255,255,255,.28);border-radius:9px;
+  padding:4px 10px;box-shadow:0 4px 16px rgba(20,61,30,.28);font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;user-select:none}
 .annot-label.editable{cursor:grab}
 .annot-label.editable:active{cursor:grabbing}
-.al-dot{width:8px;height:8px;border-radius:50%;background:var(--al-color,#B5462F);flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
-.al-text{outline:none;min-width:12px;cursor:text}
-.al-del{border:0;background:transparent;color:var(--kec-muted);font-size:15px;line-height:1;cursor:pointer;padding:0 1px;opacity:0;transition:.15s}
-.annot-label:hover .al-del{opacity:.75}
-.al-del:hover{color:var(--kec-neg);opacity:1}
-html[lang="ar"] .al-text:empty::before{content:'اكتب هنا…';color:var(--kec-muted);font-weight:400}
-html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);font-weight:400}
+.al-dot{width:9px;height:9px;border-radius:50%;background:#fff;opacity:.92;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+.al-text{outline:none;min-width:12px;cursor:text;color:#fff}
+.al-del{border:0;background:transparent;color:rgba(255,255,255,.7);font-size:15px;line-height:1;cursor:pointer;padding:0 1px;opacity:0;transition:.15s}
+.annot-label:hover .al-del{opacity:.85}
+.al-del:hover{color:#fff;opacity:1}
+html[lang="ar"] .al-text:empty::before{content:'اكتب هنا…';color:rgba(255,255,255,.7);font-weight:500}
+html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,.7);font-weight:500}
 
-/* ---- Madinah city landmarks (premium map markers) ---- */
-.lm-marker{display:inline-flex;align-items:center;gap:7px;pointer-events:none;user-select:none;transform:translateX(-4px);white-space:nowrap}
-.lm-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--kec-gold);
-  box-shadow:0 0 0 3px rgba(154,138,30,.22),0 1px 4px rgba(20,61,30,.35)}
-.lm-label{font-size:11.5px;font-weight:600;color:var(--kec-green-deep,#143D1E);
-  background:rgba(251,252,250,.92);backdrop-filter:blur(5px);border:1px solid rgba(154,138,30,.35);
-  border-radius:8px;padding:2.5px 8px;box-shadow:0 3px 12px rgba(20,61,30,.14);letter-spacing:.01em}
-.lm-marker.flag .lm-dot{width:11px;height:11px;background:var(--kec-green);
-  box-shadow:0 0 0 3px rgba(47,107,62,.24),0 0 0 6px rgba(47,107,62,.12),0 1px 5px rgba(20,61,30,.4)}
-.lm-marker.flag .lm-label{font-size:12.5px;font-weight:700;color:#fff;
-  background:linear-gradient(135deg,var(--kec-green),var(--kec-green-deep,#143D1E));
-  border-color:rgba(154,138,30,.5);box-shadow:0 4px 16px rgba(20,61,30,.3)}
+/* ---- Madinah landmarks & POIs (premium map markers, category-coloured) ---- */
+.lm-marker{display:inline-flex;align-items:center;gap:6px;pointer-events:none;user-select:none;transform:translateX(-3px);white-space:nowrap}
+.lm-dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--lm-color,#5C6B60);
+  box-shadow:0 0 0 2.5px rgba(251,252,250,.82),0 1px 4px rgba(20,61,30,.3)}
+.lm-label{font-size:11px;font-weight:600;color:#16221B;background:rgba(251,252,250,.9);backdrop-filter:blur(5px);
+  border:1px solid rgba(0,0,0,.06);border-inline-start:2.5px solid var(--lm-color,#5C6B60);
+  border-radius:7px;padding:2px 7px;box-shadow:0 2px 9px rgba(20,61,30,.12);letter-spacing:.01em}
+.lm-marker.flag .lm-dot{width:11px;height:11px;box-shadow:0 0 0 3px rgba(251,252,250,.85),0 0 0 6px rgba(20,61,30,.1),0 1px 5px rgba(20,61,30,.4)}
+.lm-marker.flag .lm-label{font-size:12.5px;font-weight:700;color:#fff;background:var(--lm-color,#2F6B3E);
+  background-image:linear-gradient(135deg,rgba(255,255,255,.16),rgba(0,0,0,.22));
+  border-color:rgba(255,255,255,.28);box-shadow:0 4px 15px rgba(20,61,30,.3)}
 /* on the satellite / earth basemap, brighten labels for legibility */
-.map-sat .lm-label{background:rgba(16,34,27,.72);color:#fff;border-color:rgba(154,138,30,.55)}
-.map-sat .lm-marker.flag .lm-label{background:linear-gradient(135deg,rgba(47,107,62,.95),rgba(20,61,30,.95))}
+.map-sat .lm-label{background:rgba(16,34,27,.74);color:#fff;border-color:rgba(255,255,255,.1);border-inline-start-color:var(--lm-color,#5C6B60)}
+.map-sat .lm-marker.flag .lm-label{background:var(--lm-color,#2F6B3E);background-image:linear-gradient(135deg,rgba(255,255,255,.18),rgba(0,0,0,.28))}
 
 /* ---- Subdivide modal ---- */
 .modal-wrap{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:20px}
@@ -338,6 +339,41 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);
 .mt-mode{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--kec-muted)}
 .mt-mode svg{color:var(--kec-green)}
 .meas-time-row b{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--kec-title)}
+/* measure mode segmented + route */
+.meas-seg{display:flex;gap:4px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:3px;margin-bottom:12px}
+.meas-seg button{flex:1;border:0;background:transparent;border-radius:7px;padding:6px 8px;font-size:11.5px;font-weight:600;color:var(--kec-muted);cursor:pointer;font-family:inherit;transition:.15s}
+.meas-seg button.on{background:var(--kec-green);color:#fff;box-shadow:0 1px 4px rgba(20,61,30,.25)}
+.meas-l{display:inline-flex;align-items:center;gap:5px}
+.meas-l svg{color:var(--kec-green)}
+.meas-err{font-size:11px;color:var(--kec-neg);margin-top:4px}
+
+/* ---- Layers & view flyout ---- */
+.lf-scrim{position:fixed;inset:0;z-index:78}
+.layers-flyout{position:fixed;inset-inline-start:calc(var(--rail-w) + 10px);top:118px;z-index:79;width:272px;max-height:calc(100vh - 150px);overflow-y:auto;
+  background:var(--panel-bg,var(--kec-paper));backdrop-filter:blur(14px);border:1px solid var(--kec-hairline);border-radius:16px;box-shadow:var(--shadow-lg);padding:14px;animation:slideIn .22s cubic-bezier(.2,.8,.2,1)}
+.lf-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;color:var(--kec-title);margin-bottom:12px}
+.lf-x{border:0;background:transparent;color:var(--kec-muted);font-size:20px;line-height:1;cursor:pointer;padding:0 2px}
+.lf-x:hover{color:var(--kec-neg)}
+.lf-group{margin-bottom:14px}
+.lf-group:last-child{margin-bottom:0}
+.lf-label{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}
+.lf-seg{display:flex;gap:4px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:3px}
+.lf-seg button{flex:1;border:0;background:transparent;border-radius:7px;padding:7px 6px;font-size:11px;font-weight:600;color:var(--kec-muted);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.lf-seg button.on{background:var(--kec-green);color:#fff;box-shadow:0 1px 4px rgba(20,61,30,.25)}
+.lf-hint{font-size:10.5px;color:var(--kec-muted);line-height:1.5;margin-top:6px}
+.lf-toggle{display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:8px;padding:8px 10px;border:1px solid var(--kec-hairline);border-radius:11px;background:var(--card)}
+.lf-toggle input{display:none}
+.lf-toggle.on .pt-switch{background:var(--kec-green)}
+.lf-toggle.on .pt-switch::after{inset-inline-start:17px}
+.lf-cats{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.lf-cat{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--kec-hairline);border-radius:20px;padding:4px 9px;font-size:10.5px;font-weight:500;color:var(--kec-muted);background:var(--card);cursor:pointer;transition:.15s}
+.lf-cat.on{color:var(--kec-ink)}
+.lf-cat-dot{width:8px;height:8px;border-radius:50%;flex:none}
+
+/* investment empty cells read as quiet placeholders */
+.inv-cell.empty{opacity:.6;background:var(--kec-surface)}
+.inv-cell.empty .inv-v{color:var(--kec-muted);font-weight:500}
+.dp-desc.muted{color:var(--kec-muted);font-style:italic}
 
 /* ---- Advanced filters ---- */
 .af-toggle{width:100%;display:flex;align-items:center;gap:7px;margin-top:10px;padding:9px 11px;border:1px solid var(--kec-hairline);border-radius:10px;background:var(--kec-surface);cursor:pointer;font-size:12.5px;color:var(--kec-ink);font-weight:500}
@@ -559,7 +595,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);
 /* investment highlights grid */
 .inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 14px 12px}
 .inv-cell{background:linear-gradient(155deg,var(--kec-surface),var(--kec-surface-2));border:1px solid var(--kec-hairline);border-radius:11px;padding:10px 11px;min-width:0}
-.inv-v{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--kec-title);line-height:1.2;overflow-wrap:break-word}
+.inv-v{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--kec-title);line-height:1.25;overflow-wrap:anywhere}
 .inv-l{font-size:10.5px;color:var(--kec-muted);margin-top:4px;line-height:1.35}
 .d-actions .btn{display:flex;align-items:center;justify-content:center;gap:6px}
 .btn.icon-only{flex:0 0 auto;width:44px;padding:10px}

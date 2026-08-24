@@ -1,29 +1,47 @@
 /**
- * Curated major landmarks of Al-Madinah Al-Munawwarah, shown as premium DOM
- * markers on the map (bilingual, so rendered as HTML — not glyph symbols — to
- * support Arabic without vendoring the full Arabic glyph range).
+ * Al-Madinah Al-Munawwarah landmarks & points of interest.
  *
- * `tier`: 1 = flagship (visible from a wide zoom), 2 = shown when zoomed in a bit.
- * Coordinates are [lon, lat] (WGS84), placed at each site for a labelled dot.
+ * The dataset (public/landmarks.json, ~800 places from OpenStreetMap) is loaded
+ * at runtime and rendered as premium bilingual DOM markers. Flagship sites are
+ * curated (tier 1); the rest are real POIs across categories (tiers 2–3), shown
+ * viewport- and zoom-aware so the map never clutters.
  */
+import { useEffect, useState } from 'react';
+
 export interface Landmark {
-  name_ar: string;
-  name_en: string;
-  lon: number;
+  na: string;   // Arabic name
+  ne: string;   // English name
   lat: number;
-  tier: 1 | 2;
-  icon?: 'mosque' | 'mount' | 'airport' | 'edu' | 'city';
+  lon: number;
+  c: string;    // category key
+  t: 1 | 2 | 3; // tier (1 = flagship)
 }
 
-export const MEDINA_LANDMARKS: Landmark[] = [
-  { name_ar: 'المسجد النبوي الشريف', name_en: 'Al-Masjid an-Nabawi', lon: 39.6112, lat: 24.4672, tier: 1, icon: 'mosque' },
-  { name_ar: 'مسجد قباء', name_en: 'Quba Mosque', lon: 39.6172, lat: 24.4398, tier: 1, icon: 'mosque' },
-  { name_ar: 'جبل أُحُد', name_en: 'Mount Uhud', lon: 39.6151, lat: 24.5100, tier: 1, icon: 'mount' },
-  { name_ar: 'مسجد القبلتين', name_en: 'Masjid al-Qiblatayn', lon: 39.5788, lat: 24.4843, tier: 2, icon: 'mosque' },
-  { name_ar: 'مقبرة البقيع', name_en: 'Al-Baqiʿ Cemetery', lon: 39.6165, lat: 24.4665, tier: 2, icon: 'mosque' },
-  { name_ar: 'المساجد السبعة', name_en: 'The Seven Mosques', lon: 39.5930, lat: 24.4870, tier: 2, icon: 'mosque' },
-  { name_ar: 'مجمع الملك فهد لطباعة المصحف', name_en: 'King Fahd Qurʾan Complex', lon: 39.5765, lat: 24.4530, tier: 2, icon: 'city' },
-  { name_ar: 'الجامعة الإسلامية بالمدينة', name_en: 'Islamic University of Madinah', lon: 39.5720, lat: 24.4515, tier: 2, icon: 'edu' },
-  { name_ar: 'مطار الأمير محمد بن عبدالعزيز', name_en: 'Prince Mohammad Airport', lon: 39.7051, lat: 24.5534, tier: 2, icon: 'airport' },
-  { name_ar: 'مدينة المعرفة الاقتصادية', name_en: 'Knowledge Economic City', lon: 39.6790, lat: 24.4696, tier: 1, icon: 'city' },
+export interface LmCategory { key: string; ar: string; en: string; color: string; icon: string }
+/** Category catalogue: colour + glyph for each POI family. */
+export const LM_CATEGORIES: LmCategory[] = [
+  { key: 'religious', ar: 'مساجد ومعالم دينية', en: 'Mosques & religious', color: '#2F6B3E', icon: '🕌' },
+  { key: 'heritage',  ar: 'مواقع تاريخية وثقافية', en: 'Heritage & culture', color: '#9A8A1E', icon: '🏛️' },
+  { key: 'shopping',  ar: 'مولات ومراكز تسوّق', en: 'Malls & shopping', color: '#B5723A', icon: '🛍️' },
+  { key: 'grocery',   ar: 'أسواق ومتاجر', en: 'Markets & stores', color: '#A8873A', icon: '🛒' },
+  { key: 'hotel',     ar: 'فنادق وإقامة', en: 'Hotels & stays', color: '#2E7D6B', icon: '🏨' },
+  { key: 'leisure',   ar: 'ترفيه وحدائق', en: 'Leisure & parks', color: '#4E8B4A', icon: '🌳' },
+  { key: 'education', ar: 'تعليم', en: 'Education', color: '#3A6BB5', icon: '🎓' },
+  { key: 'health',    ar: 'صحة ومستشفيات', en: 'Health', color: '#B5462F', icon: '🏥' },
+  { key: 'transport', ar: 'نقل ومطارات', en: 'Transport', color: '#5C6B60', icon: '✈️' },
+  { key: 'city',      ar: 'مشاريع ومدن', en: 'Cities & projects', color: '#143D1E', icon: '🏙️' },
 ];
+export const LM_CAT_MAP: Record<string, LmCategory> = Object.fromEntries(LM_CATEGORIES.map((c) => [c.key, c]));
+export const LM_CAT_KEYS = LM_CATEGORIES.map((c) => c.key);
+
+/** Load the landmark dataset once (cached). */
+export function useLandmarks(): Landmark[] {
+  const [list, setList] = useState<Landmark[]>([]);
+  useEffect(() => {
+    fetch(import.meta.env.BASE_URL + 'landmarks.json')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((j: Landmark[]) => setList(Array.isArray(j) ? j : []))
+      .catch(() => setList([]));
+  }, []);
+  return list;
+}

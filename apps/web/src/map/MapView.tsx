@@ -8,8 +8,8 @@ import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { geomArea } from '../lib/subdivide';
 import { useDialog } from '../lib/dialog';
-import { MEDINA_LANDMARKS } from '../lib/landmarks';
-import { IconWalk, IconCar } from '../components/icons';
+import { useLandmarks, LM_CAT_MAP, type Landmark } from '../lib/landmarks';
+import { IconWalk, IconCar, IconClock } from '../components/icons';
 import type { EffLandUse } from '../lib/effective';
 
 /** Human-readable travel time from seconds (e.g. "12 min", "1 h 5 min"). */
@@ -213,8 +213,9 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, labels, landmarks, creating } = useApp();
-  const [measure, setMeasure] = useState<{ dist: number; area: number; n: number }>({ dist: 0, area: 0, n: 0 });
+  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, measureMode, labels, landmarks, lmCats, creating } = useApp();
+  const lmData = useLandmarks();
+  const [measure, setMeasure] = useState<{ dist: number; area: number; n: number; routeDist?: number; routeDur?: number; routing?: boolean; routeErr?: boolean }>({ dist: 0, area: 0, n: 0 });
 
   // capture a map snapshot for the report
   useEffect(() => {
@@ -284,38 +285,57 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [labels]);
 
-  // ---------- Madinah city landmarks (premium bilingual DOM markers) ----------
-  const lmMarkers = useRef<maplibregl.Marker[]>([]);
+  // ---------- Madinah landmarks & POIs (premium bilingual DOM markers) ----------
+  // A pooled renderer: only the markers inside the viewport, matching the enabled
+  // categories and the current zoom tier, are mounted (capped) — so the ~800-place
+  // dataset stays fast and never clutters the map.
+  const lmPool = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const lmCatsRef = useRef(lmCats);
+  useEffect(() => { lmCatsRef.current = lmCats; }, [lmCats]);
+  const lmId = (lm: Landmark) => `${lm.c}:${lm.lat},${lm.lon}`;
+  const makeLmEl = (lm: Landmark, L: 'ar' | 'en') => {
+    const meta = LM_CAT_MAP[lm.c];
+    const el = document.createElement('div');
+    el.className = `lm-marker ${lm.t === 1 ? 'flag' : ''} lm-${lm.c}`;
+    el.style.setProperty('--lm-color', meta?.color ?? '#5C6B60');
+    el.style.zIndex = String(10 - lm.t);
+    const dot = document.createElement('span'); dot.className = 'lm-dot';
+    const label = document.createElement('span'); label.className = 'lm-label';
+    label.textContent = L === 'ar' ? lm.na : lm.ne;
+    el.append(dot, label);
+    return el;
+  };
+  const renderLandmarks = () => {
+    const map = mapRef.current; if (!map) return;
+    const pool = lmPool.current;
+    if (!landmarks || !lmData.length) { pool.forEach((m) => m.remove()); pool.clear(); return; }
+    const L = langRef.current;
+    const z = map.getZoom();
+    const tierMax = z < 11.5 ? 1 : z < 13 ? 2 : 3;
+    const b = map.getBounds();
+    const cats = lmCatsRef.current;
+    const c = map.getCenter();
+    const visible = lmData
+      .filter((lm) => lm.t <= tierMax && cats.has(lm.c) && b.contains([lm.lon, lm.lat] as [number, number]))
+      .sort((a, d) => a.t - d.t || (Math.hypot(a.lon - c.lng, a.lat - c.lat) - Math.hypot(d.lon - c.lng, d.lat - c.lat)))
+      .slice(0, 90);
+    const keep = new Set<string>();
+    for (const lm of visible) {
+      const id = lmId(lm); keep.add(id);
+      if (!pool.has(id)) {
+        const mk = new maplibregl.Marker({ element: makeLmEl(lm, L), anchor: 'left' }).setLngLat([lm.lon, lm.lat]).addTo(map);
+        pool.set(id, mk);
+      }
+    }
+    for (const [id, m] of pool) if (!keep.has(id)) { m.remove(); pool.delete(id); }
+  };
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
-    // clear any existing markers
-    lmMarkers.current.forEach((m) => m.remove()); lmMarkers.current = [];
-    if (!landmarks) return;
-    const L = langRef.current;
-    for (const lm of MEDINA_LANDMARKS) {
-      const el = document.createElement('div');
-      el.className = `lm-marker ${lm.tier === 1 ? 'flag' : ''} lm-${lm.icon ?? 'city'}`;
-      el.dataset.tier = String(lm.tier);
-      const dot = document.createElement('span'); dot.className = 'lm-dot';
-      const label = document.createElement('span'); label.className = 'lm-label';
-      label.textContent = L === 'ar' ? lm.name_ar : lm.name_en;
-      el.append(dot, label);
-      const mk = new maplibregl.Marker({ element: el, anchor: 'left' }).setLngLat([lm.lon, lm.lat]).addTo(map);
-      lmMarkers.current.push(mk);
-    }
-    // zoom-aware clutter control: tier-2 landmarks appear only when zoomed in a bit
-    const applyZoom = () => {
-      const z = map.getZoom();
-      for (const m of lmMarkers.current) {
-        const el = m.getElement();
-        const tier = Number(el.dataset.tier);
-        el.style.display = tier === 1 ? '' : z >= 12.6 ? '' : 'none';
-      }
-    };
-    applyZoom();
-    map.on('zoom', applyZoom);
-    return () => { map.off('zoom', applyZoom); lmMarkers.current.forEach((m) => m.remove()); lmMarkers.current = []; };
-  }, [landmarks, lang]);
+    const onMove = () => renderLandmarks();
+    map.on('moveend', onMove);
+    renderLandmarks();
+    return () => { map.off('moveend', onMove); lmPool.current.forEach((m) => m.remove()); lmPool.current.clear(); };
+  }, [landmarks, lmData, lang, lmCats]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
@@ -324,6 +344,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const apply = () => {
       map.setLayoutProperty('plots-3d', 'visibility', massing ? 'visible' : 'none');
       map.setLayoutProperty('plots-fill', 'visibility', massing ? 'none' : 'visible');
+      if (map.getLayer('ofm-3d-buildings')) map.setLayoutProperty('ofm-3d-buildings', 'visibility', earth ? 'visible' : 'none');
       // 3D terrain + atmospheric sky only in Earth mode
       try {
         if (earth) {
@@ -466,15 +487,21 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     };
   }, [editGeom]);
 
-  // ---------- measurement tool (distance + area) ----------
+  // ---------- measurement tool (straight distance/area + driving route) ----------
   const measurePts = useRef<number[][]>([]);
+  const routeTok = useRef(0);
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     if (!measuring) { measurePts.current = []; setMeasure({ dist: 0, area: 0, n: 0 }); return; }
+    const route = measureMode === 'route';
 
     map.addSource('ms-line', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
+    map.addSource('ms-route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
     map.addSource('ms-pts', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
     map.addLayer({ id: 'ms-fill', type: 'fill', source: 'ms-line', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#2E7D6B', 'fill-opacity': 0.14 } });
+    // road route: soft casing + solid line
+    map.addLayer({ id: 'ms-route-case', type: 'line', source: 'ms-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#FBFCFA', 'line-width': 7, 'line-opacity': 0.9 } });
+    map.addLayer({ id: 'ms-route-l', type: 'line', source: 'ms-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#2F6B3E', 'line-width': 4 } });
     map.addLayer({ id: 'ms-line-l', type: 'line', source: 'ms-line', paint: { 'line-color': '#2E7D6B', 'line-width': 2.4, 'line-dasharray': [2, 1] } });
     map.addLayer({ id: 'ms-pts-l', type: 'circle', source: 'ms-pts', paint: { 'circle-radius': 4.5, 'circle-color': '#FBFCFA', 'circle-stroke-color': '#2E7D6B', 'circle-stroke-width': 2 } });
     map.getCanvas().style.cursor = 'crosshair';
@@ -485,18 +512,44 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * toR) * Math.cos(b[1] * toR) * Math.sin(dLon / 2) ** 2;
       return 2 * R * Math.asin(Math.sqrt(s));
     };
+    const setSrc = (id: string, data: any) => (map.getSource(id) as maplibregl.GeoJSONSource)?.setData(data);
     const refresh = () => {
       const pts = measurePts.current;
       let dist = 0; for (let i = 1; i < pts.length; i++) dist += hav(pts[i - 1], pts[i]);
-      let area = 0; if (pts.length >= 3) area = geomArea({ type: 'Polygon', coordinates: [[...pts, pts[0]]] });
-      const lineGeom = pts.length >= 3
+      let area = 0; if (!route && pts.length >= 3) area = geomArea({ type: 'Polygon', coordinates: [[...pts, pts[0]]] });
+      const lineGeom = !route && pts.length >= 3
         ? { type: 'Polygon', coordinates: [[...pts, pts[0]]] }
         : { type: 'LineString', coordinates: pts.length ? pts : [] };
-      (map.getSource('ms-line') as maplibregl.GeoJSONSource)?.setData(pts.length ? { type: 'Feature', properties: {}, geometry: lineGeom } as any : { type: 'FeatureCollection', features: [] } as any);
-      (map.getSource('ms-pts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: pts.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } })) } as any);
-      setMeasure({ dist, area, n: pts.length });
+      setSrc('ms-line', pts.length ? { type: 'Feature', properties: {}, geometry: lineGeom } : { type: 'FeatureCollection', features: [] });
+      setSrc('ms-pts', { type: 'FeatureCollection', features: pts.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } })) });
+      setMeasure((m) => ({ ...m, dist, area, n: pts.length }));
     };
-    const onClick = (e: any) => { measurePts.current.push([e.lngLat.lng, e.lngLat.lat]); refresh(); };
+    // OSRM public server → real driving road path between the two points
+    const fetchRoute = async (a: number[], b: number[]) => {
+      const tok = ++routeTok.current;
+      setMeasure((m) => ({ ...m, routing: true, routeErr: false, routeDist: undefined, routeDur: undefined }));
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${a[0]},${a[1]};${b[0]},${b[1]}?overview=full&geometries=geojson`;
+        const r = await fetch(url); const j = await r.json();
+        if (tok !== routeTok.current) return;
+        const rt = j.routes?.[0];
+        if (!rt) throw new Error('no route');
+        setSrc('ms-route', { type: 'Feature', properties: {}, geometry: rt.geometry });
+        setSrc('ms-line', { type: 'FeatureCollection', features: [] }); // hide the straight preview
+        setMeasure((m) => ({ ...m, routing: false, routeDist: rt.distance, routeDur: rt.duration }));
+      } catch {
+        if (tok !== routeTok.current) return;
+        setMeasure((m) => ({ ...m, routing: false, routeErr: true }));
+      }
+    };
+    const onClick = (e: any) => {
+      const pt = [e.lngLat.lng, e.lngLat.lat];
+      if (route) {
+        if (measurePts.current.length >= 2) { measurePts.current = []; setSrc('ms-route', { type: 'FeatureCollection', features: [] }); setMeasure((m) => ({ ...m, routeDist: undefined, routeDur: undefined, routeErr: false })); }
+        measurePts.current.push(pt); refresh();
+        if (measurePts.current.length === 2) fetchRoute(measurePts.current[0], measurePts.current[1]);
+      } else { measurePts.current.push(pt); refresh(); }
+    };
     const onDbl = (e: any) => { e.preventDefault(); };
     map.on('click', onClick);
     map.on('dblclick', onDbl);
@@ -504,13 +557,18 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
     return () => {
       map.off('click', onClick); map.off('dblclick', onDbl);
-      ['ms-fill', 'ms-line-l', 'ms-pts-l'].forEach((l) => map.getLayer(l) && map.removeLayer(l));
-      ['ms-line', 'ms-pts'].forEach((s) => map.getSource(s) && map.removeSource(s));
+      ['ms-fill', 'ms-route-case', 'ms-route-l', 'ms-line-l', 'ms-pts-l'].forEach((l) => map.getLayer(l) && map.removeLayer(l));
+      ['ms-line', 'ms-route', 'ms-pts'].forEach((s) => map.getSource(s) && map.removeSource(s));
       map.getCanvas().style.cursor = '';
     };
-  }, [measuring]);
+  }, [measuring, measureMode]);
 
-  const clearMeasure = () => { measurePts.current = []; const map = mapRef.current; if (map) { (map.getSource('ms-line') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any); (map.getSource('ms-pts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any); } setMeasure({ dist: 0, area: 0, n: 0 }); };
+  const clearMeasure = () => {
+    measurePts.current = []; routeTok.current++;
+    const map = mapRef.current;
+    if (map) ['ms-line', 'ms-route', 'ms-pts'].forEach((s) => (map.getSource(s) as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any));
+    setMeasure({ dist: 0, area: 0, n: 0 });
+  };
 
   // ---------- create a new plot (draw a polygon) ----------
   const createRing = useRef<number[][]>([]);
@@ -709,24 +767,36 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       {measuring && (
         <div className="meas-panel" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <div className="meas-title">{t('meas.title', lang)}</div>
-          <div className="meas-readout">
-            <div className="meas-stat"><span className="meas-l">{t('meas.distance', lang)}</span><b>{measure.dist >= 1000 ? `${(measure.dist / 1000).toFixed(2)} km` : `${Math.round(measure.dist)} m`}</b></div>
-            <div className="meas-stat"><span className="meas-l">{t('meas.area', lang)}</span><b>{measure.area >= 1e4 ? `${(measure.area / 1e4).toFixed(2)} ha` : `${Math.round(measure.area)} m²`}</b></div>
+          <div className="meas-seg">
+            <button className={measureMode === 'line' ? 'on' : ''} onClick={() => useApp.getState().setMeasureMode('line')}>{t('meas.modeLine', lang)}</button>
+            <button className={measureMode === 'route' ? 'on' : ''} onClick={() => useApp.getState().setMeasureMode('route')}>{t('meas.modeRoute', lang)}</button>
           </div>
-          {measure.dist > 0 && (
-            <div className="meas-time">
-              <div className="meas-time-h">{t('meas.time', lang)} <span className="meas-est">({t('meas.est', lang)})</span></div>
-              <div className="meas-time-row">
-                <span className="mt-mode"><IconWalk size={14} /> {t('meas.walk', lang)}</span>
-                <b>{fmtDuration(measure.dist / 1.39, lang)}</b>
+
+          {measureMode === 'line' ? (
+            <>
+              <div className="meas-readout">
+                <div className="meas-stat"><span className="meas-l">{t('meas.distance', lang)}</span><b>{measure.dist >= 1000 ? `${(measure.dist / 1000).toFixed(2)} km` : `${Math.round(measure.dist)} m`}</b></div>
+                <div className="meas-stat"><span className="meas-l">{t('meas.area', lang)}</span><b>{measure.area >= 1e4 ? `${(measure.area / 1e4).toFixed(2)} ha` : `${Math.round(measure.area)} m²`}</b></div>
               </div>
-              <div className="meas-time-row">
-                <span className="mt-mode"><IconCar size={14} /> {t('meas.drive', lang)}</span>
-                <b>{fmtDuration(measure.dist / 11.1, lang)}</b>
-              </div>
+              {measure.dist > 0 && (
+                <div className="meas-time">
+                  <div className="meas-time-h">{t('meas.time', lang)} <span className="meas-est">({t('meas.est', lang)})</span></div>
+                  <div className="meas-time-row"><span className="mt-mode"><IconWalk size={14} /> {t('meas.walk', lang)}</span><b>{fmtDuration(measure.dist / 1.39, lang)}</b></div>
+                  <div className="meas-time-row"><span className="mt-mode"><IconCar size={14} /> {t('meas.drive', lang)}</span><b>{fmtDuration(measure.dist / 11.1, lang)}</b></div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="meas-readout">
+              <div className="meas-stat"><span className="meas-l"><IconCar size={14} /> {t('meas.roadDist', lang)}</span>
+                <b>{measure.routing ? '…' : measure.routeDist != null ? (measure.routeDist >= 1000 ? `${(measure.routeDist / 1000).toFixed(2)} km` : `${Math.round(measure.routeDist)} m`) : '—'}</b></div>
+              <div className="meas-stat"><span className="meas-l"><IconClock size={14} /> {t('meas.roadTime', lang)}</span>
+                <b>{measure.routing ? '…' : measure.routeDur != null ? fmtDuration(measure.routeDur, lang) : '—'}</b></div>
+              {measure.routeErr && <div className="meas-err">{t('meas.routeErr', lang)}</div>}
             </div>
           )}
-          <div className="meas-hint">{measure.n < 2 ? t('meas.twoPts', lang) : t('meas.hint', lang)}</div>
+
+          <div className="meas-hint">{measureMode === 'route' ? t('meas.routeHint', lang) : measure.n < 2 ? t('meas.twoPts', lang) : t('meas.hint', lang)}</div>
           <div className="meas-acts">
             <button className="btn sm" onClick={clearMeasure}>{t('meas.clear', lang)}</button>
             <button className="btn sm primary" onClick={() => useApp.getState().setMeasuring(false)}>{t('meas.done', lang)}</button>

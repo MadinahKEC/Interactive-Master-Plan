@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { LAND_USES, type PlotProps, type SectorKey } from '@kec/types';
 import type { Lang } from './lib/domain';
+import { LM_CAT_KEYS } from './lib/landmarks';
 
 export type Basemap = 'light' | 'satellite';
 export type Dim = '2d' | '3d' | 'earth';
@@ -34,8 +35,10 @@ export interface AppState {
   annotateMode: 'off' | 'text' | 'arrow' | 'rect';
   annotateColor: string;
   measuring: boolean;             // map measurement tool active
+  measureMode: 'line' | 'route';  // straight polyline vs. driving route
   labels: boolean;                // force plot-code labels on the map
   landmarks: boolean;             // show Madinah city landmarks
+  lmCats: Set<string>;            // enabled landmark categories
   creating: boolean;              // draw-a-new-plot mode
   zoomCode: string | null;        // plot to zoom to
   zoomToken: number;              // bump to trigger a zoom to zoomCode
@@ -63,8 +66,10 @@ export interface AppState {
   setAnnotateColor: (c: string) => void;
   toggleMeasure: () => void;
   setMeasuring: (v: boolean) => void;
+  setMeasureMode: (m: 'line' | 'route') => void;
   toggleLabels: () => void;
   toggleLandmarks: () => void;
+  toggleLmCat: (key: string) => void;
   setCreating: (v: boolean) => void;
   requestZoom: (code: string) => void;
   reveal: () => void;
@@ -90,8 +95,10 @@ export const useApp = create<AppState>((set) => ({
   annotateMode: 'off',
   annotateColor: '#B5462F',
   measuring: false,
+  measureMode: 'line',
   labels: false,
   landmarks: true,
+  lmCats: new Set(LM_CAT_KEYS),
   creating: false,
   zoomCode: null,
   zoomToken: 0,
@@ -125,8 +132,10 @@ export const useApp = create<AppState>((set) => ({
   setAnnotateColor: (annotateColor) => set({ annotateColor }),
   toggleMeasure: () => set((s) => ({ measuring: !s.measuring, annotateMode: 'off' })),
   setMeasuring: (measuring) => set({ measuring }),
+  setMeasureMode: (measureMode) => set({ measureMode }),
   toggleLabels: () => set((s) => ({ labels: !s.labels })),
   toggleLandmarks: () => set((s) => ({ landmarks: !s.landmarks })),
+  toggleLmCat: (key) => set((s) => { const lmCats = new Set(s.lmCats); lmCats.has(key) ? lmCats.delete(key) : lmCats.add(key); return { lmCats }; }),
   setCreating: (creating) => set({ creating, measuring: false, annotateMode: 'off' }),
   requestZoom: (code) => set((s) => ({ zoomCode: code, zoomToken: s.zoomToken + 1 })),
   reveal: () => set((s) => ({ revealToken: s.revealToken + 1 })),

@@ -172,6 +172,15 @@ export const DICT: Record<string, Entry> = {
   'd.status':        { ar: 'الحالة', en: 'Status' },
   'tb.measure':      { ar: 'القياس', en: 'Measure' },
   'tb.earth':        { ar: 'عرض ثلاثي الأبعاد (Earth)', en: '3D Earth view' },
+  'tb.layers':       { ar: 'الطبقات والعرض', en: 'Layers & view' },
+  'lf.title':        { ar: 'الطبقات والعرض', en: 'Layers & view' },
+  'lf.overlays':     { ar: 'الطبقات المعروضة', en: 'Overlays' },
+  'view.2d':         { ar: 'مسطّح 2D', en: '2D' },
+  'view.3d':         { ar: 'مجسّمات 3D', en: '3D Massing' },
+  'view.earth':      { ar: 'الأرض 3D', en: '3D Earth' },
+  'view.2dHint':     { ar: 'عرض علوي مسطّح للمخطط', en: 'Flat top-down plan view' },
+  'view.3dHint':     { ar: 'إبراز مجسّمات القطع حسب الارتفاع', en: 'Extruded plot volumes by height' },
+  'view.earthHint':  { ar: 'صور قمر صناعية فوق تضاريس ومبانٍ ثلاثية الأبعاد', en: 'Satellite over real terrain + 3D buildings' },
   'tb.labels':       { ar: 'إظهار أرقام البلوتات', en: 'Show plot numbers' },
   'cp.landmarks':    { ar: 'إظهار معالم المدينة المنورة', en: 'Show Madinah landmarks' },
   'sec.invest':      { ar: 'أبرز المؤشرات الاستثمارية', en: 'Investment highlights' },
@@ -211,6 +220,12 @@ export const DICT: Record<string, Entry> = {
   'meas.drive':      { ar: 'بالسيارة', en: 'Driving' },
   'meas.est':        { ar: 'تقديري', en: 'est.' },
   'meas.twoPts':     { ar: 'انقر نقطتين لقياس المسافة والزمن بينهما', en: 'Click two points for distance & time between them' },
+  'meas.modeLine':   { ar: 'مسافة ومساحة', en: 'Distance & area' },
+  'meas.modeRoute':  { ar: 'مسار السيارة', en: 'Driving route' },
+  'meas.roadDist':   { ar: 'مسافة الطريق', en: 'Road distance' },
+  'meas.roadTime':   { ar: 'زمن القيادة', en: 'Drive time' },
+  'meas.routeHint':  { ar: 'انقر نقطة البداية ثم الوجهة — سيُرسم مسار الطريق الفعلي', en: 'Click start then destination — the real road path is drawn' },
+  'meas.routeErr':   { ar: 'تعذّر جلب المسار، حاول مجدداً', en: 'Could not fetch the route, try again' },
   'af.title':        { ar: 'فلترة متقدمة', en: 'Advanced filters' },
   'af.area':         { ar: 'المساحة (م²)', en: 'Area (m²)' },
   'af.gfa':          { ar: 'GFA', en: 'GFA' },
@@ -412,22 +427,17 @@ export const INVEST_FIELDS: InvestField[] = [
 ];
 
 const nfInv = new Intl.NumberFormat('en-US');
-const nfCompact = (v: number) =>
-  Math.abs(v) >= 1e9 ? (v / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'
-  : Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M'
-  : Math.abs(v) >= 1e3 ? (v / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'K'
-  : nfInv.format(v);
-/** Format an investment value with a compact unit suffix, for the card KPI grid. */
+/** Format an investment value with full thousands separators + a unit suffix. */
 export function fmtInvest(v: number, unit: InvUnit, lang: Lang): string {
   const sar = lang === 'ar' ? 'ر.س' : 'SAR';
   switch (unit) {
-    case 'sar': return `${nfCompact(v)} ${sar}`;
+    case 'sar': return `${nfInv.format(Math.round(v))} ${sar}`;
     case 'sqm': return `${nfInv.format(Math.round(v))} ${lang === 'ar' ? 'م²' : 'm²'}`;
     case 'num': return nfInv.format(Math.round(v));
-    case 'pct': return `${(+v.toFixed(2)).toString()}%`;
-    case 'yr': return `${(+v.toFixed(1)).toString()} ${lang === 'ar' ? 'سنة' : 'yrs'}`;
-    case 'x': return `${(+v.toFixed(2)).toString()}×`;
-    default: return String(v);
+    case 'pct': return `${nfInv.format(+v.toFixed(2))}%`;
+    case 'yr': return `${nfInv.format(+v.toFixed(1))} ${lang === 'ar' ? 'سنة' : 'yrs'}`;
+    case 'x': return `${nfInv.format(+v.toFixed(2))}×`;
+    default: return nfInv.format(v);
   }
 }
 

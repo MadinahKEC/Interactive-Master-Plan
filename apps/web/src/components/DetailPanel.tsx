@@ -46,7 +46,6 @@ export function DetailPanel({
   const devDesc = (lang === 'ar' ? pr.overlay.devplan_ar : pr.overlay.devplan_en)?.trim();
   const hasDevDesc = Boolean(devDesc);
   const inv = pr.overlay.investment;
-  const invEntries = inv ? INVEST_FIELDS.filter((fld) => { const v = inv[fld.key]; return v != null && !Number.isNaN(v); }) : [];
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
   const addToPlan = () => {
@@ -81,7 +80,7 @@ export function DetailPanel({
             <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
             <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
           </div>
-          {pr.overlay.purchase_date && <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date}</b></div>}
+          <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date || '—'}</b></div>
           {mergeRec && (
             <div className="own-merge">
               <div className="merge-contains">
@@ -97,34 +96,6 @@ export function DetailPanel({
           )}
         </Section>
 
-        {(phases.length > 0 || hasDevDesc || canAttr) && (
-          <Section title={t('sec.devplan', lang)}>
-            {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
-            {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
-            {phases.length === 0 && !hasDevDesc && canAttr && (
-              <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
-            )}
-            {canAttr && phases.length > 0 && (
-              <div className="dp-manage">
-                <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
-              </div>
-            )}
-          </Section>
-        )}
-
-        {invEntries.length > 0 && (
-          <Section title={t('sec.invest', lang)}>
-            <div className="inv-grid">
-              {invEntries.map((fld) => (
-                <div className="inv-cell" key={fld.key}>
-                  <div className="inv-v">{fmtInvest(inv![fld.key]!, fld.unit, lang)}</div>
-                  <div className="inv-l">{lang === 'ar' ? fld.ar : fld.en}</div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-
         <Section title={t('sec.project', lang)}>
           <div className="sb-caption">{t('sec.stage', lang)}</div>
           <StageBar lang={lang} stageKey={pr.overlay.stage} />
@@ -133,6 +104,34 @@ export function DetailPanel({
           {summary && <p className="d-summary">{summary}</p>}
           {pr.overlay.gallery && pr.overlay.gallery.length > 0 && (
             <Carousel images={pr.overlay.gallery} />
+          )}
+        </Section>
+
+        <Section title={t('sec.invest', lang)}>
+          <div className="inv-grid">
+            {INVEST_FIELDS.map((fld) => {
+              const v = inv?.[fld.key];
+              const has = v != null && !Number.isNaN(v);
+              return (
+                <div className={`inv-cell ${has ? '' : 'empty'}`} key={fld.key}>
+                  <div className="inv-v">{has ? fmtInvest(v!, fld.unit, lang) : '—'}</div>
+                  <div className="inv-l">{lang === 'ar' ? fld.ar : fld.en}</div>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+
+        <Section title={t('sec.devplan', lang)}>
+          {hasDevDesc ? <p className="dp-desc">{devDesc}</p> : <p className="dp-desc muted">{t('dp.noPlan', lang)}</p>}
+          {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
+          {canAttr && phases.length === 0 && !hasDevDesc && (
+            <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
+          )}
+          {canAttr && phases.length > 0 && (
+            <div className="dp-manage">
+              <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
+            </div>
           )}
         </Section>
 
