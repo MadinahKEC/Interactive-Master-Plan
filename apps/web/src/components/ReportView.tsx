@@ -48,6 +48,13 @@ export function ReportView({ data, landUses, projects }: {
   const pad = (x: number) => String(x).padStart(2, '0');
   const ref = `KEC-MP-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   const dl = () => { const a = document.createElement('a'); a.href = reportImage; a.download = `${ref}.png`; a.click(); };
+  const company = lang === 'ar' ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City';
+  const printPdf = () => {
+    const prev = document.title;
+    document.title = `${company} — ${t('report.title', lang)} — ${ref}`;
+    window.print();
+    setTimeout(() => { document.title = prev; }, 800);
+  };
   // report scope line (which filters produced this view)
   const scopeBits: string[] = [];
   if (state.sector !== 'all') scopeBits.push(lang === 'ar' ? `قطاع ${state.sector}` : `${state.sector} sector`);
@@ -62,7 +69,7 @@ export function ReportView({ data, landUses, projects }: {
       <div className="report-toolbar">
         <button className="btn" onClick={() => setReportImage(null)}><IconClose size={15} /> {t('report.close', lang)}</button>
         <button className="btn" onClick={dl}>⬇ {t('report.dl', lang)}</button>
-        <button className="btn primary" onClick={() => window.print()}>🖨 {t('report.print', lang)}</button>
+        <button className="btn primary" onClick={printPdf}>🖨 {t('report.print', lang)}</button>
       </div>
 
       <div className="report-sheet report-print">

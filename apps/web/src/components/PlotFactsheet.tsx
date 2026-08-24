@@ -30,7 +30,14 @@ export function PlotFactsheet({ plot, projects, landUses, onClose }: {
   const lic = LICENSE_STAGES.find((x) => x.key === o.license);
   const summary = lang === 'ar' ? o.summary_ar : o.summary_en;
   const gallery = o.gallery ?? [];
-  const dl = () => window.print();
+  const company = lang === 'ar' ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City';
+  // The browser uses document.title as the default "Save as PDF" filename.
+  const dl = () => {
+    const prev = document.title;
+    document.title = `${title} — ${company}`;
+    window.print();
+    setTimeout(() => { document.title = prev; }, 800);
+  };
 
   const Cell = ({ l, v }: { l: string; v: string }) => (<div className="pf-cell"><span className="pf-l">{l}</span><span className="pf-v">{v}</span></div>);
 
