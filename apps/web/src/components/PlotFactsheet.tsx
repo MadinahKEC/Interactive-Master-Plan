@@ -5,6 +5,7 @@ import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, t, type ProjectInfo } 
 import { StageBar } from './StageBar';
 import type { EffLandUse } from '../lib/effective';
 import { IconClose, IconOwner } from './icons';
+import { useBackClose } from '../lib/backstack';
 
 const nf = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
@@ -13,6 +14,7 @@ export function PlotFactsheet({ plot, projects, landUses, onClose }: {
   plot: PlotProps; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onClose: () => void;
 }) {
   const lang = (document.documentElement.lang === 'ar' ? 'ar' : 'en') as 'ar' | 'en';
+  useBackClose(true, onClose, 100);
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);

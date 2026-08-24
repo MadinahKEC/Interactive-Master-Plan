@@ -136,3 +136,20 @@
 .dpv-gantt{display:flex;flex-direction:column;gap:7px;border-top:1px dashed var(--kec-hairline);padding-top:12px}
 .dpv-gantt .dp-track{grid-template-columns:160px 1fr 150px}
 .dp-pdate{font-size:10px;color:var(--kec-muted);white-space:nowrap}
+
+/* ===== Mobile: admin console + editor ===== */
+@media (max-width: 768px) {
+  .admin-head{height:52px;padding:0 12px}
+  .admin-brand b{font-size:15px}
+  .admin-main{flex-direction:column}
+  .admin-nav{width:auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;border-inline-end:0;border-bottom:1px solid var(--kec-hairline);gap:6px;padding:8px 10px}
+  .admin-nav button{white-space:nowrap;padding:9px 12px}
+  .admin-nav .ni{font-size:15px}
+  .admin-content{padding:14px 12px}
+  .admin-search{width:100%}
+  .admin-table{font-size:12px}
+  .admin-table thead th,.admin-table tbody td{padding:8px 10px}
+  /* editor slide-over becomes a full-width sheet */
+  .editor{width:100%;max-width:100%}
+  .editor-body{padding:14px}
+}

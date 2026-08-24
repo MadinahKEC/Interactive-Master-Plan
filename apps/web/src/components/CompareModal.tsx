@@ -6,6 +6,7 @@ import { useApp } from '../store';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
 import type { EffLandUse } from '../lib/effective';
 import { IconClose, IconZoom } from './icons';
+import { useBackClose } from '../lib/backstack';
 
 const nf = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
@@ -14,6 +15,7 @@ export function CompareModal({ codes, data, projects, landUses, onClose }: {
   codes: string[]; data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onClose: () => void;
 }) {
   const { lang, select, requestZoom } = useApp();
+  useBackClose(true, onClose, 100);
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', k);

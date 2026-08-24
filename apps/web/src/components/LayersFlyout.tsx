@@ -1,6 +1,7 @@
 import { useApp } from '../store';
 import { t } from '../lib/domain';
 import { LM_CATEGORIES } from '../lib/landmarks';
+import { useBackClose } from '../lib/backstack';
 import { IconLabel, IconLandmark } from './icons';
 
 /**
@@ -11,6 +12,7 @@ import { IconLabel, IconLandmark } from './icons';
 export function LayersFlyout({ onClose }: { onClose: () => void }) {
   const { lang, basemap, dim, labels, landmarks, lmCats, setBasemap, setDim, toggleLabels, toggleLandmarks, toggleLmCat } = useApp();
   const rtl = lang === 'ar';
+  useBackClose(true, onClose, 50);
 
   return (
     <>

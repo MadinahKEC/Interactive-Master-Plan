@@ -14,6 +14,7 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
   const { lang, sector, uses, planOnly, adv, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
   const plannedCount = useMemo(() => data.features.filter((f) => f.properties.planStatus).length, [data]);
   const [advOpen, setAdvOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false); // mobile bottom-sheet expand
 
   const sectorCounts = useMemo(() => {
     const c: Record<string, number> = { all: 0 };
@@ -60,7 +61,8 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
   const sectorOrder: (SectorKey | 'all')[] = ['all', 'North', 'South', 'Central', 'East', 'West'];
 
   return (
-    <div className="panel" id="controls">
+    <div className={`panel ${sheetOpen ? 'sheet-open' : 'sheet-peek'}`} id="controls">
+      <button className="cp-handle" onClick={() => setSheetOpen((o) => !o)} aria-label="toggle filters"><span className="cp-grip" /></button>
       <div className="ctl-scroll">
         <div className="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>

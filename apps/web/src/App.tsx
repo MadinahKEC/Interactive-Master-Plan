@@ -15,6 +15,7 @@ import { Login } from './components/Login';
 import { ShortcutsHelp } from './components/ShortcutsHelp';
 import { Tour } from './components/Tour';
 import { DialogHost, useDialog } from './lib/dialog';
+import { useBackClose } from './lib/backstack';
 import { useUrlSync } from './lib/urlState';
 import { usePlots } from './lib/usePlots';
 import { useProjects, t } from './lib/domain';
@@ -45,6 +46,26 @@ export default function App() {
   const landUses = useMemo(() => effectiveLandUses(luOver), [luOver]);
 
   useUrlSync(data);
+
+  // Back button / edge-swipe closes the top-most overlay (mobile-friendly).
+  const selected = useApp((s) => s.selected);
+  const multi = useApp((s) => s.multi);
+  const measuring = useApp((s) => s.measuring);
+  const creating = useApp((s) => s.creating);
+  const editGeom = useApp((s) => s.editGeom);
+  const reportImage = useApp((s) => s.reportImage);
+  const dialogSpec = useDialog((s) => s.spec);
+  useBackClose(!!dialogSpec, () => useDialog.getState().close({ value: null, fields: {} }), 200);
+  useBackClose(!!subdivideCode, () => setSubdivideCode(null), 90);
+  useBackClose(adminOpen, () => { setAdminOpen(false); setEditCode(null); useApp.getState().reveal(); }, 80);
+  useBackClose(devOpen, () => { setDevOpen(false); useApp.getState().reveal(); }, 70);
+  useBackClose(reportImage !== null, () => useApp.getState().setReportImage(null), 60);
+  useBackClose(helpOpen, () => setHelpOpen(false), 55);
+  useBackClose(!!editGeom, () => useApp.getState().setEditGeom(null), 45);
+  useBackClose(creating, () => useApp.getState().setCreating(false), 44);
+  useBackClose(measuring, () => useApp.getState().setMeasuring(false), 42);
+  useBackClose(multi.length > 0, () => useApp.getState().clearMulti(), 20);
+  useBackClose(!!selected, () => useApp.getState().select(null), 10);
 
   // First-visit onboarding tour (after login, once the UI is on screen).
   useEffect(() => {

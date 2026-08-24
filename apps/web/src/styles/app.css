@@ -741,3 +741,64 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .tb-user{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--kec-muted);padding-inline-start:6px}
 .tb-user b{color:var(--kec-title);font-weight:600}
 .tb-user .role{font-size:9px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:20px;padding:2px 7px}
+
+/* ===== Mobile / touch (phones & small tablets) ===== */
+.cp-handle{display:none}
+@media (max-width: 768px) {
+  :root{--rail-w:52px}
+  #topbar{height:50px;padding-inline:10px}
+  .rail{width:var(--rail-w);padding-top:8px}
+  .rail-btn{width:38px;height:38px}
+  .rail-brand{width:36px;height:36px}
+  .rail-brand img{width:26px;height:26px}
+  .rail-sep{margin:5px 0}
+
+  /* Panels become bottom sheets spanning from the rail to the right edge */
+  #controls, #detail, #multi{
+    top:auto; bottom:0; inset-inline-start:var(--rail-w); inset-inline-end:0; width:auto; max-width:none;
+    border-radius:16px 16px 0 0; border-top:1px solid var(--kec-hairline);
+    box-shadow:0 -10px 34px rgba(20,61,30,.2);
+  }
+  #detail{z-index:40; max-height:86vh}
+  #multi{z-index:38; max-height:76vh}
+  #controls{z-index:16}
+  /* clear the iOS home indicator */
+  #detail .d-actions, #controls .ctl-scroll, #multi{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  /* control panel collapses to a peek with a drag handle */
+  #controls .cp-handle{display:flex;align-items:center;justify-content:center;height:22px;padding-top:4px;background:transparent;border:0;cursor:pointer;flex:none}
+  #controls .cp-grip{width:42px;height:4px;border-radius:3px;background:var(--kec-hairline)}
+  #controls.sheet-peek{max-height:128px}
+  #controls.sheet-open{max-height:82vh}
+  .ctl-scroll{padding:8px 12px 14px}
+  .d-scroll{overscroll-behavior:contain}
+
+  /* Layers flyout + measure panel → bottom sheets */
+  .layers-flyout{top:auto;bottom:0;inset-inline-start:var(--rail-w);inset-inline-end:0;width:auto;max-width:none;max-height:72vh;border-radius:16px 16px 0 0}
+  .meas-panel{top:auto;bottom:0;inset-inline-start:var(--rail-w);inset-inline-end:0;width:auto;border-radius:16px 16px 0 0}
+
+  /* Modals → bottom sheets */
+  .modal-wrap{padding:0;align-items:flex-end}
+  .modal{width:100%;max-width:100%;max-height:90vh;border-radius:16px 16px 0 0}
+  .dlg-wrap{padding:16px;align-items:center}
+  .dlg-wrap .modal{border-radius:16px}
+
+  /* Full-screen overlays fit the small viewport */
+  .report-overlay{padding:12px 6px 20px}
+  .editor{width:100%;max-width:100%}
+
+  /* Floating bars clear the rail and shrink to fit */
+  .sl-bar{left:calc(var(--rail-w) + 8px);right:8px;transform:none;max-width:none;bottom:12px}
+  .geo-toolbar{left:calc(var(--rail-w) + 8px);right:8px;transform:none;width:auto;flex-wrap:wrap;justify-content:center;gap:10px}
+  .credit{display:none}
+  .powered{font-size:9px;inset-inline-end:8px}
+
+  /* phase editor row: name full-width, then dates / status wrap to two columns */
+  .ph-row{grid-template-columns:1fr 1fr}
+  .ph-row .ph-name{grid-column:1 / -1}
+}
+
+/* very small phones: keep the map usable behind sheets */
+@media (max-width: 768px) and (max-height: 680px) {
+  #detail{max-height:80vh}
+  #controls.sheet-open{max-height:74vh}
+}

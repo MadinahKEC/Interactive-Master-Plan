@@ -4,12 +4,14 @@ import QRCode from 'qrcode';
 import { useApp } from '../store';
 import { t } from '../lib/domain';
 import { IconClose, IconCopy, IconDownload } from './icons';
+import { useBackClose } from '../lib/backstack';
 
 /** Themed share sheet: shareable link + KEC-coloured QR code for the current view. */
 export function ShareModal({ url, title, onClose }: { url: string; title?: string; onClose: () => void }) {
   const { lang } = useApp();
   const [svg, setSvg] = useState('');
   const [copied, setCopied] = useState(false);
+  useBackClose(true, onClose, 100);
 
   useEffect(() => {
     QRCode.toString(url, { type: 'svg', margin: 1, width: 220, color: { dark: '#143D1E', light: '#00000000' } })
