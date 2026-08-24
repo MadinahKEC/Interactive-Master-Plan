@@ -1,0 +1,17 @@
+{
+  "name": "KEC Interactive Master Plan",
+  "short_name": "KEC Plan",
+  "description": "Knowledge Economic City — interactive GIS master plan",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0C2E1B",
+  "theme_color": "#2F6B3E",
+  "lang": "ar",
+  "dir": "rtl",
+  "icons": [
+    { "src": "KEC.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "KEC.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }
+  ]
+}

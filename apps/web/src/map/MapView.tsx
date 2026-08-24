@@ -153,7 +153,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
     // single = details only; ctrl = multi; double = zoom
     map.on('click', HIT, (e) => {
-      if (useApp.getState().editGeom || useApp.getState().measuring || modeRef.current !== 'off') return;
+      if (useApp.getState().editGeom || useApp.getState().measuring || useApp.getState().creating || modeRef.current !== 'off') return;
       const p = e.features?.[0]?.properties as PlotProps | undefined; if (!p) return;
       const ctrl = (e.originalEvent as MouseEvent).ctrlKey || (e.originalEvent as MouseEvent).metaKey;
       if (ctrl) { if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; } useApp.getState().toggleMulti(p.code); return; }
@@ -201,7 +201,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, labels } = useApp();
+  const { sector, uses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, labels, creating } = useApp();
   const [measure, setMeasure] = useState<{ dist: number; area: number; n: number }>({ dist: 0, area: 0, n: 0 });
 
   // capture a map snapshot for the report
@@ -445,6 +445,63 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
   const clearMeasure = () => { measurePts.current = []; const map = mapRef.current; if (map) { (map.getSource('ms-line') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any); (map.getSource('ms-pts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] } as any); } setMeasure({ dist: 0, area: 0, n: 0 }); };
 
+  // ---------- create a new plot (draw a polygon) ----------
+  const createRing = useRef<number[][]>([]);
+  const [createN, setCreateN] = useState(0);
+  useEffect(() => {
+    const map = mapRef.current; if (!map) return;
+    if (!creating) { createRing.current = []; setCreateN(0); return; }
+    map.addSource('cr-poly', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
+    map.addSource('cr-verts', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } as any });
+    map.addLayer({ id: 'cr-fill', type: 'fill', source: 'cr-poly', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#9A8A1E', 'fill-opacity': 0.18 } });
+    map.addLayer({ id: 'cr-line', type: 'line', source: 'cr-poly', paint: { 'line-color': '#9A8A1E', 'line-width': 2.4, 'line-dasharray': [2, 1] } });
+    map.addLayer({ id: 'cr-verts-l', type: 'circle', source: 'cr-verts', paint: { 'circle-radius': 5, 'circle-color': '#FBFCFA', 'circle-stroke-color': '#9A8A1E', 'circle-stroke-width': 2.2 } });
+    map.getCanvas().style.cursor = 'crosshair';
+    const refresh = () => {
+      const r = createRing.current;
+      const geom = r.length >= 3 ? { type: 'Polygon', coordinates: [[...r, r[0]]] } : { type: 'LineString', coordinates: r };
+      (map.getSource('cr-poly') as maplibregl.GeoJSONSource)?.setData(r.length ? { type: 'Feature', properties: {}, geometry: geom } as any : { type: 'FeatureCollection', features: [] } as any);
+      (map.getSource('cr-verts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: r.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } })) } as any);
+      setCreateN(r.length);
+    };
+    const onClick = (e: any) => { createRing.current.push([e.lngLat.lng, e.lngLat.lat]); refresh(); };
+    map.on('click', onClick);
+    refresh();
+    return () => {
+      map.off('click', onClick);
+      ['cr-fill', 'cr-line', 'cr-verts-l'].forEach((l) => map.getLayer(l) && map.removeLayer(l));
+      ['cr-poly', 'cr-verts'].forEach((s) => map.getSource(s) && map.removeSource(s));
+      map.getCanvas().style.cursor = '';
+    };
+  }, [creating]);
+
+  const undoCreatePt = () => { createRing.current.pop(); const map = mapRef.current; if (!map) return; const r = createRing.current; const geom = r.length >= 3 ? { type: 'Polygon', coordinates: [[...r, r[0]]] } : { type: 'LineString', coordinates: r }; (map.getSource('cr-poly') as maplibregl.GeoJSONSource)?.setData(r.length ? { type: 'Feature', properties: {}, geometry: geom } as any : { type: 'FeatureCollection', features: [] } as any); (map.getSource('cr-verts') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: r.map((p) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: p } })) } as any); setCreateN(r.length); };
+
+  const saveCreate = async () => {
+    const r = createRing.current; if (r.length < 3) return;
+    const geom: any = { type: 'Polygon', coordinates: [[...r, r[0]]] };
+    const area = Math.round(geomArea(geom));
+    const lang = useApp.getState().lang;
+    const nf = new Intl.NumberFormat('en-US');
+    const dfltCode = 'NEW-' + Date.now().toString(36).slice(-4).toUpperCase();
+    const res = await useDialog.getState().open({
+      title: t('cr.title', lang),
+      dir: lang === 'ar' ? 'rtl' : 'ltr',
+      body: (<p style={{ margin: 0 }}>{t('cr.area', lang)}: <b>{nf.format(area)} m²</b></p>),
+      fields: [
+        { key: 'code', label: t('cr.code', lang), value: dfltCode },
+        { key: 'name', label: t('a.nameEn', lang), value: '' },
+      ],
+      buttons: [{ label: t('a.cancel', lang), value: 'cancel' }, { label: t('cr.save', lang), value: 'ok', variant: 'primary' }],
+    });
+    if (res.value !== 'ok') return;
+    const code = (res.fields.code || '').trim() || dfltCode;
+    const firstLu = Object.keys(LAND_USES)[0];
+    useOverrides.getState().addCreatedPlot({ code, name_en: res.fields.name || undefined, land_use: firstLu, sector: 'Central', area, geometry: geom });
+    useApp.getState().setCreating(false);
+    setTimeout(() => { const f = dataRef.current?.features.find((x) => x.properties.code === code); if (f) { useApp.getState().select(f.properties); useApp.getState().requestZoom(code); } }, 250);
+  };
+
   const saveShape = async () => {
     const meta = editMeta.current; if (!meta) return;
     const ring = [...editRing.current, editRing.current[0]];
@@ -569,6 +626,16 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
             <button className="btn" onClick={resetShape}>{t('g.reset', lang)}</button>
             <button className="btn" onClick={() => useApp.getState().setEditGeom(null)}>{t('g.cancel', lang)}</button>
             <button className="btn primary" onClick={saveShape}>{t('g.save', lang)}</button>
+          </div>
+        </div>
+      )}
+      {creating && (
+        <div className="geo-toolbar">
+          <span className="geo-hint">{t('cr.hint', lang)} · {createN} {t('cr.points', lang)}</span>
+          <div className="geo-actions">
+            <button className="btn" disabled={createN === 0} onClick={undoCreatePt}>{t('cr.undo', lang)}</button>
+            <button className="btn" onClick={() => useApp.getState().setCreating(false)}>{t('g.cancel', lang)}</button>
+            <button className="btn primary" disabled={createN < 3} onClick={saveCreate}>{t('cr.save', lang)}</button>
           </div>
         </div>
       )}

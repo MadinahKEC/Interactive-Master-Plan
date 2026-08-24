@@ -3,11 +3,11 @@ import { can } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { t } from '../lib/domain';
-import { IconHome, IconCalendar, IconAdmin, IconLayers, IconSatellite, IconCube, IconPower, IconTag, IconExport, IconRuler } from './icons';
+import { IconHome, IconCalendar, IconAdmin, IconLayers, IconSatellite, IconCube, IconPower, IconTag, IconExport, IconRuler, IconPlus } from './icons';
 
 /** Vertical icon rail: primary navigation + map tools. */
 export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => void; onOpenDevPlan: () => void }) {
-  const { lang, basemap, dim, annotateMode, measuring, toggleMeasure, setAnnotateMode, setBasemap, setDim, fitAll, toggleLang, requestExport } = useApp();
+  const { lang, basemap, dim, annotateMode, measuring, creating, toggleMeasure, setCreating, setAnnotateMode, setBasemap, setDim, fitAll, toggleLang, requestExport } = useApp();
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const canAdmin = can(user?.role as any, 'plot:attr:update');
@@ -20,6 +20,7 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => voi
       <div className="rail-group">
         <RailBtn tip={t('d.fullPlan', lang)} onClick={fitAll}><IconHome size={20} /></RailBtn>
         <RailBtn tip={t('tb.devplan', lang)} onClick={onOpenDevPlan}><IconCalendar size={20} /></RailBtn>
+        {canAdmin && <RailBtn tip={t('tb.create', lang)} active={creating} onClick={() => setCreating(!creating)}><IconPlus size={20} /></RailBtn>}
         {canAdmin && <RailBtn tip={t('tb.annotate', lang)} active={annotateMode !== 'off'} onClick={() => setAnnotateMode(annotateMode === 'off' ? 'text' : 'off')}><IconTag size={20} /></RailBtn>}
         {canAdmin && <RailBtn tip={t('tb.admin', lang)} onClick={onOpenAdmin}><IconAdmin size={20} /></RailBtn>}
       </div>

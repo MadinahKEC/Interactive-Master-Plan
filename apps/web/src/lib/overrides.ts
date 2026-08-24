@@ -18,7 +18,7 @@ export interface AuditEntry {
   before?: RevertSnapshot;  // data slices just before this change (session-only, enables revert)
 }
 /** The revertible data slices captured before a change. */
-type RevertSnapshot = Pick<OverridesState, 'plotAttrs' | 'projects' | 'landUses' | 'plotGeom' | 'merges' | 'splits' | 'annotations' | 'users' | 'optionLists'>;
+type RevertSnapshot = Pick<OverridesState, 'plotAttrs' | 'projects' | 'landUses' | 'plotGeom' | 'merges' | 'splits' | 'annotations' | 'users' | 'optionLists' | 'createdPlots'>;
 export interface LandUseOverride { color?: string; labelAr?: string; labelEn?: string }
 /** An admin-added dropdown choice (persisted and reused across sessions). */
 export interface OptionItem { value: string; ar?: string; en?: string }
@@ -41,6 +41,16 @@ export interface SubPlotRecord {
   area: number; gfa?: number; floors?: number; height?: number; coverage?: number; far?: number;
   geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: any };
 }
+/** A brand-new plot drawn on the map by an admin. */
+export interface CreatedPlot {
+  code: string;
+  name_ar?: string; name_en?: string;
+  land_use: string; sector: string;
+  area: number; gfa?: number; floors?: number; height?: number; coverage?: number; far?: number;
+  geometry: { type: 'Polygon'; coordinates: any };
+}
+/** A note left on a plot by a signed-in user (synced to everyone). */
+export interface PlotComment { id: string; text: string; author: string; at: number }
 /** A free annotation drawn on the map (admin only). */
 export interface Annotation {
   id: string;
@@ -60,6 +70,8 @@ interface OverridesState {
   annotations: Annotation[];
   users: AdminUser[];
   optionLists: Record<string, OptionItem[]>;   // admin-added choices per dropdown
+  createdPlots: Record<string, CreatedPlot>;   // new plots drawn by admins
+  comments: Record<string, PlotComment[]>;     // notes per plot code
   audit: AuditEntry[];
 
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
@@ -79,6 +91,10 @@ interface OverridesState {
   updateUser: (id: string, patch: Partial<AdminUser>) => void;
   removeUser: (id: string) => void;
   addOption: (listKey: string, opt: OptionItem, actor?: string) => void;
+  addCreatedPlot: (rec: CreatedPlot, actor?: string) => void;
+  removeCreatedPlot: (code: string) => void;
+  addComment: (code: string, text: string, author: string) => void;
+  removeComment: (code: string, id: string) => void;
   log: (e: Omit<AuditEntry, 'at' | 'id' | 'before'>) => void;
   revertTo: (id: string) => void;
   exportAll: () => string;
@@ -88,7 +104,7 @@ interface OverridesState {
 
 const snap = (s: OverridesState): RevertSnapshot => ({
   plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom,
-  merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists,
+  merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots,
 });
 // Prepend an audit entry (with a pre-change snapshot for revert) and cap the log.
 const pushAudit = (s: OverridesState, e: Omit<AuditEntry, 'at' | 'id' | 'before'>): AuditEntry[] =>
@@ -111,6 +127,8 @@ export const useOverrides = create<OverridesState>()(
       annotations: [],
       users: seedUsers,
       optionLists: {},
+      createdPlots: {},
+      comments: {},
       audit: [],
 
       addOption: (listKey, opt, actor = 'admin') =>
@@ -122,6 +140,20 @@ export const useOverrides = create<OverridesState>()(
             audit: pushAudit(s, { actor, action: 'option.add', target: listKey, detail: opt.en || opt.ar || opt.value }),
           };
         }),
+
+      addCreatedPlot: (rec, actor = 'admin') =>
+        set((s) => ({
+          createdPlots: { ...s.createdPlots, [rec.code]: rec },
+          audit: pushAudit(s, { actor, action: 'plot.create', target: rec.code, detail: `${Math.round(rec.area)} m²` }),
+        })),
+      removeCreatedPlot: (code) => set((s) => { const c = { ...s.createdPlots }; delete c[code]; return { createdPlots: c }; }),
+
+      addComment: (code, text, author) =>
+        set((s) => {
+          const c: PlotComment = { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text, author, at: Date.now() };
+          return { comments: { ...s.comments, [code]: [...(s.comments[code] ?? []), c] } };
+        }),
+      removeComment: (code, id) => set((s) => ({ comments: { ...s.comments, [code]: (s.comments[code] ?? []).filter((c) => c.id !== id) } })),
 
       log: (e) => set((s) => ({ audit: pushAudit(s, e) })),
 
@@ -197,7 +229,7 @@ export const useOverrides = create<OverridesState>()(
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -211,6 +243,8 @@ export const useOverrides = create<OverridesState>()(
             annotations: o.annotations ?? s.annotations,
             users: o.users ?? s.users,
             optionLists: o.optionLists ?? s.optionLists,
+            createdPlots: o.createdPlots ?? s.createdPlots,
+            comments: o.comments ?? s.comments,
             audit: o.audit ?? s.audit,
           }));
           return true;
@@ -224,9 +258,9 @@ export const useOverrides = create<OverridesState>()(
         // restore the snapshot taken before this edit; drop this edit and every newer one
         return { ...s.audit[idx].before, audit: s.audit.slice(idx + 1) } as any;
       }),
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, audit: [] }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, audit: [] }),
     }),
     // `before` snapshots stay in memory only — persisting them would bloat storage/sync.
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, audit: s.audit.map(({ before, ...e }) => e) }) as any },
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, audit: s.audit.map(({ before, ...e }) => e) }) as any },
   ),
 );

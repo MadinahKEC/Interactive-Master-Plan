@@ -35,6 +35,7 @@ export interface AppState {
   annotateColor: string;
   measuring: boolean;             // map measurement tool active
   labels: boolean;                // force plot-code labels on the map
+  creating: boolean;              // draw-a-new-plot mode
   zoomCode: string | null;        // plot to zoom to
   zoomToken: number;              // bump to trigger a zoom to zoomCode
   revealToken: number;            // bump to force a map resize+repaint (after overlays close)
@@ -62,6 +63,7 @@ export interface AppState {
   toggleMeasure: () => void;
   setMeasuring: (v: boolean) => void;
   toggleLabels: () => void;
+  setCreating: (v: boolean) => void;
   requestZoom: (code: string) => void;
   reveal: () => void;
   requestExport: () => void;
@@ -87,6 +89,7 @@ export const useApp = create<AppState>((set) => ({
   annotateColor: '#B5462F',
   measuring: false,
   labels: false,
+  creating: false,
   zoomCode: null,
   zoomToken: 0,
   revealToken: 0,
@@ -120,6 +123,7 @@ export const useApp = create<AppState>((set) => ({
   toggleMeasure: () => set((s) => ({ measuring: !s.measuring, annotateMode: 'off' })),
   setMeasuring: (measuring) => set({ measuring }),
   toggleLabels: () => set((s) => ({ labels: !s.labels })),
+  setCreating: (creating) => set({ creating, measuring: false, annotateMode: 'off' }),
   requestZoom: (code) => set((s) => ({ zoomCode: code, zoomToken: s.zoomToken + 1 })),
   reveal: () => set((s) => ({ revealToken: s.revealToken + 1 })),
   requestExport: () => set((s) => ({ exportToken: s.exportToken + 1 })),

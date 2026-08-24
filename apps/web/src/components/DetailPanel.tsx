@@ -6,6 +6,7 @@ import { useOverrides } from '../lib/overrides';
 import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
+import { confirmDialog } from '../lib/dialog';
 import { StageBar } from './StageBar';
 import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
@@ -23,6 +24,8 @@ export function DetailPanel({
   const unmerge = useOverrides((s) => s.unmerge);
   const setProject = useOverrides((s) => s.setProject);
   const splits = useOverrides((s) => s.splits);
+  const createdPlots = useOverrides((s) => s.createdPlots);
+  const removeCreatedPlot = useOverrides((s) => s.removeCreatedPlot);
   const canAttr = can(role as any, 'plot:attr:update');
   const canGeom = can(role as any, 'plot:geometry:update');
   const shortlist = useShortlist();
@@ -130,10 +133,15 @@ export function DetailPanel({
           </div>
         </Section>
 
+        <Section title={t('sec.comments', lang)}>
+          <Comments code={p.code} lang={lang} />
+        </Section>
+
         <div className="d-actions">
           {canAttr && <button className="btn primary" onClick={() => onEdit(p.code)}><IconEdit size={15} /> {t('d.editAttrs', lang)}</button>}
           {canGeom && <button className="btn icon-only" onClick={() => setEditGeom(p.code)} title={t('d.editShape', lang)}><IconShape size={15} /></button>}
           {canAttr && <button className="btn icon-only" onClick={() => onSubdivide(Object.keys(splits).find((par) => splits[par].some((pt) => pt.code === p.code)) ?? p.code)} title={t('d.subdivide', lang)}><IconSplit size={15} /></button>}
+          {canAttr && createdPlots[p.code] && <button className="btn icon-only danger" title={t('d.deletePlot', lang)} onClick={async () => { if (await confirmDialog({ title: t('d.deletePlot', lang), body: `${p.code}`, confirmLabel: t('d.deletePlot', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) { removeCreatedPlot(p.code); fitAll(); } }}><IconTrash size={15} /></button>}
           <button className="btn icon-only" onClick={() => requestZoom(p.code)} title={t('d.zoom', lang)}><IconZoom size={15} /></button>
         </div>
       </div>
@@ -235,6 +243,50 @@ function nameOfConstituent(code: string, projects: Record<string, ProjectInfo>, 
     if (rec && (rec.name_ar || rec.name_en)) return (lang === 'ar' ? rec.name_ar || rec.name_en : rec.name_en || rec.name_ar) as string;
   }
   return code;
+}
+
+function Comments({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
+  const comments = useOverrides((s) => s.comments[code]) ?? [];
+  const addComment = useOverrides((s) => s.addComment);
+  const removeComment = useOverrides((s) => s.removeComment);
+  const user = useAuth((s) => s.user);
+  const isAdmin = can(user?.role as any, 'plot:attr:update');
+  const [text, setText] = useState('');
+  const author = user?.name || user?.email || 'User';
+  const submit = () => { const v = text.trim(); if (!v) return; addComment(code, v, author); setText(''); };
+  const rel = (at: number) => {
+    const d = (Date.now() - at) / 1000;
+    if (d < 60) return lang === 'ar' ? 'الآن' : 'now';
+    if (d < 3600) return Math.floor(d / 60) + (lang === 'ar' ? ' د' : 'm');
+    if (d < 86400) return Math.floor(d / 3600) + (lang === 'ar' ? ' س' : 'h');
+    return new Date(at).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB');
+  };
+  return (
+    <div className="cm">
+      {comments.length === 0 && <div className="cm-empty">{t('cm.empty', lang)}</div>}
+      {comments.length > 0 && (
+        <div className="cm-list">
+          {comments.slice().sort((a, b) => a.at - b.at).map((c) => (
+            <div className="cm-item" key={c.id}>
+              <div className="cm-head">
+                <span className="cm-avatar">{(c.author || '?').trim().charAt(0).toUpperCase()}</span>
+                <span className="cm-author">{c.author}</span>
+                <span className="cm-time">{rel(c.at)}</span>
+                {(isAdmin || c.author === author) && <button className="cm-del" title="×" onClick={() => removeComment(code, c.id)}>×</button>}
+              </div>
+              <div className="cm-text">{c.text}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {user && (
+        <div className="cm-add">
+          <input value={text} placeholder={t('cm.placeholder', lang)} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
+          <button className="btn sm primary" disabled={!text.trim()} onClick={submit}>{t('cm.add', lang)}</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

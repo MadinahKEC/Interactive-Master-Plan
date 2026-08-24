@@ -1,6 +1,6 @@
 import { LAND_USES, type PlotCollection, type PlotProps, type PlotFeature } from '@kec/types';
 import type { ProjectInfo } from './domain';
-import type { GeomOverride, LandUseOverride, MergeRecord, PlotAttrOverride, SubPlotRecord } from './overrides';
+import type { CreatedPlot, GeomOverride, LandUseOverride, MergeRecord, PlotAttrOverride, SubPlotRecord } from './overrides';
 
 export interface EffLandUse { key: string; labelAr: string; labelEn: string; color: string }
 
@@ -32,6 +32,7 @@ export function effectiveCollection(
   merges: MergeRecord[],
   projects: Record<string, ProjectInfo> = {},
   splits: Record<string, SubPlotRecord[]> = {},
+  created: Record<string, CreatedPlot> = {},
 ): PlotCollection | null {
   if (!base) return null;
   const hidden = new Set<string>();
@@ -118,6 +119,27 @@ export function effectiveCollection(
         ...(mps ? { planStatus: mps } : {}),
       } as PlotProps,
       geometry: { type: 'MultiPolygon', coordinates: polys } as any,
+    });
+  }
+
+  // 5) admin-drawn new plots (with their own attribute/geometry overrides).
+  for (const code of Object.keys(created)) {
+    if (hidden.has(code)) continue;
+    const c = created[code];
+    const patch = attrs[code];
+    const g = geom[code];
+    const ps = planStatusOf(code);
+    features.push({
+      type: 'Feature',
+      properties: {
+        code, name: c.name_en || c.name_ar || code,
+        land_use: c.land_use, sector: c.sector,
+        gfa: c.gfa ?? null, area: c.area ?? null, floors: c.floors ?? null,
+        height: c.height ?? null, coverage: c.coverage ?? null, far: c.far ?? null, style: null,
+        ...(patch ?? {}),
+        ...(ps ? { planStatus: ps } : {}),
+      } as PlotProps,
+      geometry: g ? ({ type: g.type, coordinates: g.coordinates } as any) : (c.geometry as any),
     });
   }
 
