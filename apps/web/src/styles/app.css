@@ -591,8 +591,12 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);
 
 /* ---- Unmerge + timeline (card) ---- */
 .own-merge{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px 10px;flex-wrap:wrap}
-.btn.sm{flex:0 0 auto;font-size:11px;padding:6px 10px;display:inline-flex;align-items:center;gap:5px;border-radius:9px;border:1px solid var(--kec-hairline);background:var(--card);cursor:pointer}
+.btn.sm{flex:0 0 auto;font-size:11px;padding:6px 10px;display:inline-flex;align-items:center;gap:5px;border-radius:9px;border:1px solid var(--kec-hairline);background:var(--card);color:var(--kec-title);cursor:pointer}
 .btn.sm.danger{color:var(--kec-neg);border-color:var(--kec-neg)}
+/* .btn.sm resets the background AFTER .btn.primary, so small primary buttons need
+   the green re-applied at higher specificity (otherwise: white text on white). */
+.btn.sm.primary{background:var(--kec-green);color:#fff;border-color:var(--kec-green)}
+.btn.sm.primary:hover{filter:brightness(1.08)}
 .tl{display:flex;flex-direction:column;gap:10px;padding:8px 14px 12px}
 .tl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .tl-name{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--kec-ink)}
