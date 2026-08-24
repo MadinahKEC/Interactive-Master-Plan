@@ -450,15 +450,19 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:var(--kec-muted);
   #root{display:none !important}
   .report-overlay{position:static !important;display:block !important;background:#fff !important;padding:0 !important;overflow:visible !important;height:auto !important}
   .report-toolbar{display:none !important}
-  .report-sheet,.pf-sheet{position:static !important;margin:0 auto !important;box-shadow:none !important;border-radius:0 !important;min-height:0 !important}
-  .report-sheet{width:190mm !important;max-width:190mm !important;padding:6mm !important}
+  /* fill the printable A4 height and flex so the footer always pins to the bottom
+     → every exported report/factsheet looks identical regardless of content */
+  .report-sheet,.pf-sheet{position:static !important;margin:0 auto !important;box-shadow:none !important;border-radius:0 !important;
+    box-sizing:border-box !important;display:flex !important;flex-direction:column !important;min-height:277mm !important}
+  .report-sheet{width:192mm !important;max-width:192mm !important;padding:6mm !important}
   .pf-sheet{width:192mm !important;max-width:192mm !important;padding:0 !important}
+  .rp-foot,.pf-footer{margin-top:auto !important}
   /* compact the project report so it fits one page */
   .rp-head{padding-bottom:8px;margin-bottom:8px}.rp-head img{height:42px}.rp-title h1{font-size:18px}
   .rp-scope{margin-bottom:8px;padding:6px 10px}
   .rp-map{max-height:62mm;object-fit:cover;margin-bottom:8px}
   .rp-sub{margin:2px 0 5px}.rp-kpis{gap:6px;margin-bottom:8px}.rp-kpi{padding:7px}.rp-kpi .v{font-size:15px}
-  .rp-bars{gap:4px}.rp-foot{margin-top:6px;padding-top:6px}
+  .rp-bars{gap:4px}.rp-foot{padding-top:8px;border-top:1px solid var(--kec-hairline)}
   /* factsheet media */
   .pf-photo-main{height:110px}.pf-noimg{height:160px}
   @page{size:A4 portrait;margin:9mm}
