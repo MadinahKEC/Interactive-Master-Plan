@@ -115,6 +115,14 @@ html[dir="rtl"] .rail-hide svg{transform:rotate(-90deg)}
 .d-cell .l{font-size:10px;color:var(--kec-muted);margin-bottom:4px}
 .d-cell .v{font-size:14px;font-weight:600;color:var(--kec-ink);font-family:var(--kec-mono);display:flex;align-items:center;flex-wrap:wrap;gap:2px 6px;min-width:0;overflow-wrap:anywhere;line-height:1.3}
 .d-cell .v.sm{font-size:12.5px;font-family:var(--kec-font)}
+/* compact key/value rows (Land data + Investment highlights) — matches the tidy
+   feel of the analysis section rather than big cards */
+.d-list{display:flex;flex-direction:column;padding:2px 14px 12px}
+.d-list .d-cell{display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;border:0;border-top:1px solid var(--kec-hairline);border-radius:0;padding:8px 2px}
+.d-list .d-cell:first-child{border-top:0}
+.d-list .d-cell .l{font-size:11.5px;color:var(--kec-muted);margin:0;flex:1;min-width:0}
+.d-list .d-cell .v{font-size:13px;text-align:end;justify-content:flex-end;flex:0 0 auto;max-width:60%}
+.d-list .d-cell .v.sm{font-size:12px}
 .cell-chip{width:11px;height:11px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.14)}
 .d-actions{display:flex;gap:8px;padding:2px 12px 10px}
 .btn{flex:1;font-size:12.5px;font-weight:600;border-radius:10px;padding:10px;cursor:pointer;border:1px solid var(--kec-hairline);background:var(--card);color:var(--kec-title);transition:.15s}
@@ -427,43 +435,51 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .fe-res-l{font-size:10.5px;color:var(--kec-muted);margin-top:3px}
 .fe-note{font-size:10.5px;color:var(--kec-muted);margin:14px 0 0;line-height:1.5;font-style:italic}
 
-/* ---- Executive dashboard (item 17) + print/PDF export (item B) ---- */
-.exec-overlay{position:fixed;inset:0;z-index:82;background:var(--kec-surface);overflow:auto;display:flex;justify-content:center;animation:fadeIn .2s}
-.exec-sheet{width:100%;max-width:1120px;background:var(--kec-paper);min-height:100%;box-shadow:0 0 40px rgba(0,0,0,.08);display:flex;flex-direction:column;padding:22px 26px 28px}
-.exec-head{display:flex;align-items:center;gap:16px;border-bottom:2px solid var(--kec-green);padding-bottom:14px;margin-bottom:18px}
+/* ---- Executive dashboard (item 17) + print/PDF export (item B) — KEC register identity ---- */
+.exec-overlay{position:fixed;inset:0;z-index:82;background:#e9ece7;overflow:auto;display:flex;justify-content:center;animation:fadeIn .2s}
+.exec-sheet{width:100%;max-width:1180px;background:var(--kec-paper);min-height:100%;box-shadow:0 2px 18px rgba(0,0,0,.12);display:flex;flex-direction:column;padding:24px 34px 20px}
+/* header: title + gold subtitle, logo right, gold accent under the rule */
+.exec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid var(--kec-hairline);padding-bottom:8px;margin-bottom:16px;position:relative}
+.exec-head::after{content:'';position:absolute;bottom:-2px;inset-inline-end:0;width:120px;height:3px;background:var(--kec-gold)}
 .exec-title{flex:1;min-width:0}
-.exec-h1{font-size:22px;font-weight:700;color:var(--kec-title);line-height:1.15}
-.exec-sub{font-size:12px;color:var(--kec-muted);margin-top:3px}
-.exec-logo{height:44px;width:auto;object-fit:contain;flex:none}
-.exec-acts{display:flex;align-items:center;gap:8px}
-.exec-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
-.exec-kpi{border:1px solid var(--kec-hairline);border-radius:12px;padding:12px 13px;background:linear-gradient(160deg,var(--kec-surface),var(--kec-paper))}
-.exec-kpi.accent{background:linear-gradient(150deg,rgba(154,138,30,.14),var(--kec-paper));border-color:rgba(154,138,30,.4)}
-.ek-top{display:flex;align-items:center;gap:6px;color:var(--kec-muted);font-size:10.5px;margin-bottom:7px}
+.exec-h1{font-size:26px;font-weight:700;color:var(--kec-title);line-height:1.18;letter-spacing:-.2px}
+.exec-sub{font-size:13px;font-weight:500;color:var(--kec-gold);margin-top:3px}
+.exec-logo{height:46px;width:auto;object-fit:contain;flex:none}
+.exec-acts{display:flex;align-items:center;gap:8px;align-self:flex-start}
+/* KPI strip: uniform centred white cards */
+.exec-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.exec-kpi{background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:13px 11px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-width:0}
+.ek-top{display:flex;align-items:center;gap:6px;justify-content:center;min-width:0;max-width:100%}
 .ek-top svg{color:var(--kec-green);flex:none}
-.ek-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ek-v{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--kec-title);line-height:1;overflow-wrap:anywhere}
-.exec-hero{display:grid;grid-template-columns:210px 1fr;gap:20px;align-items:center;border:1px solid var(--kec-hairline);border-radius:14px;padding:18px 20px;margin-bottom:16px;background:linear-gradient(120deg,rgba(47,107,62,.06),transparent)}
-.exec-hero-pct{font-family:'IBM Plex Mono',monospace;font-size:52px;font-weight:700;color:var(--kec-green);line-height:1}
-.exec-hero-pct span{font-size:24px;margin-inline-start:2px}
-.exec-hero-l{font-size:13px;color:var(--kec-ink);font-weight:600;margin-top:4px}
+.ek-l{font-size:10px;font-weight:500;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ek-v{font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--kec-green-deep);line-height:1;white-space:nowrap;font-feature-settings:'tnum' 1}
+.exec-kpi.accent .ek-v{color:var(--kec-gold)}
+/* hero developed-land card (white) */
+.exec-hero{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:center;background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:16px 20px;margin-bottom:14px}
+.exec-hero-pct{font-family:'IBM Plex Mono',monospace;font-size:46px;font-weight:600;color:var(--kec-green-deep);line-height:1;text-align:center}
+.exec-hero-pct span{font-size:22px;margin-inline-start:2px;color:var(--kec-gold)}
+.exec-hero-l{font-size:13px;color:var(--kec-ink);font-weight:600;margin-top:4px;text-align:center}
 .exec-hero-l em{font-style:normal;color:var(--kec-muted);font-weight:400;font-size:11px;display:block}
-.ehb-track{display:flex;height:22px;border-radius:11px;overflow:hidden;background:var(--kec-hairline)}
+.ehb-track{display:flex;height:20px;border-radius:10px;overflow:hidden;background:var(--kec-surface)}
 .ehb-seg{display:block;height:100%}
 .ehb-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:11px;color:var(--kec-muted)}
 .ehb-legend span{display:flex;align-items:center;gap:6px}
 .ehb-legend i{width:11px;height:11px;border-radius:3px;flex:none}
-.exec-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.exec-chart{border:1px solid var(--kec-hairline);border-radius:14px;padding:8px 10px;background:var(--kec-paper)}
+.exec-charts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.exec-chart{background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:8px 11px}
 .exec-pipe{padding:8px 6px}
-.exec-pipe-h{font-size:13px;font-weight:700;color:var(--kec-title);margin:2px 0 14px 4px}
+.exec-pipe-h{font-size:13px;font-weight:600;color:var(--kec-green-deep);margin:2px 0 14px 4px}
 .exec-pipe-row{display:grid;grid-template-columns:92px 1fr 28px;align-items:center;gap:10px;margin-bottom:10px}
 .epr-l{font-size:12px;color:var(--kec-ink)}
-.epr-bar{height:18px;border-radius:9px;background:var(--kec-surface);overflow:hidden}
-.epr-bar span{display:block;height:100%;border-radius:9px;min-width:3px}
-.epr-v{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--kec-title);text-align:end}
+.epr-bar{height:16px;border-radius:8px;background:var(--kec-surface);overflow:hidden}
+.epr-bar span{display:block;height:100%;border-radius:8px;min-width:3px}
+.epr-v{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--kec-green-deep);text-align:end}
 .exec-pipe-empty{color:var(--kec-muted);padding:20px;text-align:center}
-.exec-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--kec-hairline);font-size:10px;color:var(--kec-muted);text-align:center}
+/* footer: gold rule + green bar */
+.exec-foot{margin-top:auto;flex:none;padding-top:12px}
+.exec-foot-rule{height:2px;background:var(--kec-gold);border-radius:2px}
+.exec-foot-row{display:flex;align-items:center;gap:10px;padding-top:7px;font-size:9.5px;color:var(--kec-muted)}
+.exec-foot-bar{width:3px;height:20px;background:var(--kec-green);border-radius:2px;flex:none}
 @media (max-width:768px){
   .exec-strip{grid-template-columns:repeat(2,1fr)}
   .exec-charts{grid-template-columns:1fr}
