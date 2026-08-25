@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { SECTORS, can } from '@kec/types';
+import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
@@ -10,13 +10,15 @@ import { confirmDialog } from '../lib/dialog';
 import { StageBar } from './StageBar';
 import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
+import { FeasibilityModal } from './FeasibilityModal';
+import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
 import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, TypeIcon } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
-  projects, landUses, onEdit, onSubdivide,
+  data, projects, landUses, onEdit, onSubdivide,
 }: {
-  projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onEdit: (code: string) => void; onSubdivide: (code: string) => void;
+  data: PlotCollection | null; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onEdit: (code: string) => void; onSubdivide: (code: string) => void;
 }) {
   const { selected, lang, fitAll, setEditGeom, requestZoom } = useApp();
   const role = useAuth((s) => s.user?.role);
@@ -31,6 +33,7 @@ export function DetailPanel({
   const shortlist = useShortlist();
   const [shareOpen, setShareOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [feasOpen, setFeasOpen] = useState(false);
   if (!selected) return null;
   const p = selected;
   const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
@@ -46,6 +49,9 @@ export function DetailPanel({
   const devDesc = (lang === 'ar' ? pr.overlay.devplan_ar : pr.overlay.devplan_en)?.trim();
   const hasDevDesc = Boolean(devDesc);
   const inv = pr.overlay.investment;
+  const feat = data?.features.find((ft) => ft.properties.code === p.code);
+  const haramKm = feat ? haversineKm(centroidOf(feat.geometry), HARAM) : 0;
+  const analysis = computeInvestmentScore(p, pr.overlay, haramKm);
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
   const addToPlan = () => {
@@ -133,6 +139,27 @@ export function DetailPanel({
           )}
         </Section>
 
+        <Section title={t('sec.analysis', lang)}>
+          <div className="ia-top">
+            <ScoreRing score={analysis.score} />
+            <div className="ia-meta">
+              <div className="ia-grade" style={{ color: scoreColor(analysis.score) }}>{analysis.grade} · {gradeLabel(analysis.grade, lang)}</div>
+              <div className="ia-label">{t('ia.score', lang)}</div>
+              <div className="ia-haram">{t('ia.haram', lang)}: <b>{haramKm.toFixed(1)} {lang === 'ar' ? 'كم' : 'km'}</b></div>
+            </div>
+          </div>
+          <div className="ia-factors">
+            {analysis.factors.map((fac) => (
+              <div className="ia-fac" key={fac.key}>
+                <span className="ia-fac-l">{lang === 'ar' ? fac.ar : fac.en}<em>{Math.round(fac.weight * 100)}%</em></span>
+                <span className="ia-fac-bar"><span className="ia-fac-fill" style={{ width: `${fac.value}%`, background: scoreColor(fac.value) }} /></span>
+                <span className="ia-fac-v">{fac.value}</span>
+              </div>
+            ))}
+          </div>
+          <button className="btn sm primary ia-feas" onClick={() => setFeasOpen(true)}>{t('ia.feasibility', lang)}</button>
+        </Section>
+
         <Section title={t('sec.invest', lang)}>
           <div className="d-grid">
             {INVEST_FIELDS.map((fld) => {
@@ -164,6 +191,7 @@ export function DetailPanel({
       </div>
       {shareOpen && <ShareModal url={shareUrl()} title={title} onClose={() => setShareOpen(false)} />}
       {pdfOpen && <PlotFactsheet plot={p} projects={projects} landUses={landUses} onClose={() => setPdfOpen(false)} />}
+      {feasOpen && <FeasibilityModal plot={p} projects={projects} onClose={() => setFeasOpen(false)} />}
     </div>
   );
 }
@@ -315,6 +343,20 @@ function Section({ title, children, defaultOpen = true }: { title: string; child
         <IconChevron size={16} />
       </button>
       {open && <div className="d-sec-body">{children}</div>}
+    </div>
+  );
+}
+function ScoreRing({ score }: { score: number }) {
+  const R = 26, C = 2 * Math.PI * R;
+  const col = scoreColor(score);
+  return (
+    <div className="ia-ring">
+      <svg viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={R} fill="none" stroke="var(--kec-hairline)" strokeWidth="7" />
+        <circle cx="32" cy="32" r={R} fill="none" stroke={col} strokeWidth="7" strokeLinecap="round"
+          strokeDasharray={C} strokeDashoffset={C * (1 - score / 100)} transform="rotate(-90 32 32)" />
+      </svg>
+      <span className="ia-ring-n" style={{ color: col }}>{score}</span>
     </div>
   );
 }

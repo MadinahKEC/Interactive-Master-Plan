@@ -147,7 +147,7 @@ export default function App() {
       )}
       <TopBar />
       {data && <ControlPanel data={data} landUses={landUses} projects={projects} />}
-      <DetailPanel projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
+      <DetailPanel data={data} projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
       {data && <MultiSelectPanel data={data} projects={projects} />}
       {data && <ShortlistBar data={data} projects={projects} landUses={landUses} />}
       <AnnotateToolbar />
