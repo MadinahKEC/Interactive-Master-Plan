@@ -427,6 +427,59 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .fe-res-l{font-size:10.5px;color:var(--kec-muted);margin-top:3px}
 .fe-note{font-size:10.5px;color:var(--kec-muted);margin:14px 0 0;line-height:1.5;font-style:italic}
 
+/* ---- Executive dashboard (item 17) + print/PDF export (item B) ---- */
+.exec-overlay{position:fixed;inset:0;z-index:82;background:var(--kec-surface);overflow:auto;display:flex;justify-content:center;animation:fadeIn .2s}
+.exec-sheet{width:100%;max-width:1120px;background:var(--kec-paper);min-height:100%;box-shadow:0 0 40px rgba(0,0,0,.08);display:flex;flex-direction:column;padding:22px 26px 28px}
+.exec-head{display:flex;align-items:center;gap:16px;border-bottom:2px solid var(--kec-green);padding-bottom:14px;margin-bottom:18px}
+.exec-title{flex:1;min-width:0}
+.exec-h1{font-size:22px;font-weight:700;color:var(--kec-title);line-height:1.15}
+.exec-sub{font-size:12px;color:var(--kec-muted);margin-top:3px}
+.exec-logo{height:44px;width:auto;object-fit:contain;flex:none}
+.exec-acts{display:flex;align-items:center;gap:8px}
+.exec-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.exec-kpi{border:1px solid var(--kec-hairline);border-radius:12px;padding:12px 13px;background:linear-gradient(160deg,var(--kec-surface),var(--kec-paper))}
+.exec-kpi.accent{background:linear-gradient(150deg,rgba(154,138,30,.14),var(--kec-paper));border-color:rgba(154,138,30,.4)}
+.ek-top{display:flex;align-items:center;gap:6px;color:var(--kec-muted);font-size:10.5px;margin-bottom:7px}
+.ek-top svg{color:var(--kec-green);flex:none}
+.ek-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ek-v{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:var(--kec-title);line-height:1;overflow-wrap:anywhere}
+.exec-hero{display:grid;grid-template-columns:210px 1fr;gap:20px;align-items:center;border:1px solid var(--kec-hairline);border-radius:14px;padding:18px 20px;margin-bottom:16px;background:linear-gradient(120deg,rgba(47,107,62,.06),transparent)}
+.exec-hero-pct{font-family:'IBM Plex Mono',monospace;font-size:52px;font-weight:700;color:var(--kec-green);line-height:1}
+.exec-hero-pct span{font-size:24px;margin-inline-start:2px}
+.exec-hero-l{font-size:13px;color:var(--kec-ink);font-weight:600;margin-top:4px}
+.exec-hero-l em{font-style:normal;color:var(--kec-muted);font-weight:400;font-size:11px;display:block}
+.ehb-track{display:flex;height:22px;border-radius:11px;overflow:hidden;background:var(--kec-hairline)}
+.ehb-seg{display:block;height:100%}
+.ehb-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:11px;color:var(--kec-muted)}
+.ehb-legend span{display:flex;align-items:center;gap:6px}
+.ehb-legend i{width:11px;height:11px;border-radius:3px;flex:none}
+.exec-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.exec-chart{border:1px solid var(--kec-hairline);border-radius:14px;padding:8px 10px;background:var(--kec-paper)}
+.exec-pipe{padding:8px 6px}
+.exec-pipe-h{font-size:13px;font-weight:700;color:var(--kec-title);margin:2px 0 14px 4px}
+.exec-pipe-row{display:grid;grid-template-columns:92px 1fr 28px;align-items:center;gap:10px;margin-bottom:10px}
+.epr-l{font-size:12px;color:var(--kec-ink)}
+.epr-bar{height:18px;border-radius:9px;background:var(--kec-surface);overflow:hidden}
+.epr-bar span{display:block;height:100%;border-radius:9px;min-width:3px}
+.epr-v{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--kec-title);text-align:end}
+.exec-pipe-empty{color:var(--kec-muted);padding:20px;text-align:center}
+.exec-foot{margin-top:auto;padding-top:16px;border-top:1px solid var(--kec-hairline);font-size:10px;color:var(--kec-muted);text-align:center}
+@media (max-width:768px){
+  .exec-strip{grid-template-columns:repeat(2,1fr)}
+  .exec-charts{grid-template-columns:1fr}
+  .exec-hero{grid-template-columns:1fr;text-align:center}
+  .exec-sheet{padding:16px 14px 22px}
+  .exec-h1{font-size:18px}
+}
+@media print {
+  #root{display:none!important}
+  .exec-overlay{position:static;overflow:visible;background:#fff}
+  .exec-sheet{max-width:none;box-shadow:none;padding:8mm;min-height:auto}
+  .no-print{display:none!important}
+  .exec-chart,.exec-hero,.exec-strip{page-break-inside:avoid}
+  @page{size:A4 landscape;margin:8mm}
+}
+
 /* ---- Investor interest pipeline (card) ---- */
 .iv{padding:2px 14px 12px}
 .iv-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}

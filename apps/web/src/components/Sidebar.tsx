@@ -4,10 +4,10 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { t } from '../lib/domain';
 import { LayersFlyout } from './LayersFlyout';
-import { IconHome, IconCalendar, IconAdmin, IconLayers, IconPower, IconTag, IconExport, IconRuler, IconPlus, IconChevron } from './icons';
+import { IconHome, IconCalendar, IconAdmin, IconLayers, IconPower, IconTag, IconExport, IconRuler, IconPlus, IconChevron, IconDashboard } from './icons';
 
 /** Vertical icon rail: navigation, a unified layers/view flyout, and map tools. */
-export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => void; onOpenDevPlan: () => void }) {
+export function Sidebar({ onOpenAdmin, onOpenDevPlan, onOpenExec }: { onOpenAdmin: () => void; onOpenDevPlan: () => void; onOpenExec: () => void }) {
   const { lang, dim, annotateMode, measuring, creating, toggleMeasure, setCreating, setAnnotateMode, fitAll, toggleLang, requestExport, toggleRail } = useApp();
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
@@ -23,6 +23,7 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => voi
 
       <div className="rail-group">
         <RailBtn tip={t('d.fullPlan', lang)} onClick={fitAll}><IconHome size={20} /></RailBtn>
+        <RailBtn tip={t('tb.exec', lang)} onClick={onOpenExec}><IconDashboard size={20} /></RailBtn>
         <RailBtn tip={t('tb.devplan', lang)} onClick={onOpenDevPlan}><IconCalendar size={20} /></RailBtn>
         {canAdmin && <RailBtn tip={t('tb.admin', lang)} onClick={onOpenAdmin}><IconAdmin size={20} /></RailBtn>}
       </div>

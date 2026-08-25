@@ -8,6 +8,7 @@ import { MultiSelectPanel } from './components/MultiSelectPanel';
 import { ShortlistBar } from './components/ShortlistBar';
 import { AdminConsole } from './admin/AdminConsole';
 import { DevPlanView } from './components/DevPlanView';
+import { ExecDashboard } from './components/ExecDashboard';
 import { AnnotateToolbar } from './components/AnnotateToolbar';
 import { ReportView } from './components/ReportView';
 import { SubdivideModal } from './components/SubdivideModal';
@@ -40,6 +41,7 @@ export default function App() {
   const [subdivideCode, setSubdivideCode] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  const [execOpen, setExecOpen] = useState(false);
 
   const projects = useMemo(() => effectiveProjects(baseProjects, projOver), [baseProjects, projOver]);
   const data = useMemo(() => effectiveCollection(baseData, plotAttrs, plotGeom, merges, projects, splits, createdPlots), [baseData, plotAttrs, plotGeom, merges, projects, splits, createdPlots]);
@@ -83,6 +85,7 @@ export default function App() {
       if (e.key !== 'Escape' || useDialog.getState().spec) return;
       const a = useApp.getState();
       if (helpOpen) { setHelpOpen(false); return; }
+      if (execOpen) { setExecOpen(false); a.reveal(); return; }
       if (a.reportImage !== null) { a.setReportImage(null); return; }
       if (subdivideCode) { setSubdivideCode(null); return; }
       if (adminOpen) { setAdminOpen(false); setEditCode(null); a.reveal(); return; }
@@ -95,7 +98,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [subdivideCode, adminOpen, devOpen, helpOpen]);
+  }, [subdivideCode, adminOpen, devOpen, helpOpen, execOpen]);
 
   // Global keyboard shortcuts (ignored while typing in a field).
   useEffect(() => {
@@ -139,7 +142,7 @@ export default function App() {
   return (
     <>
       <MapView data={data} projects={projects} landUses={landUses} canAnnotate={canAnnotate} />
-      <Sidebar onOpenAdmin={() => openAdmin()} onOpenDevPlan={() => setDevOpen(true)} />
+      <Sidebar onOpenAdmin={() => openAdmin()} onOpenDevPlan={() => setDevOpen(true)} onOpenExec={() => setExecOpen(true)} />
       {!railOpen && (
         <button className="rail-reveal" onClick={() => useApp.getState().toggleRail()} title={t('tb.showMenu', lang)} aria-label={t('tb.showMenu', lang)}>
           <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
@@ -161,6 +164,7 @@ export default function App() {
         open={devOpen} onClose={() => { setDevOpen(false); useApp.getState().reveal(); }}
         data={data} projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)}
       />
+      {execOpen && data && <ExecDashboard data={data} projects={projects} landUses={landUses} onClose={() => { setExecOpen(false); useApp.getState().reveal(); }} />}
       <div className="credit">© {t('credit', lang)}</div>
       <div className="powered">{t('powered', lang)}</div>
       {!baseData && !error && (
