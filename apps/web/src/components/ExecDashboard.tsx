@@ -6,7 +6,7 @@ import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { useBackClose } from '../lib/backstack';
 import { Chart } from '../admin/Chart';
-import { IconClose, IconExport, IconPlots, IconInvest, IconBuilding } from './icons';
+import { IconClose, IconPlots, IconInvest, IconBuilding } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -49,25 +49,51 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   }, [data, projects, investors]);
 
   const devPct = s.area ? (s.developed / s.area) * 100 : 0;
-  const underPct = s.area ? (s.underDev / s.area) * 100 : 0;
   const ref = `KEC-EXE-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
-  const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
-    title: { text: title, left: 8, top: 6, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any } },
-    tooltip: { trigger: 'item', valueFormatter: valFmt },
-    legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 } },
-    series: [{ type: 'pie', radius: ['42%', '68%'], center: ['50%', '52%'], avoidLabelOverlap: true, label: { show: false }, data: Object.keys(obj).filter((k) => obj[k] > 0).map((k) => ({ name: labelOf(k), value: Math.round(obj[k]), itemStyle: { color: colorOf(k) } })) }],
+  const titleOf = (text: string) => ({ text, left: 10, top: 7, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any } });
+  // donut with the value printed inside each slice + a legend of names
+  const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, unit?: string) => ({
+    title: titleOf(title),
+    tooltip: { trigger: 'item', valueFormatter: (v: any) => nf.format(v) + (unit ? ' ' + unit : '') },
+    legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 }, itemWidth: 11, itemHeight: 11 },
+    series: [{ type: 'pie', radius: ['40%', '66%'], center: ['50%', '50%'], avoidLabelOverlap: true,
+      label: { show: true, position: 'inside', formatter: (p: any) => (p.percent >= 6 ? compact(p.value) : ''), fontSize: 10, color: '#fff', fontWeight: 700 },
+      labelLayout: { hideOverlap: true },
+      data: Object.keys(obj).filter((k) => obj[k] > 0).map((k) => ({ name: labelOf(k), value: Math.round(obj[k]), itemStyle: { color: colorOf(k) } })) }],
   });
+  // vertical bar with the value printed on top of each column
   const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
-    title: { text: title, left: 8, top: 6, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any } },
-    grid: { left: 44, right: 16, top: 44, bottom: 40 }, tooltip: { trigger: 'axis', valueFormatter: valFmt },
-    xAxis: { type: 'category', data: keys.map(labelOf), axisLabel: { fontSize: 10, interval: 0, rotate: keys.length > 4 ? 20 : 0 } },
-    yAxis: { type: 'value', axisLabel: { fontSize: 10, formatter: (v: number) => compact(v) } },
-    series: [{ type: 'bar', data: vals.map((v) => Math.round(v)), itemStyle: { color, borderRadius: [6, 6, 0, 0] } }],
+    title: titleOf(title),
+    grid: { left: 46, right: 18, top: 46, bottom: 34 }, tooltip: { trigger: 'axis', valueFormatter: valFmt },
+    xAxis: { type: 'category', data: keys.map(labelOf), axisLabel: { fontSize: 10, interval: 0, rotate: keys.length > 4 ? 18 : 0 } },
+    yAxis: { type: 'value', axisLabel: { fontSize: 9, formatter: (v: number) => compact(v) } },
+    series: [{ type: 'bar', data: vals.map((v) => Math.round(v)), itemStyle: { color, borderRadius: [5, 5, 0, 0] },
+      label: { show: true, position: 'top', fontSize: 10, fontWeight: 600, color: '#16221B', formatter: (p: any) => compact(p.value) } }],
+  });
+  // horizontal bar (good for many categories) with the value at the end
+  const hbar = (title: string, rows: { name: string; value: number; color: string }[], unit?: string) => ({
+    title: titleOf(title),
+    grid: { left: 8, right: 60, top: 40, bottom: 10, containLabel: true }, tooltip: { trigger: 'item', valueFormatter: (v: any) => nf.format(v) + (unit ? ' ' + unit : '') },
+    xAxis: { type: 'value', show: false }, yAxis: { type: 'category', inverse: true, data: rows.map((r) => r.name), axisLabel: { fontSize: 9.5 }, axisTick: { show: false }, axisLine: { show: false } },
+    series: [{ type: 'bar', data: rows.map((r) => ({ value: Math.round(r.value), itemStyle: { color: r.color, borderRadius: [0, 5, 5, 0] } })), barWidth: '62%',
+      label: { show: true, position: 'right', fontSize: 9.5, fontWeight: 600, color: '#16221B', formatter: (p: any) => compact(p.value) } }],
+  });
+  // semicircle gauge for the developed-land share
+  const gauge = (title: string, pct: number) => ({
+    title: titleOf(title),
+    series: [{ type: 'gauge', startAngle: 200, endAngle: -20, min: 0, max: 100, radius: '92%', center: ['50%', '74%'],
+      progress: { show: true, width: 16, itemStyle: { color: '#2F6B3E' } }, axisLine: { lineStyle: { width: 16, color: [[1, '#EAF3E4']] } },
+      pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
+      anchor: { show: false }, title: { show: false },
+      detail: { valueAnimation: true, offsetCenter: [0, '-8%'], fontSize: 30, fontWeight: 700, color: '#143D1E', formatter: (v: number) => v.toFixed(1) + '%' },
+      data: [{ value: +pct.toFixed(1) }] }],
   });
 
   const secKeys = Object.keys(SECTORS).filter((k) => s.secGfa[k]);
   const pipeKeys = INVESTOR_STATUSES.map((x) => x.key).filter((k) => s.pipe[k]);
+  const luTop = Object.keys(s.luArea).filter((k) => s.luArea[k] > 0).sort((a, b) => s.luArea[b] - s.luArea[a]).slice(0, 8)
+    .map((k) => ({ name: (lang === 'ar' ? landUses[k]?.labelAr : landUses[k]?.labelEn) ?? k, value: s.luArea[k], color: landUses[k]?.color ?? '#ccc' }));
 
   return createPortal(
     <div className="exec-overlay" dir={rtl ? 'rtl' : 'ltr'}>
@@ -79,7 +105,6 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
           </div>
           <img className="exec-logo" src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
           <div className="exec-acts no-print">
-            <button className="btn sm" onClick={() => { window.dispatchEvent(new Event('resize')); setTimeout(() => window.print(), 180); }}><IconExport size={14} /> {t('exec.print', lang)}</button>
             <button className="ic-btn" onClick={onClose}><IconClose size={18} /></button>
           </div>
         </header>
@@ -103,30 +128,19 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
           <Sat v={`${s.leads}`} l={t('exec.pipeline', lang)} />
         </div>
 
-        <div className="exec-hero">
-          <div className="exec-hero-fig">
-            <div className="exec-hero-pct">{devPct.toFixed(1)}<span>%</span></div>
-            <div className="exec-hero-l">{t('exec.developed', lang)} <em>{t('exec.ofTotal', lang)}</em></div>
-          </div>
-          <div className="exec-hero-bar">
-            <div className="ehb-track">
-              <span className="ehb-seg done" style={{ width: `${devPct}%` }} title={t('exec.developed', lang)} />
-              <span className="ehb-seg dev" style={{ width: `${underPct}%` }} title={t('exec.underdev', lang)} />
-            </div>
-            <div className="ehb-legend">
+        <div className="exec-charts">
+          <div className="exec-chart">
+            <Chart height={200} option={gauge(t('exec.developed', lang), devPct)} />
+            <div className="exec-gauge-cap">
               <span><i style={{ background: '#2F6B3E' }} />{t('exec.developed', lang)} · {compact(s.developed)} m²</span>
               <span><i style={{ background: '#9A8A1E' }} />{t('exec.underdev', lang)} · {compact(s.underDev)} m²</span>
-              <span><i style={{ background: 'var(--kec-hairline)' }} />{compact(s.area - s.developed - s.underDev)} m²</span>
             </div>
           </div>
-        </div>
-
-        <div className="exec-charts">
-          <div className="exec-chart"><Chart height={220} option={donut(t('report.luMix', lang), s.luArea, (k) => landUses[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? landUses[k]?.labelAr ?? k : landUses[k]?.labelEn ?? k), (v: any) => compact(v) + ' m²')} /></div>
-          <div className="exec-chart"><Chart height={220} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={220} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={220} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
-          <div className="exec-chart"><Chart height={220} option={bar(t('exec.plotsBySector', lang), secKeys, secKeys.map((k) => s.secCount[k]), '#9A8A1E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k))} /></div>
+          <div className="exec-chart"><Chart height={230} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height={230} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height={230} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
+          <div className="exec-chart"><Chart height={230} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
+          <div className="exec-chart"><Chart height={230} option={bar(t('exec.plotsBySector', lang), secKeys, secKeys.map((k) => s.secCount[k]), '#9A8A1E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k))} /></div>
           <div className="exec-chart">
             <div className="exec-pipe">
               <div className="exec-pipe-h">{t('exec.pipeline', lang)} · {s.leads} {t('exec.leads', lang)}</div>

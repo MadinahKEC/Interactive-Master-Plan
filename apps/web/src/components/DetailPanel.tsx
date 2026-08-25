@@ -49,6 +49,7 @@ export function DetailPanel({
   const phases = pr.overlay.phases ?? [];
   const devDesc = (lang === 'ar' ? pr.overlay.devplan_ar : pr.overlay.devplan_en)?.trim();
   const hasDevDesc = Boolean(devDesc);
+  const inPlan = phases.length > 0;
   const inv = pr.overlay.investment;
   const feat = data?.features.find((ft) => ft.properties.code === p.code);
   const haramKm = feat ? haversineKm(centroidOf(feat.geometry), HARAM) : 0;
@@ -126,20 +127,6 @@ export function DetailPanel({
           </div>
         </Section>
 
-        <Section title={t('sec.devplan', lang)}>
-          {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
-          {phases.length > 0 && <Timeline phases={phases} lang={lang} />}
-          {phases.length === 0 && !hasDevDesc && !canAttr && <p className="dp-desc muted">{t('dp.noPlan', lang)}</p>}
-          {canAttr && phases.length === 0 && !hasDevDesc && (
-            <div className="dp-add-card"><button className="btn sm" onClick={addToPlan}><IconPlus size={14} /> {t('d.addToPlan', lang)}</button></div>
-          )}
-          {canAttr && phases.length > 0 && (
-            <div className="dp-manage">
-              <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
-            </div>
-          )}
-        </Section>
-
         <Section title={t('sec.analysis', lang)}>
           <div className="ia-top">
             <ScoreRing score={analysis.score} />
@@ -161,15 +148,37 @@ export function DetailPanel({
           <button className="btn sm primary ia-feas" onClick={() => setFeasOpen(true)}>{t('ia.feasibility', lang)}</button>
         </Section>
 
-        <Section title={t('sec.invest', lang)}>
-          <div className="d-tiles">
-            {INVEST_FIELDS.map((fld) => {
-              const v = inv?.[fld.key];
-              const has = v != null && !Number.isNaN(v);
-              return <Tile key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
-            })}
+        {/* development plan is the gate: joining it unlocks the development + investment sections */}
+        {!inPlan && canAttr && (
+          <div className="dp-gate">
+            <button className="btn primary dp-gate-btn" onClick={addToPlan}><IconPlus size={15} /> {t('d.addToPlan', lang)}</button>
+            <p className="dp-gate-hint">{t('d.planUnlock', lang)}</p>
           </div>
-        </Section>
+        )}
+
+        {inPlan && (
+          <>
+            <Section title={t('sec.devplan', lang)}>
+              {hasDevDesc && <p className="dp-desc">{devDesc}</p>}
+              <Timeline phases={phases} lang={lang} />
+              {canAttr && (
+                <div className="dp-manage">
+                  <button className="btn sm danger" onClick={removeFromPlan}><IconTrash size={13} /> {t('d.removeFromPlan', lang)}</button>
+                </div>
+              )}
+            </Section>
+
+            <Section title={t('sec.invest', lang)}>
+              <div className="d-tiles">
+                {INVEST_FIELDS.map((fld) => {
+                  const v = inv?.[fld.key];
+                  const has = v != null && !Number.isNaN(v);
+                  return <Tile key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
+                })}
+              </div>
+            </Section>
+          </>
+        )}
 
         <Section title={t('sec.project', lang)}>
           <div className="sb-caption">{t('sec.stage', lang)}</div>
@@ -370,13 +379,15 @@ function investIcon(unit: string): RN {
   if (unit === 'yr') return <IconClock size={13} />;
   return <IconInvest size={13} />;
 }
-/** Compact tile — small icon, label, value — two per row. */
+/** Premium stat tile — icon badge, label, value — two per row. */
 function Tile({ icon, l, v, chip }: { icon: RN; l: string; v: string; chip?: string }) {
   return (
     <div className="d-tile">
-      <span className="d-tile-ic">{chip ? <span className="cell-chip" style={{ background: chip }} /> : icon}</span>
-      <div className="d-tile-l">{l}</div>
-      <div className="d-tile-v">{v}</div>
+      <span className="d-tile-ic">{icon}</span>
+      <div className="d-tile-body">
+        <div className="d-tile-l">{l}</div>
+        <div className="d-tile-v">{chip && <span className="cell-chip" style={{ background: chip }} />}{v}</div>
+      </div>
     </div>
   );
 }

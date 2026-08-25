@@ -367,6 +367,7 @@ export const DICT: Record<string, Entry> = {
   'dp.notFound':     { ar: 'لم يتم العثور على القطعة', en: 'Plot not found' },
   'dp.count':        { ar: 'قطعة ضمن الخطة', en: 'plots in plan' },
   'd.addToPlan':     { ar: 'إضافة لخطة التطوير', en: 'Add to development plan' },
+  'd.planUnlock':    { ar: 'أضِف هذا البلوت لخطة التطوير لفتح تفاصيل التطوير والمؤشرات الاستثمارية.', en: 'Add this plot to the development plan to unlock its development & investment details.' },
   'powered':         { ar: 'powered by : Sa^^3R', en: 'powered by : Sa^^3R' },
 };
 export const t = (key: string, lang: Lang) => DICT[key]?.[lang] ?? key;
