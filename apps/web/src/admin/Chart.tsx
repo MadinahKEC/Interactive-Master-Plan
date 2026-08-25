@@ -11,7 +11,9 @@ export function Chart({ option, height = 230 }: { option: any; height?: number }
     inst.current = echarts.init(ref.current, undefined, { renderer: 'canvas' });
     const onResize = () => inst.current?.resize();
     window.addEventListener('resize', onResize);
-    return () => { window.removeEventListener('resize', onResize); inst.current?.dispose(); inst.current = null; };
+    window.addEventListener('beforeprint', onResize);
+    window.addEventListener('afterprint', onResize);
+    return () => { window.removeEventListener('resize', onResize); window.removeEventListener('beforeprint', onResize); window.removeEventListener('afterprint', onResize); inst.current?.dispose(); inst.current = null; };
   }, []);
 
   useEffect(() => { inst.current?.setOption(option, true); }, [option]);

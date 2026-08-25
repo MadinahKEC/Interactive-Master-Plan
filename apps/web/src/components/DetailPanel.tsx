@@ -12,7 +12,8 @@ import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconHome, IconInvest, IconClock, TypeIcon } from './icons';
+import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
 
 export function DetailPanel({
@@ -113,15 +114,15 @@ export function DetailPanel({
         )}
 
         <Section title={t('sec.land', lang)}>
-          <div className="d-list">
-            <Cell l={t('d.landuse', lang)} v={luLabel} chip={lu.color} sm />
-            <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} sm />
-            <Cell l={t('d.area', lang)} v={num(p.area, 2)} />
-            <Cell l={t('d.gfa', lang)} v={num(p.gfa, 1)} />
-            <Cell l={t('d.floors', lang)} v={num(p.floors)} />
-            <Cell l={t('d.height', lang)} v={num(p.height)} />
-            <Cell l={t('d.coverage', lang)} v={num(p.coverage, 2)} />
-            <Cell l={t('d.far', lang)} v={num(p.far, 2)} />
+          <div className="d-tiles">
+            <Tile icon={<IconLayers size={13} />} l={t('d.landuse', lang)} v={luLabel} chip={lu.color} />
+            <Tile icon={<IconHome size={13} />} l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} />
+            <Tile icon={<IconRuler size={13} />} l={t('d.area', lang)} v={num(p.area, 2)} />
+            <Tile icon={<IconBuilding size={13} />} l={t('d.gfa', lang)} v={num(p.gfa, 1)} />
+            <Tile icon={<IconBuilding size={13} />} l={t('d.floors', lang)} v={num(p.floors)} />
+            <Tile icon={<IconRuler size={13} />} l={t('d.height', lang)} v={num(p.height)} />
+            <Tile icon={<IconLayers size={13} />} l={t('d.coverage', lang)} v={num(p.coverage, 2)} />
+            <Tile icon={<IconInvest size={13} />} l={t('d.far', lang)} v={num(p.far, 2)} />
           </div>
         </Section>
 
@@ -161,11 +162,11 @@ export function DetailPanel({
         </Section>
 
         <Section title={t('sec.invest', lang)}>
-          <div className="d-list">
+          <div className="d-tiles">
             {INVEST_FIELDS.map((fld) => {
               const v = inv?.[fld.key];
               const has = v != null && !Number.isNaN(v);
-              return <Cell key={fld.key} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
+              return <Tile key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
             })}
           </div>
         </Section>
@@ -363,10 +364,19 @@ function ScoreRing({ score }: { score: number }) {
     </div>
   );
 }
-function Cell({ l, v, sm, chip }: { l: string; v: string; sm?: boolean; chip?: string }) {
+function investIcon(unit: string): RN {
+  if (unit === 'sqm') return <IconRuler size={13} />;
+  if (unit === 'num') return <IconBuilding size={13} />;
+  if (unit === 'yr') return <IconClock size={13} />;
+  return <IconInvest size={13} />;
+}
+/** Compact tile — small icon, label, value — two per row. */
+function Tile({ icon, l, v, chip }: { icon: RN; l: string; v: string; chip?: string }) {
   return (
-    <div className="d-cell"><div className="l">{l}</div>
-      <div className={`v ${sm ? 'sm' : ''}`}>{chip && <span className="cell-chip" style={{ background: chip }} />}{v}</div>
+    <div className="d-tile">
+      <span className="d-tile-ic">{chip ? <span className="cell-chip" style={{ background: chip }} /> : icon}</span>
+      <div className="d-tile-l">{l}</div>
+      <div className="d-tile-v">{v}</div>
     </div>
   );
 }

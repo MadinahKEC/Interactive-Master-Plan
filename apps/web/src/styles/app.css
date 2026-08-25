@@ -115,15 +115,14 @@ html[dir="rtl"] .rail-hide svg{transform:rotate(-90deg)}
 .d-cell .l{font-size:10px;color:var(--kec-muted);margin-bottom:4px}
 .d-cell .v{font-size:14px;font-weight:600;color:var(--kec-ink);font-family:var(--kec-mono);display:flex;align-items:center;flex-wrap:wrap;gap:2px 6px;min-width:0;overflow-wrap:anywhere;line-height:1.3}
 .d-cell .v.sm{font-size:12.5px;font-family:var(--kec-font)}
-/* compact key/value rows (Land data + Investment highlights) — matches the tidy
-   feel of the analysis section rather than big cards */
-.d-list{display:flex;flex-direction:column;padding:2px 14px 12px}
-.d-list .d-cell{display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;border:0;border-top:1px solid var(--kec-hairline);border-radius:0;padding:8px 2px}
-.d-list .d-cell:first-child{border-top:0}
-.d-list .d-cell .l{font-size:11.5px;color:var(--kec-muted);margin:0;flex:1;min-width:0}
-.d-list .d-cell .v{font-size:13px;text-align:end;justify-content:flex-end;flex:0 0 auto;max-width:60%}
-.d-list .d-cell .v.sm{font-size:12px}
-.cell-chip{width:11px;height:11px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.14)}
+/* compact data tiles — small icon / label / value, two per row (Land data + Investment) */
+.d-tiles{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:4px 14px 12px}
+.d-tile{display:flex;flex-direction:column;gap:2px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:9px;padding:7px 10px;min-width:0}
+.d-tile-ic{height:14px;display:flex;align-items:center;color:var(--kec-green)}
+.d-tile-ic svg{width:13px;height:13px}
+.d-tile-l{font-size:9.5px;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.d-tile-v{font-size:12.5px;font-weight:600;color:var(--kec-title);font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:5px;overflow-wrap:anywhere;line-height:1.25;min-width:0}
+.cell-chip{width:10px;height:10px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.14)}
 .d-actions{display:flex;gap:8px;padding:2px 12px 10px}
 .btn{flex:1;font-size:12.5px;font-weight:600;border-radius:10px;padding:10px;cursor:pointer;border:1px solid var(--kec-hairline);background:var(--card);color:var(--kec-title);transition:.15s}
 .btn:hover{background:var(--kec-surface-2)}
@@ -465,8 +464,24 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .ehb-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:11px;color:var(--kec-muted)}
 .ehb-legend span{display:flex;align-items:center;gap:6px}
 .ehb-legend i{width:11px;height:11px;border-radius:3px;flex:none}
-.exec-charts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+/* secondary stat strip */
+.exec-sats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.exec-sat{display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:9px;padding:8px 8px;text-align:center;min-width:0}
+.es-dot{width:8px;height:8px;border-radius:50%;margin-bottom:2px}
+.es-v{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:var(--kec-green-deep);line-height:1}
+.es-l{font-size:9px;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.exec-charts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
 .exec-chart{background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:8px 11px}
+/* sector summary table (register-app style) */
+.exec-table-card{background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:12px 14px;margin-bottom:6px}
+.exec-table-h{font-size:13px;font-weight:600;color:var(--kec-green-deep);margin-bottom:10px}
+.exec-table{width:100%;border-collapse:collapse;font-size:12px}
+.exec-table thead th{text-align:start;color:var(--kec-green-deep);font-weight:500;font-size:10px;padding:6px 8px;background:var(--kec-surface);border-bottom:1px solid var(--kec-hairline);white-space:nowrap}
+.exec-table thead th:first-child{border-start-start-radius:6px}
+.exec-table thead th:last-child{border-start-end-radius:6px}
+.exec-table td{padding:6px 8px;border-bottom:1px solid #EEF2EA;color:var(--kec-ink)}
+.exec-table td.mono{font-family:'IBM Plex Mono',monospace}
+.exec-table-total td{font-weight:700;color:var(--kec-title);border-top:2px solid var(--kec-hairline);border-bottom:0}
 .exec-pipe{padding:8px 6px}
 .exec-pipe-h{font-size:13px;font-weight:600;color:var(--kec-green-deep);margin:2px 0 14px 4px}
 .exec-pipe-row{display:grid;grid-template-columns:92px 1fr 28px;align-items:center;gap:10px;margin-bottom:10px}
@@ -489,10 +504,15 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 }
 @media print {
   #root{display:none!important}
-  .exec-overlay{position:static;overflow:visible;background:#fff}
-  .exec-sheet{max-width:none;box-shadow:none;padding:8mm;min-height:auto}
+  .exec-overlay{position:static;overflow:visible;background:#fff;display:block}
+  .exec-sheet{max-width:none;box-shadow:none;padding:6mm;min-height:auto}
+  /* force backgrounds, chart colours and bars to actually print */
+  .exec-overlay, .exec-overlay *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .no-print{display:none!important}
-  .exec-chart,.exec-hero,.exec-strip{page-break-inside:avoid}
+  .exec-chart,.exec-hero,.exec-strip,.exec-sats,.exec-table-card,.exec-pipe{page-break-inside:avoid}
+  .exec-charts{grid-template-columns:repeat(3,1fr)}
+  .exec-strip{grid-template-columns:repeat(6,1fr)}
+  .exec-sats{grid-template-columns:repeat(7,1fr)}
   @page{size:A4 landscape;margin:8mm}
 }
 
