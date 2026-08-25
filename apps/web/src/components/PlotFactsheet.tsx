@@ -106,54 +106,54 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
           </div>
         </div>
 
-        <div className="pf-barsrow">
-          <div className="pf-barbox">
-            <div className="pf-cap">{t('sec.stage', lang)}</div>
-            <StageBar lang={lang} stageKey={o.stage} />
-          </div>
-          <div className="pf-barbox">
-            <div className="pf-cap">{t('sec.license', lang)}</div>
-            <StageBar lang={lang} stageKey={o.license} stages={LICENSE_STAGES} variant="license" />
-          </div>
-        </div>
-
-        <div className="pf-cols">
-          <div className="pf-colbox">
-            <div className="pf-cap">{t('sec.ownership', lang)}</div>
-            <Cell l={t('d.ownership', lang)} v={lang === 'ar' ? pr.ownership.ar : pr.ownership.en} />
-            <Cell l={t('a.owner', lang)} v={pr.owner || '—'} />
-            <Cell l={t('d.purchase', lang)} v={o.purchase_date || '—'} />
-            <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} />
-          </div>
-          <div className="pf-colbox">
-            <div className="pf-cap">{t('sec.project', lang)}</div>
-            <Cell l={t('a.type', lang)} v={lang === 'ar' ? pr.type.ar : pr.type.en} />
-            <Cell l={t('sec.stage', lang)} v={stg ? (lang === 'ar' ? stg.ar : stg.en) : '—'} />
-            <Cell l={t('sec.license', lang)} v={lic ? (lang === 'ar' ? lic.ar : lic.en) : '—'} />
-            <Cell l={t('d.landuse', lang)} v={luLabel} />
-          </div>
-        </div>
-
-        {o.investment && INVEST_FIELDS.some((f) => o.investment![f.key] != null) && (
-          <div className="pf-invest-box">
-            <div className="pf-cap">{t('sec.invest', lang)}</div>
-            <div className="pf-invest-grid">
-              {INVEST_FIELDS.filter((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])).map((f) => (
-                <div className="pf-inv" key={f.key}>
-                  <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit, lang)}</div>
-                  <div className="pf-inv-l">{lang === 'ar' ? f.ar : f.en}</div>
-                </div>
-              ))}
+        <div className="pf-body">
+          <div className="pf-bcol">
+            <div className="pf-barbox">
+              <div className="pf-cap">{t('sec.stage', lang)}</div>
+              <StageBar lang={lang} stageKey={o.stage} />
             </div>
+            <div className="pf-colbox">
+              <div className="pf-cap">{t('sec.ownership', lang)}</div>
+              <Cell l={t('d.ownership', lang)} v={lang === 'ar' ? pr.ownership.ar : pr.ownership.en} />
+              <Cell l={t('a.owner', lang)} v={pr.owner || '—'} />
+              <Cell l={t('d.purchase', lang)} v={o.purchase_date || '—'} />
+              <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} />
+            </div>
+            <div className="pf-colbox">
+              <div className="pf-cap">{t('sec.project', lang)}</div>
+              <Cell l={t('a.type', lang)} v={lang === 'ar' ? pr.type.ar : pr.type.en} />
+              <Cell l={t('sec.stage', lang)} v={stg ? (lang === 'ar' ? stg.ar : stg.en) : '—'} />
+              <Cell l={t('sec.license', lang)} v={lic ? (lang === 'ar' ? lic.ar : lic.en) : '—'} />
+              <Cell l={t('d.landuse', lang)} v={luLabel} />
+            </div>
+            {summary && (
+              <div className="pf-summary-box">
+                <div className="pf-cap">{lang === 'ar' ? 'نبذة' : 'Summary'}</div>
+                <p>{summary}</p>
+              </div>
+            )}
           </div>
-        )}
 
-        {summary && (
-          <div className="pf-summary-box">
-            <div className="pf-cap">{lang === 'ar' ? 'نبذة' : 'Summary'}</div>
-            <p>{summary}</p>
+          <div className="pf-bcol">
+            <div className="pf-barbox">
+              <div className="pf-cap">{t('sec.license', lang)}</div>
+              <StageBar lang={lang} stageKey={o.license} stages={LICENSE_STAGES} variant="license" />
+            </div>
+            {o.investment && INVEST_FIELDS.some((f) => o.investment![f.key] != null) && (
+              <div className="pf-invest-box">
+                <div className="pf-cap">{t('sec.invest', lang)}</div>
+                <div className="pf-invest-grid">
+                  {INVEST_FIELDS.filter((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])).map((f) => (
+                    <div className="pf-inv" key={f.key}>
+                      <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit, lang)}</div>
+                      <div className="pf-inv-l">{lang === 'ar' ? f.ar : f.en}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         <footer className="pf-footer">
           <span>© {lang === 'ar' ? 'مدينة المعرفة الاقتصادية — المخطط العام' : 'Knowledge Economic City — Master Plan'}</span>

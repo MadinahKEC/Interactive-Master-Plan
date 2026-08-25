@@ -126,7 +126,7 @@ export async function createUserSecondary(email: string, password: string) {
 
 interface SyncableStore {
   plotAttrs: unknown; projects: unknown; landUses: unknown; plotGeom: unknown;
-  merges: unknown; users: unknown; audit: unknown;
+  merges: unknown; users: unknown; audit: unknown; hiddenCards: unknown;
   importAll: (json: string) => boolean;
 }
 
@@ -157,6 +157,7 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       const blob = JSON.stringify({
         plotAttrs: st.plotAttrs, projects: st.projects, landUses: st.landUses,
         plotGeom: st.plotGeom, merges: st.merges, users: st.users, audit: st.audit,
+        hiddenCards: st.hiddenCards,
       });
       lastNonce = Math.random().toString(36).slice(2) + Date.now();
       setDoc(overridesDoc, { blob, nonce: lastNonce, updatedAt: Date.now() })

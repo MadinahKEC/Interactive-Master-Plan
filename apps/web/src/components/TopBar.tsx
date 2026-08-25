@@ -17,8 +17,7 @@ export function TopBar() {
       <div className="spacer" />
       {user && (
         <div className="tb-user">
-          <span><b>{user.name}</b></span>
-          <span className="role">{t(`role.${user.role}`, lang)}</span>
+          <span className="tb-pill"><span className="tb-dot" />{user.name}</span>
         </div>
       )}
     </div>

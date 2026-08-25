@@ -258,6 +258,8 @@ export const DICT: Record<string, Entry> = {
   'sec.collapse':    { ar: 'طيّ / إظهار', en: 'Collapse / expand' },
   'cp.labels':       { ar: 'إظهار أرقام القطع على الخريطة', en: 'Show plot numbers on map' },
   'd.pdf':           { ar: 'بطاقة PDF', en: 'PDF factsheet' },
+  'd.customize':     { ar: 'تخصيص الحقول والبطاقات', en: 'Customize fields & cards' },
+  'd.customizeHint': { ar: 'وضع التخصيص: اضغط ✕ لإخفاء أي حقل أو بطاقة، و + لإرجاعه. يُطبَّق على الجميع.', en: 'Customize mode: press ✕ to remove any field or card, + to restore. Applies to everyone.' },
   'pf.title':        { ar: 'بطاقة بلوت', en: 'Plot Factsheet' },
   'dash.gfaSector':  { ar: 'إجمالي GFA حسب القطاع', en: 'Total GFA by sector' },
   'dash.permits':    { ar: 'التراخيص الصادرة', en: 'Permits issued' },

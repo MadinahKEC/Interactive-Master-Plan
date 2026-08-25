@@ -6,7 +6,7 @@ import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { useBackClose } from '../lib/backstack';
 import { Chart } from '../admin/Chart';
-import { IconClose, IconPlots, IconInvest, IconBuilding } from './icons';
+import { IconClose, IconPlots, IconInvest, IconBuilding, IconExport } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -50,12 +50,21 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
 
   const devPct = s.area ? (s.developed / s.area) * 100 : 0;
   const ref = `KEC-EXE-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const printExec = () => {
+    const prev = document.title;
+    document.title = `${t('brand.title', lang)} — ${t('exec.title', lang)} — ${ref}`;
+    window.print();
+    setTimeout(() => { document.title = prev; }, 800);
+  };
 
-  const titleOf = (text: string) => ({ text, left: 10, top: 7, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any } });
+  // Report fonts (Latin → Inter / Source Serif; Arabic glyphs fall back to Readex Pro).
+  const SANS = 'Inter, "Readex Pro", system-ui, sans-serif';
+  const SERIF = '"Source Serif 4", "Readex Pro", Georgia, serif';
+  const titleOf = (text: string) => ({ text, left: 10, top: 7, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any, fontFamily: SERIF } });
   // donut: value printed inside each slice AND appended to every legend row, so no
   // figure is ever hidden (a tiny slice still shows its number in the legend).
   const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, unit?: string) => ({
-    title: titleOf(title),
+    title: titleOf(title), textStyle: { fontFamily: SANS },
     tooltip: { trigger: 'item', valueFormatter: (v: any) => nf.format(v) + (unit ? ' ' + unit : '') },
     legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 }, itemWidth: 11, itemHeight: 11 },
     series: [{ type: 'pie', radius: ['38%', '64%'], center: ['50%', '46%'], avoidLabelOverlap: true,
@@ -65,7 +74,7 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   });
   // vertical bar with the value printed on top of each column
   const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string, labelFmt?: (v: number) => string) => ({
-    title: titleOf(title),
+    title: titleOf(title), textStyle: { fontFamily: SANS },
     grid: { left: 46, right: 18, top: 46, bottom: 34 }, tooltip: { trigger: 'axis', valueFormatter: valFmt },
     xAxis: { type: 'category', data: keys.map(labelOf), axisLabel: { fontSize: 10, interval: 0, rotate: keys.length > 4 ? 18 : 0 } },
     yAxis: { type: 'value', axisLabel: { fontSize: 9, formatter: (v: number) => (labelFmt ? labelFmt(v) : compact(v)) } },
@@ -74,7 +83,7 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   });
   // horizontal bar (good for many categories) with the value at the end
   const hbar = (title: string, rows: { name: string; value: number; color: string }[], unit?: string) => ({
-    title: titleOf(title),
+    title: titleOf(title), textStyle: { fontFamily: SANS },
     grid: { left: 8, right: 60, top: 40, bottom: 10, containLabel: true }, tooltip: { trigger: 'item', valueFormatter: (v: any) => nf.format(v) + (unit ? ' ' + unit : '') },
     xAxis: { type: 'value', show: false }, yAxis: { type: 'category', inverse: true, data: rows.map((r) => r.name), axisLabel: { fontSize: 9.5 }, axisTick: { show: false }, axisLine: { show: false } },
     series: [{ type: 'bar', data: rows.map((r) => ({ value: Math.round(r.value), itemStyle: { color: r.color, borderRadius: [0, 5, 5, 0] } })), barWidth: '62%',
@@ -82,7 +91,7 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   });
   // semicircle gauge for the developed-land share
   const gauge = (title: string, pct: number) => ({
-    title: titleOf(title),
+    title: titleOf(title), textStyle: { fontFamily: SANS },
     series: [{ type: 'gauge', startAngle: 200, endAngle: -20, min: 0, max: 100, radius: '92%', center: ['50%', '74%'],
       progress: { show: true, width: 16, itemStyle: { color: '#2F6B3E' } }, axisLine: { lineStyle: { width: 16, color: [[1, '#EAF3E4']] } },
       pointer: { show: false }, axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
@@ -105,6 +114,7 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
           </div>
           <img className="exec-logo" src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
           <div className="exec-acts no-print">
+            <button className="exec-print" onClick={printExec}><IconExport size={15} /> {t('report.print', lang)}</button>
             <button className="ic-btn" onClick={onClose}><IconClose size={18} /></button>
           </div>
         </header>

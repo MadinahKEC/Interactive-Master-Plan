@@ -9,7 +9,11 @@
   --panel-bg:rgba(251,252,250,.94);
   --tip-bg:#ffffff;
   --map-bg:#EAF3E4;
-  --kec-font:'Readex Pro',system-ui,'Segoe UI',Tahoma,sans-serif;
+  /* Latin glyphs render in Inter; Arabic glyphs fall through to Readex Pro
+     automatically (per-glyph fallback), so both scripts stay first-class. */
+  --kec-font:'Inter','Readex Pro',system-ui,'Segoe UI',Tahoma,sans-serif;
+  /* Editorial serif for report + section headings (Arabic falls back to Readex Pro). */
+  --kec-serif:'Source Serif 4','Readex Pro',Georgia,'Times New Roman',serif;
   --kec-mono:'IBM Plex Mono',ui-monospace,monospace;
   --shadow:0 6px 22px rgba(20,61,30,.10),0 1px 3px rgba(20,61,30,.08);
   --shadow-lg:0 18px 50px rgba(20,61,30,.22);

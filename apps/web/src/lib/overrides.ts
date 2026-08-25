@@ -88,6 +88,7 @@ interface OverridesState {
   createdPlots: Record<string, CreatedPlot>;   // new plots drawn by admins
   comments: Record<string, PlotComment[]>;     // notes per plot code
   hiddenLandmarks: string[];                   // landmark ids removed by curators
+  hiddenCards: string[];                        // detail-card sections/fields the admin removed (prefixed keys: 's:…' / 'f:…')
   planStyle: PlanStyle;                        // map styling for development-plan plots
   investors: Record<string, InvestorLead[]>;   // investor-interest pipeline per plot
   audit: AuditEntry[];
@@ -115,6 +116,7 @@ interface OverridesState {
   removeComment: (code: string, id: string) => void;
   hideLandmark: (id: string, actor?: string) => void;
   showAllLandmarks: () => void;
+  toggleHiddenCard: (key: string, actor?: string) => void;
   setPlanStyle: (patch: Partial<PlanStyle>, actor?: string) => void;
   addInvestor: (code: string, lead: Omit<InvestorLead, 'id' | 'at'>, actor?: string) => void;
   updateInvestor: (code: string, id: string, patch: Partial<InvestorLead>) => void;
@@ -154,6 +156,7 @@ export const useOverrides = create<OverridesState>()(
       createdPlots: {},
       comments: {},
       hiddenLandmarks: [],
+      hiddenCards: [],
       planStyle: DEFAULT_PLAN_STYLE,
       investors: {},
       audit: [],
@@ -188,6 +191,14 @@ export const useOverrides = create<OverridesState>()(
           audit: pushAudit(s, { actor, action: 'landmark.hide', target: id, detail: 'removed' }),
         })),
       showAllLandmarks: () => set({ hiddenLandmarks: [] }),
+      toggleHiddenCard: (key, actor = 'admin') =>
+        set((s) => {
+          const on = s.hiddenCards.includes(key);
+          return {
+            hiddenCards: on ? s.hiddenCards.filter((k) => k !== key) : [...s.hiddenCards, key],
+            audit: pushAudit(s, { actor, action: on ? 'card.show' : 'card.hide', target: key, detail: on ? 'restored' : 'removed' }),
+          };
+        }),
       setPlanStyle: (patch, actor = 'admin') =>
         set((s) => ({ planStyle: { ...s.planStyle, ...patch }, audit: pushAudit(s, { actor, action: 'planStyle', target: 'plan', detail: JSON.stringify(patch) }) })),
 
@@ -275,7 +286,7 @@ export const useOverrides = create<OverridesState>()(
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks, planStyle: get().planStyle, investors: get().investors }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks, hiddenCards: get().hiddenCards, planStyle: get().planStyle, investors: get().investors }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -292,6 +303,7 @@ export const useOverrides = create<OverridesState>()(
             createdPlots: o.createdPlots ?? s.createdPlots,
             comments: o.comments ?? s.comments,
             hiddenLandmarks: o.hiddenLandmarks ?? s.hiddenLandmarks,
+            hiddenCards: o.hiddenCards ?? s.hiddenCards,
             planStyle: o.planStyle ?? s.planStyle,
             investors: o.investors ?? s.investors,
             audit: o.audit ?? s.audit,
@@ -307,9 +319,9 @@ export const useOverrides = create<OverridesState>()(
         // restore the snapshot taken before this edit; drop this edit and every newer one
         return { ...s.audit[idx].before, audit: s.audit.slice(idx + 1) } as any;
       }),
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], planStyle: DEFAULT_PLAN_STYLE, investors: {}, audit: [] }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], hiddenCards: [], planStyle: DEFAULT_PLAN_STYLE, investors: {}, audit: [] }),
     }),
     // `before` snapshots stay in memory only — persisting them would bloat storage/sync.
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, planStyle: s.planStyle, investors: s.investors, audit: s.audit.map(({ before, ...e }) => e) }) as any },
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, hiddenCards: s.hiddenCards, planStyle: s.planStyle, investors: s.investors, audit: s.audit.map(({ before, ...e }) => e) }) as any },
   ),
 );
