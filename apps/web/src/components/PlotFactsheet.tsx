@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SECTORS, type PlotProps } from '@kec/types';
 import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInvest, t, type ProjectInfo } from '../lib/domain';
+import { computeInvestmentScore, scoreColor, gradeLabel } from '../lib/investment';
 import { StageBar } from './StageBar';
 import type { EffLandUse } from '../lib/effective';
 import { IconClose, IconOwner } from './icons';
@@ -10,8 +11,8 @@ import { useBackClose } from '../lib/backstack';
 const nf = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
 /** Premium one-page (A4) print-ready factsheet for a single plot — imagery + full data. */
-export function PlotFactsheet({ plot, projects, landUses, onClose }: {
-  plot: PlotProps; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onClose: () => void;
+export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }: {
+  plot: PlotProps; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; haramKm?: number; onClose: () => void;
 }) {
   const lang = (document.documentElement.lang === 'ar' ? 'ar' : 'en') as 'ar' | 'en';
   useBackClose(true, onClose, 100);
@@ -31,6 +32,7 @@ export function PlotFactsheet({ plot, projects, landUses, onClose }: {
   const stg = PROGRESS_STAGES.find((x) => x.key === o.stage);
   const lic = LICENSE_STAGES.find((x) => x.key === o.license);
   const summary = lang === 'ar' ? o.summary_ar : o.summary_en;
+  const analysis = computeInvestmentScore(p, o, haramKm);
   const gallery = o.gallery ?? [];
   const company = lang === 'ar' ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City';
   // The browser uses document.title as the default "Save as PDF" filename.
@@ -88,6 +90,11 @@ export function PlotFactsheet({ plot, projects, landUses, onClose }: {
               <span className="pf-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
             </div>
             <div className="pf-owner"><IconOwner size={14} /> {pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')} <span className="pf-own-badge" style={{ background: pr.ownership.color }}>{lang === 'ar' ? pr.ownership.ar : pr.ownership.en}</span></div>
+            <div className="pf-score" style={{ borderColor: scoreColor(analysis.score) }}>
+              <span className="pf-score-n" style={{ color: scoreColor(analysis.score) }}>{analysis.score}</span>
+              <span className="pf-score-t"><b>{analysis.grade} · {gradeLabel(analysis.grade, lang)}</b>{t('ia.score', lang)}</span>
+              <span className="pf-score-h">{t('ia.haram', lang)}: {haramKm.toFixed(1)} {lang === 'ar' ? 'كم' : 'km'}</span>
+            </div>
             <div className="pf-stats">
               <Stat v={nf(p.area, 0)} l={`${t('d.area', lang)} · m²`} big />
               <Stat v={nf(p.gfa, 0)} l="GFA · m²" big />

@@ -52,15 +52,16 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   const ref = `KEC-EXE-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
   const titleOf = (text: string) => ({ text, left: 10, top: 7, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any } });
-  // donut with the value printed inside each slice + a legend of names
+  // donut: value printed inside each slice AND appended to every legend row, so no
+  // figure is ever hidden (a tiny slice still shows its number in the legend).
   const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, unit?: string) => ({
     title: titleOf(title),
     tooltip: { trigger: 'item', valueFormatter: (v: any) => nf.format(v) + (unit ? ' ' + unit : '') },
     legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 }, itemWidth: 11, itemHeight: 11 },
-    series: [{ type: 'pie', radius: ['40%', '66%'], center: ['50%', '50%'], avoidLabelOverlap: true,
-      label: { show: true, position: 'inside', formatter: (p: any) => (p.percent >= 6 ? compact(p.value) : ''), fontSize: 10, color: '#fff', fontWeight: 700 },
+    series: [{ type: 'pie', radius: ['38%', '64%'], center: ['50%', '46%'], avoidLabelOverlap: true,
+      label: { show: true, position: 'inside', formatter: (p: any) => (p.percent >= 7 ? compact(p.value) : ''), fontSize: 10, color: '#fff', fontWeight: 700 },
       labelLayout: { hideOverlap: true },
-      data: Object.keys(obj).filter((k) => obj[k] > 0).map((k) => ({ name: labelOf(k), value: Math.round(obj[k]), itemStyle: { color: colorOf(k) } })) }],
+      data: Object.keys(obj).filter((k) => obj[k] > 0).map((k) => ({ name: `${labelOf(k)} · ${compact(obj[k])}`, value: Math.round(obj[k]), itemStyle: { color: colorOf(k) } })) }],
   });
   // vertical bar with the value printed on top of each column
   const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string, labelFmt?: (v: number) => string) => ({
@@ -129,17 +130,17 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
 
         <div className="exec-charts">
           <div className="exec-chart">
-            <Chart height={168} option={gauge(t('exec.developed', lang), devPct)} />
+            <Chart height={192} option={gauge(t('exec.developed', lang), devPct)} />
             <div className="exec-gauge-cap">
               <span><i style={{ background: '#2F6B3E' }} />{t('exec.developed', lang)} · {compact(s.developed)} m²</span>
               <span><i style={{ background: '#9A8A1E' }} />{t('exec.underdev', lang)} · {compact(s.underDev)} m²</span>
             </div>
           </div>
-          <div className="exec-chart"><Chart height={188} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={188} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={188} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
-          <div className="exec-chart"><Chart height={188} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
-          <div className="exec-chart"><Chart height={188} option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
+          <div className="exec-chart"><Chart height={205} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height={205} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height={205} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
+          <div className="exec-chart"><Chart height={205} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
+          <div className="exec-chart"><Chart height={205} option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
         </div>
 
         <footer className="exec-foot">

@@ -23,8 +23,8 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan, onOpenExec }: { onOpenAdmi
 
       <div className="rail-group">
         <RailBtn tip={t('d.fullPlan', lang)} onClick={fitAll}><IconHome size={20} /></RailBtn>
-        <RailBtn tip={t('tb.exec', lang)} onClick={onOpenExec}><IconDashboard size={20} /></RailBtn>
-        <RailBtn tip={t('tb.devplan', lang)} onClick={onOpenDevPlan}><IconCalendar size={20} /></RailBtn>
+        {canAdmin && <RailBtn tip={t('tb.exec', lang)} onClick={onOpenExec}><IconDashboard size={20} /></RailBtn>}
+        {canAdmin && <RailBtn tip={t('tb.devplan', lang)} onClick={onOpenDevPlan}><IconCalendar size={20} /></RailBtn>}
         {canAdmin && <RailBtn tip={t('tb.admin', lang)} onClick={onOpenAdmin}><IconAdmin size={20} /></RailBtn>}
       </div>
 
@@ -34,7 +34,7 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan, onOpenExec }: { onOpenAdmi
       <div className="rail-group">
         <RailBtn tip={t('tb.layers', lang)} active={layersOpen || viewOn} onClick={() => setLayersOpen((o) => !o)}><IconLayers size={20} /></RailBtn>
         <RailBtn tip={t('tb.measure', lang)} active={measuring} onClick={toggleMeasure}><IconRuler size={20} /></RailBtn>
-        <RailBtn tip={t('tb.export', lang)} onClick={requestExport}><IconExport size={20} /></RailBtn>
+        {canAdmin && <RailBtn tip={t('tb.export', lang)} onClick={requestExport}><IconExport size={20} /></RailBtn>}
       </div>
 
       {canAdmin && (

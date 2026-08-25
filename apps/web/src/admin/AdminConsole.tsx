@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
-import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE, PLAN_MARKERS } from '../lib/overrides';
+import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary, watchAccessLog, type AccessSession } from '../lib/firebase';
 import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
@@ -228,12 +228,6 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
           <label className="lu-plan-c"><input type="color" value={planStyle.outline} onChange={(e) => setPlanStyle({ outline: e.target.value })} /><span>{t('a.planOutline', lang)}</span></label>
           <label className="lu-plan-k"><input type="checkbox" checked={planStyle.dash} onChange={(e) => setPlanStyle({ dash: e.target.checked })} /><span>{t('a.planDash', lang)}</span></label>
           <label className="lu-plan-k"><input type="checkbox" checked={planStyle.glow} onChange={(e) => setPlanStyle({ glow: e.target.checked })} /><span>{t('a.planGlow', lang)}</span></label>
-          <label className="lu-plan-c"><span>{t('a.planMarker', lang)}</span>
-            <select value={planStyle.marker ?? 'arrow'} onChange={(e) => setPlanStyle({ marker: e.target.value })}>
-              {PLAN_MARKERS.map((m) => <option key={m.key} value={m.key}>{lang === 'ar' ? m.ar : m.en}</option>)}
-            </select>
-          </label>
-          <label className="lu-plan-c"><input type="color" value={planStyle.markerColor ?? '#9A8A1E'} onChange={(e) => setPlanStyle({ markerColor: e.target.value })} /><span>{t('a.planMarkerColor', lang)}</span></label>
           <button className="btn sm" onClick={() => setPlanStyle(DEFAULT_PLAN_STYLE)}>{t('a.reset', lang)}</button>
         </div>
       </div>

@@ -367,26 +367,6 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     return () => { clearTimeout(start); clearInterval(timer); };
   }, [flyover]);
 
-  // ---------- development-plan plot markers (editable shape + colour) ----------
-  const planMk = useRef<maplibregl.Marker[]>([]);
-  useEffect(() => {
-    const map = mapRef.current; if (!map) return;
-    planMk.current.forEach((m) => m.remove()); planMk.current = [];
-    const shape = planStyle.marker ?? 'arrow';
-    const color = planStyle.markerColor ?? '#9A8A1E';
-    if (!data || shape === 'none') return;
-    for (const f of data.features) {
-      if (!(f.properties as any).planStatus) continue;
-      const ring = ringOf(f.geometry);
-      let x = 0, y = 0; for (const p of ring) { x += p[0]; y += p[1]; }
-      const c: [number, number] = [x / ring.length, y / ring.length];
-      const el = document.createElement('div');
-      el.className = 'plan-marker';
-      el.innerHTML = planMarkerSVG(shape, color);
-      planMk.current.push(new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(c).addTo(map));
-    }
-    return () => { planMk.current.forEach((m) => m.remove()); planMk.current = []; };
-  }, [data, planStyle.marker, planStyle.markerColor]);
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
@@ -866,20 +846,6 @@ function arrowHead(s: number[], e: number[]): number[][][] {
   const size = 0.00030;
   const seg = (a: number): number[][] => [e, [e[0] + (Math.cos(a) * size) / cosLat, e[1] + Math.sin(a) * size]];
   return [seg(ang + Math.PI - 0.5), seg(ang + Math.PI + 0.5)];
-}
-
-/** Inline SVG for a development-plan plot marker in the chosen shape + colour. */
-function planMarkerSVG(shape: string, c: string): string {
-  const wrap = (inner: string) => `<svg viewBox="0 0 24 24" width="22" height="22">${inner}</svg>`;
-  switch (shape) {
-    case 'arrow': return wrap(`<path d="M12 3 L20 13 H15.5 V21 H8.5 V13 H4 Z" fill="${c}" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>`);
-    case 'star': return wrap(`<path d="M12 2.5 l2.7 5.6 6.1 .9 -4.4 4.3 1 6.1 -5.4 -2.9 -5.4 2.9 1 -6.1 -4.4 -4.3 6.1 -.9 Z" fill="${c}" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/>`);
-    case 'diamond': return wrap(`<path d="M12 2 L22 12 L12 22 L2 12 Z" fill="${c}" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>`);
-    case 'circle': return wrap(`<circle cx="12" cy="12" r="8.5" fill="${c}" stroke="#fff" stroke-width="1.3"/>`);
-    case 'flag': return wrap(`<path d="M6 21 V3" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M7 3.5 H19 L16 8 L19 12.5 H7 Z" fill="${c}" stroke="#fff" stroke-width="1"/>`);
-    case 'check': return wrap(`<circle cx="12" cy="12" r="9" fill="${c}"/><path d="M7.5 12.5 l3 3 L16.5 8.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`);
-    default: return '';
-  }
 }
 
 function distToSeg(p: [number, number], a: [number, number], b: [number, number]) {

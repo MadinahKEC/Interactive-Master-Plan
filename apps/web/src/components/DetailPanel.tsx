@@ -12,8 +12,6 @@ import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
-import { useLandmarks } from '../lib/landmarks';
-import { IconLandmark } from './icons';
 import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconHome, IconInvest, IconClock, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
@@ -34,10 +32,12 @@ export function DetailPanel({
   const canAttr = can(role as any, 'plot:attr:update');
   const canGeom = can(role as any, 'plot:geometry:update');
   const shortlist = useShortlist();
-  const lmData = useLandmarks();
   const [shareOpen, setShareOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [feasOpen, setFeasOpen] = useState(false);
+  // reset any open sub-modal when the selection changes (or clears) so e.g. the QR
+  // never re-opens by itself on the next plot.
+  useEffect(() => { setShareOpen(false); setPdfOpen(false); setFeasOpen(false); }, [selected?.code]);
   if (!selected) return null;
   const p = selected;
   const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
@@ -58,12 +58,6 @@ export function DetailPanel({
   const centroid = feat ? centroidOf(feat.geometry) : HARAM;
   const haramKm = haversineKm(centroid, HARAM);
   const analysis = computeInvestmentScore(p, pr.overlay, haramKm);
-  const nearKm = (cats: string[]) => {
-    let b = Infinity;
-    for (const lm of lmData) if (cats.includes(lm.c)) { const d = haversineKm([lm.lon, lm.lat], centroid); if (d < b) b = d; }
-    return b === Infinity ? null : b;
-  };
-  const fmtKm = (km: number | null) => (km == null ? '—' : km < 1 ? `${Math.round(km * 1000)} ${lang === 'ar' ? 'م' : 'm'}` : `${km.toFixed(1)} ${lang === 'ar' ? 'كم' : 'km'}`);
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
   const addToPlan = () => {
@@ -134,17 +128,6 @@ export function DetailPanel({
             <Tile icon={<IconRuler size={13} />} l={t('d.height', lang)} v={num(p.height)} />
             <Tile icon={<IconLayers size={13} />} l={t('d.coverage', lang)} v={num(p.coverage, 2)} />
             <Tile icon={<IconInvest size={13} />} l={t('d.far', lang)} v={num(p.far, 2)} />
-          </div>
-        </Section>
-
-        <Section title={t('sec.location', lang)}>
-          <div className="d-tiles">
-            <Tile icon={<IconLandmark size={13} />} l={t('loc.haram', lang)} v={fmtKm(haramKm)} />
-            <Tile icon={<IconLandmark size={13} />} l={t('loc.mosque', lang)} v={fmtKm(nearKm(['religious']))} />
-            <Tile icon={<IconBuilding size={13} />} l={t('loc.mall', lang)} v={fmtKm(nearKm(['shopping', 'grocery']))} />
-            <Tile icon={<IconBuilding size={13} />} l={t('loc.hospital', lang)} v={fmtKm(nearKm(['health']))} />
-            <Tile icon={<IconBuilding size={13} />} l={t('loc.airport', lang)} v={fmtKm(nearKm(['transport']))} />
-            <Tile icon={<IconLandmark size={13} />} l={t('loc.education', lang)} v={fmtKm(nearKm(['education']))} />
           </div>
         </Section>
 
@@ -221,7 +204,7 @@ export function DetailPanel({
         </div>
       </div>
       {shareOpen && <ShareModal url={shareUrl()} title={title} onClose={() => setShareOpen(false)} />}
-      {pdfOpen && <PlotFactsheet plot={p} projects={projects} landUses={landUses} onClose={() => setPdfOpen(false)} />}
+      {pdfOpen && <PlotFactsheet plot={p} projects={projects} landUses={landUses} haramKm={haramKm} onClose={() => setPdfOpen(false)} />}
       {feasOpen && <FeasibilityModal plot={p} projects={projects} onClose={() => setFeasOpen(false)} />}
     </div>
   );
