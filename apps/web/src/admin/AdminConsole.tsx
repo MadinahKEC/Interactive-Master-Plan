@@ -2,18 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
-import { createUserSecondary } from '../lib/firebase';
+import { createUserSecondary, watchAccessLog, type AccessSession } from '../lib/firebase';
 import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { Chart } from './Chart';
 import { PlotEditor } from './PlotEditor';
-import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel } from '../components/icons';
+import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock } from '../components/icons';
 
-type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'audit' | 'settings';
+type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: { id: Tab; Icon: (p: { size?: number }) => JSX.Element }[] = [
   { id: 'dashboard', Icon: IconDashboard }, { id: 'plots', Icon: IconPlots }, { id: 'devplan', Icon: IconCalendar },
-  { id: 'landuses', Icon: IconPalette }, { id: 'users', Icon: IconUsers }, { id: 'audit', Icon: IconAudit }, { id: 'settings', Icon: IconSettings },
+  { id: 'landuses', Icon: IconPalette }, { id: 'users', Icon: IconUsers }, { id: 'access', Icon: IconClock }, { id: 'audit', Icon: IconAudit }, { id: 'settings', Icon: IconSettings },
 ];
 
 export function AdminConsole({
@@ -51,6 +51,7 @@ export function AdminConsole({
           {tab === 'devplan' && <DevPlanTab data={data} projects={projects} onEdit={setEditing} />}
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
           {tab === 'users' && <UsersTab />}
+          {tab === 'access' && <AccessLogTab />}
           {tab === 'audit' && <AuditTab />}
           {tab === 'settings' && <SettingsTab data={data} projects={projects} />}
         </section>
@@ -301,6 +302,53 @@ function UsersTab() {
       </div>
       {msg && <div className={`add-msg ${msg.ok ? 'ok' : 'err'}`}>{msg.text}</div>}
       <div className="hint" style={{ marginTop: 8 }}>{lang === 'ar' ? 'يُنشئ حساب Firebase حقيقياً ويربط الدور. يتطلب تفعيل Email/Password في Firebase.' : 'Creates a real Firebase account and maps the role. Requires Email/Password enabled in Firebase.'}</div>
+    </div>
+  );
+}
+
+/* ---------------- Access log ---------------- */
+function deviceOf(ua?: string): string {
+  if (!ua) return '—';
+  if (/iphone|ipad|ipod/i.test(ua)) return 'iOS';
+  if (/android/i.test(ua)) return 'Android';
+  if (/windows/i.test(ua)) return 'Windows';
+  if (/mac os/i.test(ua)) return 'macOS';
+  if (/linux/i.test(ua)) return 'Linux';
+  return 'Other';
+}
+function AccessLogTab() {
+  const { lang } = useApp();
+  const [rows, setRows] = useState<AccessSession[]>([]);
+  useEffect(() => watchAccessLog(setRows), []);
+  const dur = (s: AccessSession) => {
+    const m = Math.max(0, Math.round((s.lastSeen - s.loginAt) / 60000));
+    return m < 60 ? `${m} ${lang === 'ar' ? 'د' : 'min'}` : `${Math.floor(m / 60)} ${lang === 'ar' ? 'س' : 'h'} ${m % 60}`;
+  };
+  return (
+    <div>
+      <div className="ed-sec">{t('a.access', lang)} · {rows.length}</div>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead><tr>
+            <th>{t('a.name', lang)}</th><th>{t('a.role', lang)}</th><th>IP</th>
+            <th>{t('a.location', lang)}</th><th>{t('a.device', lang)}</th><th>{t('a.time', lang)}</th><th>{t('a.duration', lang)}</th>
+          </tr></thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={7} className="dim">{t('a.noSessions', lang)}</td></tr>}
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{r.name || r.email}<div className="dim">{r.email}</div></td>
+                <td>{t(`role.${r.role}`, lang)}</td>
+                <td className="mono">{r.ip || '—'}</td>
+                <td>{[r.city, r.country].filter(Boolean).join(', ') || '—'}</td>
+                <td>{deviceOf(r.ua)}</td>
+                <td className="mono">{new Date(r.loginAt).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB')}</td>
+                <td className="mono">{dur(r)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

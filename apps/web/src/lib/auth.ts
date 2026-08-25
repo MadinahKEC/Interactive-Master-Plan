@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Role } from '@kec/types';
 import { useOverrides, SUPER_ADMIN_EMAIL } from './overrides';
-import { FIREBASE_ENABLED, watchAuth, signIn, signOutFb, bootstrapAccount, startFirestoreSync } from './firebase';
+import { FIREBASE_ENABLED, watchAuth, signIn, signOutFb, bootstrapAccount, startFirestoreSync, fetchGeo, logAccess, touchAccess } from './firebase';
 
 export { SUPER_ADMIN_EMAIL };
 
@@ -68,6 +68,20 @@ export const useAuth = create<AuthState>((set) => ({
 }));
 
 let syncStarted = false;
+let accessLogged = false;
+function recordAccess(email: string, name: string, role: string) {
+  if (accessLogged) return;
+  accessLogged = true;
+  fetchGeo().then((geo) => {
+    logAccess({ email, name, role, ...geo, ua: navigator.userAgent, loginAt: Date.now(), lastSeen: Date.now() }).then((id) => {
+      if (!id) return;
+      const ping = () => touchAccess(id);
+      setInterval(ping, 60000);                                   // heartbeat → session duration
+      window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') ping(); });
+      window.addEventListener('pagehide', ping);
+    });
+  });
+}
 if (FIREBASE_ENABLED) {
   watchAuth((u) => {
     if (u && u.email) {
@@ -75,6 +89,7 @@ if (FIREBASE_ENABLED) {
       useAuth.setState({ user: { email: u.email, name, role }, status: 'in', error: null, busy: false });
       // start cloud sync now that we're authenticated (works with auth-required Firestore rules)
       if (!syncStarted) { syncStarted = true; try { startFirestoreSync(useOverrides as any); } catch (e) { console.warn('[firestore] sync init failed', e); } }
+      recordAccess(u.email, name, role);
     } else {
       useAuth.setState({ user: null, status: 'out' });
     }

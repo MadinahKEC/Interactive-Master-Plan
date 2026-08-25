@@ -15,7 +15,7 @@
  *     match /{doc=**} { allow read, write: if true; } } }
  */
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, setDoc, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence,
@@ -72,6 +72,33 @@ export async function uploadPlotImage(code: string, file: File): Promise<string>
 
 // ---------- Auth ----------
 export function watchAuth(cb: (u: User | null) => void) { return onAuthStateChanged(auth, cb); }
+
+// ---------- Access log (who signed in, from where, for how long) ----------
+export interface AccessSession {
+  id?: string; email: string; name?: string; role?: string;
+  ip?: string; city?: string; country?: string; org?: string; ua?: string;
+  loginAt: number; lastSeen: number;
+}
+const sessionsCol = collection(db, 'sessions');
+/** Best-effort public IP + coarse geolocation (free, no key). */
+export async function fetchGeo(): Promise<{ ip?: string; city?: string; country?: string; org?: string }> {
+  try {
+    const r = await fetch('https://ipwho.is/');
+    const j: any = await r.json();
+    if (j && j.success !== false) return { ip: j.ip, city: j.city, country: j.country, org: j.connection?.org || j.org };
+  } catch { /* offline / blocked */ }
+  return {};
+}
+export async function logAccess(s: Omit<AccessSession, 'id'>): Promise<string | null> {
+  try { const ref = await addDoc(sessionsCol, s as any); return ref.id; } catch { return null; }
+}
+export async function touchAccess(id: string): Promise<void> {
+  try { await updateDoc(doc(db, 'sessions', id), { lastSeen: Date.now() }); } catch { /* */ }
+}
+export function watchAccessLog(cb: (rows: AccessSession[]) => void) {
+  const q = query(sessionsCol, orderBy('loginAt', 'desc'), limit(300));
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))), () => cb([]));
+}
 
 export async function signIn(email: string, password: string, remember: boolean) {
   await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence).catch(() => {});

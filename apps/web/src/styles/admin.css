@@ -137,6 +137,7 @@
 .dpv-gantt .dp-track{grid-template-columns:160px 1fr 150px}
 .dp-pdate{font-size:10px;color:var(--kec-muted);white-space:nowrap}
 
+.admin-table-wrap{overflow-x:auto}
 /* development-plan plot styling editor (Land Uses tab) */
 .lu-plan{border:1px solid var(--kec-hairline);border-radius:12px;padding:14px 16px;margin-bottom:18px;background:linear-gradient(160deg,var(--kec-surface),var(--kec-surface-2))}
 .lu-plan-head{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
