@@ -220,6 +220,9 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 /* on the satellite / earth basemap, brighten labels for legibility */
 .map-sat .lm-label{background:rgba(16,34,27,.74);color:#fff;border-color:rgba(255,255,255,.1);border-inline-start-color:var(--lm-color,#5C6B60)}
 .map-sat .lm-marker.flag .lm-label{background:var(--lm-color,#2F6B3E);background-image:linear-gradient(135deg,rgba(255,255,255,.18),rgba(0,0,0,.28))}
+/* development-plan plot markers */
+.plan-marker{pointer-events:none;filter:drop-shadow(0 1px 3px rgba(20,61,30,.5))}
+.plan-marker svg{display:block}
 /* curator remove-landmark affordance */
 .lm-marker.editable{pointer-events:auto}
 .lm-del{pointer-events:auto;opacity:0;margin-inline-start:3px;border:0;border-radius:50%;width:16px;height:16px;line-height:1;
@@ -387,6 +390,8 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .lf-seg button{flex:1;border:0;background:transparent;border-radius:7px;padding:7px 6px;font-size:11px;font-weight:600;color:var(--kec-muted);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .lf-seg button.on{background:var(--kec-green);color:#fff;box-shadow:0 1px 4px rgba(20,61,30,.25)}
 .lf-hint{font-size:10.5px;color:var(--kec-muted);line-height:1.5;margin-top:6px}
+.lf-fly{width:100%;margin-top:9px;padding:9px;border:1px solid var(--kec-gold);border-radius:10px;background:linear-gradient(135deg,rgba(154,138,30,.1),transparent);color:var(--kec-title);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.lf-fly.on{background:var(--kec-green);color:#fff;border-color:var(--kec-green)}
 .lf-toggle{display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:8px;padding:8px 10px;border:1px solid var(--kec-hairline);border-radius:11px;background:var(--card)}
 .lf-toggle input{display:none}
 .lf-toggle.on .pt-switch{background:var(--kec-green)}
@@ -400,6 +405,8 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .inv-cell.empty{opacity:.6;background:var(--kec-surface)}
 .inv-cell.empty .inv-v{color:var(--kec-muted);font-weight:500}
 .dp-desc.muted,.d-summary.muted{color:var(--kec-muted);font-style:italic}
+.dp-remove-wrap{padding:4px 14px 12px}
+.dp-remove-btn{width:100%;justify-content:center}
 /* development-plan gate: unlocks the development + investment sections */
 .dp-gate{margin:4px 14px 14px;padding:16px 14px;border:1px dashed var(--kec-gold);border-radius:13px;background:linear-gradient(150deg,rgba(154,138,30,.07),transparent);text-align:center}
 .dp-gate-btn{width:100%;justify-content:center}
@@ -437,6 +444,14 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .fe-res.good .fe-res-v{color:var(--kec-pos)}
 .fe-res.bad .fe-res-v{color:var(--kec-neg)}
 .fe-res-l{font-size:10.5px;color:var(--kec-muted);margin-top:3px}
+.fe-sec-hint{font-weight:400;color:var(--kec-muted);text-transform:none;letter-spacing:0;font-size:10px}
+.fe-sens{margin-bottom:12px}
+.fe-sens-l{font-size:11px;color:var(--kec-muted);margin-bottom:6px}
+.fe-sens-bars{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:end;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:10px 12px 8px}
+.fe-sens-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-height:74px}
+.fe-sens-v{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--kec-title)}
+.fe-sens-bar{width:60%;max-width:26px;border-radius:4px 4px 0 0;min-height:4px}
+.fe-sens-x{font-size:9.5px;color:var(--kec-muted)}
 .fe-note{font-size:10.5px;color:var(--kec-muted);margin:14px 0 0;line-height:1.5;font-style:italic}
 
 /* ---- Executive dashboard (item 17) + print/PDF export (item B) — KEC register identity ---- */
@@ -514,17 +529,23 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   #root{display:none!important}
   .exec-overlay{position:static;overflow:visible;background:#fff;display:block}
   /* named landscape page — scoped so it doesn't clash with the report's portrait @page */
-  .exec-sheet{max-width:none;box-shadow:none;padding:5mm 5mm 15mm;min-height:auto;page:kecland}
+  .exec-sheet{max-width:none;box-shadow:none;padding:4mm 6mm 12mm;min-height:auto;page:kecland}
   /* force backgrounds, chart colours and bars to actually print */
   .exec-overlay, .exec-overlay *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .no-print{display:none!important}
-  .exec-chart,.exec-strip,.exec-sats,.exec-pipe{page-break-inside:avoid}
-  .exec-charts{grid-template-columns:repeat(3,1fr)}
-  .exec-strip{grid-template-columns:repeat(6,1fr)}
-  .exec-sats{grid-template-columns:repeat(7,1fr)}
+  .exec-chart,.exec-strip,.exec-sats{page-break-inside:avoid}
+  .exec-charts{grid-template-columns:repeat(3,1fr);gap:6px}
+  .exec-strip{grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
+  .exec-sats{grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px}
+  /* compact chrome so the whole summary lands on ONE A4-landscape page */
+  .exec-head{margin-bottom:8px;padding-bottom:5px}
+  .exec-h1{font-size:18px}.exec-sub{font-size:10.5px}.exec-logo{height:36px}
+  .exec-kpi{padding:7px 8px}.ek-top{margin-bottom:3px}.ek-v{font-size:15px}
+  .exec-sat{padding:5px 6px}.es-v{font-size:13px}
+  .exec-chart{padding:4px 8px}
   /* footer pinned to the bottom of every printed page */
   .exec-foot{position:fixed;bottom:0;left:0;right:0;margin:0;padding:3px 6mm 2mm;background:#fff}
-  @page kecland{size:A4 landscape;margin:8mm}
+  @page kecland{size:A4 landscape;margin:7mm}
 }
 
 /* ---- Investor interest pipeline (card) ---- */
@@ -716,6 +737,11 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-l{color:var(--kec-muted)}
 .pf-v{color:var(--kec-title);font-weight:600;text-align:end}
 .pf-summary-box{padding:4px 22px 12px}
+.pf-invest-box{padding:4px 22px 8px}
+.pf-invest-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
+.pf-inv{background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:8px;padding:7px 9px}
+.pf-inv-v{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--kec-title);overflow-wrap:anywhere;line-height:1.2}
+.pf-inv-l{font-size:8.5px;color:var(--kec-muted);margin-top:3px}
 .pf-summary-box p{font-size:12px;color:var(--kec-ink);line-height:1.7;background:var(--kec-surface);border-inline-start:3px solid var(--kec-gold);border-radius:8px;padding:10px 14px}
 .pf-footer{margin-top:auto;display:flex;justify-content:space-between;font-size:10px;color:var(--kec-muted);padding:12px 22px;border-top:1px solid var(--kec-hairline);background:var(--kec-surface)}
 .pf-overlay{align-items:flex-start}

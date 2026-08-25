@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { SECTORS, type PlotProps } from '@kec/types';
-import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInvest, t, type ProjectInfo } from '../lib/domain';
 import { StageBar } from './StageBar';
 import type { EffLandUse } from '../lib/effective';
 import { IconClose, IconOwner } from './icons';
@@ -126,6 +126,20 @@ export function PlotFactsheet({ plot, projects, landUses, onClose }: {
             <Cell l={t('d.landuse', lang)} v={luLabel} />
           </div>
         </div>
+
+        {o.investment && INVEST_FIELDS.some((f) => o.investment![f.key] != null) && (
+          <div className="pf-invest-box">
+            <div className="pf-cap">{t('sec.invest', lang)}</div>
+            <div className="pf-invest-grid">
+              {INVEST_FIELDS.filter((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])).map((f) => (
+                <div className="pf-inv" key={f.key}>
+                  <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit, lang)}</div>
+                  <div className="pf-inv-l">{lang === 'ar' ? f.ar : f.en}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {summary && (
           <div className="pf-summary-box">

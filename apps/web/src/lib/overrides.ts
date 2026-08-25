@@ -54,8 +54,18 @@ export interface PlotComment { id: string; text: string; author: string; at: num
 /** An investor who expressed interest in a plot (interest pipeline / CRM-lite). */
 export interface InvestorLead { id: string; name: string; contact?: string; note?: string; status: string; at: number; by?: string }
 /** Map styling for plots that are in the development plan (admin-editable). */
-export interface PlanStyle { fill: string; outline: string; dash: boolean; glow: boolean }
-export const DEFAULT_PLAN_STYLE: PlanStyle = { fill: '#2F6B3E', outline: '#9A8A1E', dash: true, glow: true };
+export interface PlanStyle { fill: string; outline: string; dash: boolean; glow: boolean; marker: string; markerColor: string }
+export const DEFAULT_PLAN_STYLE: PlanStyle = { fill: '#2F6B3E', outline: '#9A8A1E', dash: true, glow: true, marker: 'arrow', markerColor: '#9A8A1E' };
+/** Selectable marker shapes placed inside development-plan plots. */
+export const PLAN_MARKERS: { key: string; ar: string; en: string }[] = [
+  { key: 'none', ar: 'بدون', en: 'None' },
+  { key: 'arrow', ar: 'سهم', en: 'Arrow' },
+  { key: 'star', ar: 'نجمة', en: 'Star' },
+  { key: 'diamond', ar: 'معيّن', en: 'Diamond' },
+  { key: 'circle', ar: 'دائرة', en: 'Circle' },
+  { key: 'flag', ar: 'علَم', en: 'Flag' },
+  { key: 'check', ar: 'صح', en: 'Check' },
+];
 /** A free annotation drawn on the map (admin only). */
 export interface Annotation {
   id: string;

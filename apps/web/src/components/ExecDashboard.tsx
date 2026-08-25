@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { resolveProject, STATUS_META, OWNERSHIP_META, INVESTOR_STATUSES, investorStatusMeta, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, OWNERSHIP_META, t, type ProjectInfo } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { useBackClose } from '../lib/backstack';
@@ -91,7 +91,6 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   });
 
   const secKeys = Object.keys(SECTORS).filter((k) => s.secGfa[k]);
-  const pipeKeys = INVESTOR_STATUSES.map((x) => x.key).filter((k) => s.pipe[k]);
   const luTop = Object.keys(s.luArea).filter((k) => s.luArea[k] > 0).sort((a, b) => s.luArea[b] - s.luArea[a]).slice(0, 8)
     .map((k) => ({ name: (lang === 'ar' ? landUses[k]?.labelAr : landUses[k]?.labelEn) ?? k, value: s.luArea[k], color: landUses[k]?.color ?? '#ccc' }));
 
@@ -130,35 +129,17 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
 
         <div className="exec-charts">
           <div className="exec-chart">
-            <Chart height={200} option={gauge(t('exec.developed', lang), devPct)} />
+            <Chart height={168} option={gauge(t('exec.developed', lang), devPct)} />
             <div className="exec-gauge-cap">
               <span><i style={{ background: '#2F6B3E' }} />{t('exec.developed', lang)} · {compact(s.developed)} m²</span>
               <span><i style={{ background: '#9A8A1E' }} />{t('exec.underdev', lang)} · {compact(s.underDev)} m²</span>
             </div>
           </div>
-          <div className="exec-chart"><Chart height={230} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={230} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={230} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
-          <div className="exec-chart"><Chart height={230} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
-          <div className="exec-chart"><Chart height={230} option={bar(t('exec.plotsBySector', lang), secKeys, secKeys.map((k) => s.secCount[k]), '#9A8A1E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k))} /></div>
-          <div className="exec-chart"><Chart height={230} option={bar(t('exec.areaBySector', lang), secKeys, secKeys.map((k) => Math.round(s.secArea[k] || 0)), '#2E7D6B', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
-          <div className="exec-chart"><Chart height={230} option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
-          <div className="exec-chart">
-            <div className="exec-pipe">
-              <div className="exec-pipe-h">{t('exec.pipeline', lang)} · {s.leads} {t('exec.leads', lang)}</div>
-              {pipeKeys.length === 0 && <div className="exec-pipe-empty">—</div>}
-              {pipeKeys.map((k) => {
-                const m = investorStatusMeta(k); const max = Math.max(...pipeKeys.map((x) => s.pipe[x]));
-                return (
-                  <div className="exec-pipe-row" key={k}>
-                    <span className="epr-l">{lang === 'ar' ? m.ar : m.en}</span>
-                    <span className="epr-bar"><span style={{ width: `${(s.pipe[k] / max) * 100}%`, background: m.color }} /></span>
-                    <span className="epr-v">{s.pipe[k]}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <div className="exec-chart"><Chart height={188} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height={188} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height={188} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
+          <div className="exec-chart"><Chart height={188} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
+          <div className="exec-chart"><Chart height={188} option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
         </div>
 
         <footer className="exec-foot">

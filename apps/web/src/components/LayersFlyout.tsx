@@ -10,7 +10,7 @@ import { IconLabel, IconLandmark } from './icons';
  * category). Opened from the rail so these controls stop being scattered.
  */
 export function LayersFlyout({ onClose }: { onClose: () => void }) {
-  const { lang, basemap, dim, labels, landmarks, lmCats, setBasemap, setDim, toggleLabels, toggleLandmarks, toggleLmCat } = useApp();
+  const { lang, basemap, dim, labels, landmarks, lmCats, flyover, setBasemap, setDim, toggleLabels, toggleLandmarks, toggleLmCat, toggleFlyover } = useApp();
   const rtl = lang === 'ar';
   useBackClose(true, onClose, 50);
 
@@ -36,6 +36,7 @@ export function LayersFlyout({ onClose }: { onClose: () => void }) {
             <button className={dim === 'earth' ? 'on' : ''} onClick={() => setDim('earth')}>{t('view.earth', lang)}</button>
           </div>
           <div className="lf-hint">{dim === 'earth' ? t('view.earthHint', lang) : dim === '3d' ? t('view.3dHint', lang) : t('view.2dHint', lang)}</div>
+          <button className={`lf-fly ${flyover ? 'on' : ''}`} onClick={toggleFlyover}>{flyover ? t('view.flyStop', lang) : t('view.fly', lang)}</button>
         </div>
 
         <div className="lf-group">

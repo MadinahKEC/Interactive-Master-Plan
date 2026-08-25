@@ -8,7 +8,8 @@ export function Chart({ option, height = 230 }: { option: any; height?: number }
 
   useEffect(() => {
     if (!ref.current) return;
-    inst.current = echarts.init(ref.current, undefined, { renderer: 'canvas' });
+    // SVG = vector output → razor-sharp on screen and, crucially, in print/PDF
+    inst.current = echarts.init(ref.current, undefined, { renderer: 'svg' });
     const onResize = () => inst.current?.resize();
     window.addEventListener('resize', onResize);
     window.addEventListener('beforeprint', onResize);
@@ -18,5 +19,5 @@ export function Chart({ option, height = 230 }: { option: any; height?: number }
 
   useEffect(() => { inst.current?.setOption(option, true); }, [option]);
 
-  return <div ref={ref} style={{ width: '100%', height }} />;
+  return <div ref={ref} style={{ width: '100%', height, direction: 'ltr' }} />;
 }
