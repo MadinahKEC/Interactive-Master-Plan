@@ -195,6 +195,15 @@ export const DICT: Record<string, Entry> = {
   'cp.landmarks':    { ar: 'إظهار معالم المدينة المنورة', en: 'Show Madinah landmarks' },
   'sec.invest':      { ar: 'أبرز المؤشرات الاستثمارية', en: 'Investment highlights' },
   'sec.analysis':    { ar: 'التحليل الاستثماري', en: 'Investment analysis' },
+  'sec.investors':   { ar: 'اهتمام المستثمرين', en: 'Investor interest' },
+  'iv.add':          { ar: 'إضافة مستثمر مهتم', en: 'Add interested investor' },
+  'iv.name':         { ar: 'اسم المستثمر / الجهة', en: 'Investor / company' },
+  'iv.contact':      { ar: 'وسيلة التواصل', en: 'Contact' },
+  'iv.note':         { ar: 'ملاحظة', en: 'Note' },
+  'iv.status':       { ar: 'الحالة', en: 'Status' },
+  'iv.empty':        { ar: 'لا يوجد مستثمرون مسجّلون بعد.', en: 'No investors logged yet.' },
+  'iv.save':         { ar: 'إضافة', en: 'Add' },
+  'iv.count':        { ar: 'مهتمّ', en: 'interested' },
   'ia.score':        { ar: 'درجة الجاذبية الاستثمارية', en: 'Investment attractiveness' },
   'ia.haram':        { ar: 'المسافة إلى الحرم', en: 'Distance to the Haram' },
   'ia.factors':      { ar: 'العوامل', en: 'Factors' },
@@ -404,6 +413,17 @@ export const LICENSE_STAGES: { key: string; ar: string; en: string }[] = [
   { key: 'civil_defense', ar: 'رخصة الدفاع المدني', en: 'Civil Defense (Safety)' },
   { key: 'operation', ar: 'رخصة التشغيل', en: 'Operating License' },
 ];
+
+// ---------- Investor interest pipeline ----------
+export interface InvestorStatus { key: string; ar: string; en: string; color: string }
+export const INVESTOR_STATUSES: InvestorStatus[] = [
+  { key: 'inquiry',     ar: 'استفسار', en: 'Inquiry',     color: '#5C6B60' },
+  { key: 'negotiation', ar: 'تفاوض',   en: 'Negotiation', color: '#9A8A1E' },
+  { key: 'reserved',    ar: 'محجوز',   en: 'Reserved',    color: '#2E7D6B' },
+  { key: 'sold',        ar: 'مُباع',    en: 'Sold',        color: '#2F6B3E' },
+  { key: 'declined',    ar: 'اعتذار',  en: 'Declined',    color: '#B5462F' },
+];
+export const investorStatusMeta = (k: string) => INVESTOR_STATUSES.find((s) => s.key === k) ?? INVESTOR_STATUSES[0];
 
 // ---------- Ownership ----------
 export interface OwnershipMeta { key: string; ar: string; en: string; color: string }

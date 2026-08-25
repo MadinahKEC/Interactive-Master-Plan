@@ -3,7 +3,7 @@ import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, INVESTOR_STATUSES, investorStatusMeta, fmtInvest, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
@@ -170,6 +170,10 @@ export function DetailPanel({
           </div>
         </Section>
 
+        <Section title={t('sec.investors', lang)}>
+          <Investors code={p.code} lang={lang} canManage={canAttr} />
+        </Section>
+
         <Section title={t('sec.project', lang)}>
           <div className="sb-caption">{t('sec.stage', lang)}</div>
           <StageBar lang={lang} stageKey={pr.overlay.stage} />
@@ -288,6 +292,54 @@ function nameOfConstituent(code: string, projects: Record<string, ProjectInfo>, 
     if (rec && (rec.name_ar || rec.name_en)) return (lang === 'ar' ? rec.name_ar || rec.name_en : rec.name_en || rec.name_ar) as string;
   }
   return code;
+}
+
+function Investors({ code, lang, canManage }: { code: string; lang: 'ar' | 'en'; canManage: boolean }) {
+  const leads = useOverrides((s) => s.investors[code]) ?? [];
+  const addInvestor = useOverrides((s) => s.addInvestor);
+  const updateInvestor = useOverrides((s) => s.updateInvestor);
+  const removeInvestor = useOverrides((s) => s.removeInvestor);
+  const user = useAuth((s) => s.user);
+  const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
+  const [status, setStatus] = useState('inquiry');
+  const submit = () => { const n = name.trim(); if (!n) return; addInvestor(code, { name: n, contact: contact.trim() || undefined, status, by: user?.name || user?.email || undefined }); setName(''); setContact(''); setStatus('inquiry'); };
+  return (
+    <div className="iv">
+      {leads.length === 0 && <div className="cm-empty">{t('iv.empty', lang)}</div>}
+      {leads.length > 0 && (
+        <div className="iv-list">
+          {leads.slice().sort((a, b) => a.at - b.at).map((l) => {
+            const m = investorStatusMeta(l.status);
+            return (
+              <div className="iv-item" key={l.id}>
+                <span className="iv-name">{l.name}</span>
+                {l.contact && <span className="iv-contact">{l.contact}</span>}
+                {canManage ? (
+                  <select className="iv-status-sel" value={l.status} onChange={(e) => updateInvestor(code, l.id, { status: e.target.value })} style={{ color: m.color, borderColor: m.color }}>
+                    {INVESTOR_STATUSES.map((s) => <option key={s.key} value={s.key}>{lang === 'ar' ? s.ar : s.en}</option>)}
+                  </select>
+                ) : <span className="iv-status" style={{ background: m.color }}>{lang === 'ar' ? m.ar : m.en}</span>}
+                {canManage && <button className="cm-del" title="×" onClick={() => removeInvestor(code, l.id)}>×</button>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {canManage && (
+        <div className="iv-add">
+          <input value={name} placeholder={t('iv.name', lang)} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
+          <div className="iv-add-row">
+            <input value={contact} placeholder={t('iv.contact', lang)} onChange={(e) => setContact(e.target.value)} />
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              {INVESTOR_STATUSES.map((s) => <option key={s.key} value={s.key}>{lang === 'ar' ? s.ar : s.en}</option>)}
+            </select>
+            <button className="btn sm primary" disabled={!name.trim()} onClick={submit}>{t('iv.save', lang)}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Comments({ code, lang }: { code: string; lang: 'ar' | 'en' }) {

@@ -51,6 +51,8 @@ export interface CreatedPlot {
 }
 /** A note left on a plot by a signed-in user (synced to everyone). */
 export interface PlotComment { id: string; text: string; author: string; at: number }
+/** An investor who expressed interest in a plot (interest pipeline / CRM-lite). */
+export interface InvestorLead { id: string; name: string; contact?: string; note?: string; status: string; at: number; by?: string }
 /** Map styling for plots that are in the development plan (admin-editable). */
 export interface PlanStyle { fill: string; outline: string; dash: boolean; glow: boolean }
 export const DEFAULT_PLAN_STYLE: PlanStyle = { fill: '#2F6B3E', outline: '#9A8A1E', dash: true, glow: true };
@@ -77,6 +79,7 @@ interface OverridesState {
   comments: Record<string, PlotComment[]>;     // notes per plot code
   hiddenLandmarks: string[];                   // landmark ids removed by curators
   planStyle: PlanStyle;                        // map styling for development-plan plots
+  investors: Record<string, InvestorLead[]>;   // investor-interest pipeline per plot
   audit: AuditEntry[];
 
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
@@ -103,6 +106,9 @@ interface OverridesState {
   hideLandmark: (id: string, actor?: string) => void;
   showAllLandmarks: () => void;
   setPlanStyle: (patch: Partial<PlanStyle>, actor?: string) => void;
+  addInvestor: (code: string, lead: Omit<InvestorLead, 'id' | 'at'>, actor?: string) => void;
+  updateInvestor: (code: string, id: string, patch: Partial<InvestorLead>) => void;
+  removeInvestor: (code: string, id: string) => void;
   log: (e: Omit<AuditEntry, 'at' | 'id' | 'before'>) => void;
   revertTo: (id: string) => void;
   exportAll: () => string;
@@ -139,6 +145,7 @@ export const useOverrides = create<OverridesState>()(
       comments: {},
       hiddenLandmarks: [],
       planStyle: DEFAULT_PLAN_STYLE,
+      investors: {},
       audit: [],
 
       addOption: (listKey, opt, actor = 'admin') =>
@@ -173,6 +180,16 @@ export const useOverrides = create<OverridesState>()(
       showAllLandmarks: () => set({ hiddenLandmarks: [] }),
       setPlanStyle: (patch, actor = 'admin') =>
         set((s) => ({ planStyle: { ...s.planStyle, ...patch }, audit: pushAudit(s, { actor, action: 'planStyle', target: 'plan', detail: JSON.stringify(patch) }) })),
+
+      addInvestor: (code, lead, actor = 'admin') =>
+        set((s) => {
+          const l: InvestorLead = { ...lead, id: 'iv' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), at: Date.now() };
+          return { investors: { ...s.investors, [code]: [...(s.investors[code] ?? []), l] }, audit: pushAudit(s, { actor, action: 'investor.add', target: code, detail: lead.name }) };
+        }),
+      updateInvestor: (code, id, patch) =>
+        set((s) => ({ investors: { ...s.investors, [code]: (s.investors[code] ?? []).map((l) => (l.id === id ? { ...l, ...patch } : l)) } })),
+      removeInvestor: (code, id) =>
+        set((s) => ({ investors: { ...s.investors, [code]: (s.investors[code] ?? []).filter((l) => l.id !== id) } })),
 
       log: (e) => set((s) => ({ audit: pushAudit(s, e) })),
 
@@ -248,7 +265,7 @@ export const useOverrides = create<OverridesState>()(
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks, planStyle: get().planStyle }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks, planStyle: get().planStyle, investors: get().investors }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -266,6 +283,7 @@ export const useOverrides = create<OverridesState>()(
             comments: o.comments ?? s.comments,
             hiddenLandmarks: o.hiddenLandmarks ?? s.hiddenLandmarks,
             planStyle: o.planStyle ?? s.planStyle,
+            investors: o.investors ?? s.investors,
             audit: o.audit ?? s.audit,
           }));
           return true;
@@ -279,9 +297,9 @@ export const useOverrides = create<OverridesState>()(
         // restore the snapshot taken before this edit; drop this edit and every newer one
         return { ...s.audit[idx].before, audit: s.audit.slice(idx + 1) } as any;
       }),
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], planStyle: DEFAULT_PLAN_STYLE, audit: [] }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], planStyle: DEFAULT_PLAN_STYLE, investors: {}, audit: [] }),
     }),
     // `before` snapshots stay in memory only — persisting them would bloat storage/sync.
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, planStyle: s.planStyle, audit: s.audit.map(({ before, ...e }) => e) }) as any },
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, planStyle: s.planStyle, investors: s.investors, audit: s.audit.map(({ before, ...e }) => e) }) as any },
   ),
 );
