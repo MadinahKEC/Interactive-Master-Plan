@@ -177,19 +177,19 @@ export function DetailPanel({
                 })}
               </div>
             </Section>
+
+            <Section title={t('sec.project', lang)}>
+              <div className="sb-caption">{t('sec.stage', lang)}</div>
+              <StageBar lang={lang} stageKey={pr.overlay.stage} />
+              <div className="sb-caption">{t('sec.license', lang)}</div>
+              <StageBar lang={lang} stageKey={pr.overlay.license} stages={LICENSE_STAGES} variant="license" />
+            </Section>
+
+            <Section title={t('sec.comments', lang)}>
+              <Comments code={p.code} lang={lang} />
+            </Section>
           </>
         )}
-
-        <Section title={t('sec.project', lang)}>
-          <div className="sb-caption">{t('sec.stage', lang)}</div>
-          <StageBar lang={lang} stageKey={pr.overlay.stage} />
-          <div className="sb-caption">{t('sec.license', lang)}</div>
-          <StageBar lang={lang} stageKey={pr.overlay.license} stages={LICENSE_STAGES} variant="license" />
-        </Section>
-
-        <Section title={t('sec.comments', lang)}>
-          <Comments code={p.code} lang={lang} />
-        </Section>
 
         <div className="d-actions">
           {canAttr && <button className="btn primary" onClick={() => onEdit(p.code)}><IconEdit size={15} /> {t('d.editAttrs', lang)}</button>}

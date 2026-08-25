@@ -63,13 +63,13 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
       data: Object.keys(obj).filter((k) => obj[k] > 0).map((k) => ({ name: labelOf(k), value: Math.round(obj[k]), itemStyle: { color: colorOf(k) } })) }],
   });
   // vertical bar with the value printed on top of each column
-  const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
+  const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string, labelFmt?: (v: number) => string) => ({
     title: titleOf(title),
     grid: { left: 46, right: 18, top: 46, bottom: 34 }, tooltip: { trigger: 'axis', valueFormatter: valFmt },
     xAxis: { type: 'category', data: keys.map(labelOf), axisLabel: { fontSize: 10, interval: 0, rotate: keys.length > 4 ? 18 : 0 } },
-    yAxis: { type: 'value', axisLabel: { fontSize: 9, formatter: (v: number) => compact(v) } },
-    series: [{ type: 'bar', data: vals.map((v) => Math.round(v)), itemStyle: { color, borderRadius: [5, 5, 0, 0] },
-      label: { show: true, position: 'top', fontSize: 10, fontWeight: 600, color: '#16221B', formatter: (p: any) => compact(p.value) } }],
+    yAxis: { type: 'value', axisLabel: { fontSize: 9, formatter: (v: number) => (labelFmt ? labelFmt(v) : compact(v)) } },
+    series: [{ type: 'bar', data: vals, itemStyle: { color, borderRadius: [5, 5, 0, 0] },
+      label: { show: true, position: 'top', fontSize: 10, fontWeight: 600, color: '#16221B', formatter: (p: any) => (labelFmt ? labelFmt(p.value) : compact(p.value)) } }],
   });
   // horizontal bar (good for many categories) with the value at the end
   const hbar = (title: string, rows: { name: string; value: number; color: string }[], unit?: string) => ({
@@ -141,6 +141,8 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
           <div className="exec-chart"><Chart height={230} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
           <div className="exec-chart"><Chart height={230} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
           <div className="exec-chart"><Chart height={230} option={bar(t('exec.plotsBySector', lang), secKeys, secKeys.map((k) => s.secCount[k]), '#9A8A1E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k))} /></div>
+          <div className="exec-chart"><Chart height={230} option={bar(t('exec.areaBySector', lang), secKeys, secKeys.map((k) => Math.round(s.secArea[k] || 0)), '#2E7D6B', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
+          <div className="exec-chart"><Chart height={230} option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
           <div className="exec-chart">
             <div className="exec-pipe">
               <div className="exec-pipe-h">{t('exec.pipeline', lang)} · {s.leads} {t('exec.leads', lang)}</div>
@@ -157,33 +159,6 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
               })}
             </div>
           </div>
-        </div>
-
-        <div className="exec-table-card">
-          <div className="exec-table-h">{t('exec.sectorTable', lang)}</div>
-          <table className="exec-table">
-            <thead><tr>
-              <th>{t('exec.tSector', lang)}</th><th>{t('exec.tPlots', lang)}</th><th>{t('exec.tArea', lang)}</th><th>{t('exec.tGfa', lang)}</th><th>{t('exec.tDev', lang)}</th>
-            </tr></thead>
-            <tbody>
-              {secKeys.map((k) => (
-                <tr key={k}>
-                  <td>{lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k}</td>
-                  <td className="mono">{nf.format(s.secCount[k] || 0)}</td>
-                  <td className="mono">{nf.format(Math.round(s.secArea[k] || 0))}</td>
-                  <td className="mono">{nf.format(Math.round(s.secGfa[k] || 0))}</td>
-                  <td className="mono">{((s.secArea[k] ? (s.secDev[k] || 0) / s.secArea[k] : 0) * 100).toFixed(1)}%</td>
-                </tr>
-              ))}
-              <tr className="exec-table-total">
-                <td>{t('exec.total', lang)}</td>
-                <td className="mono">{nf.format(s.n)}</td>
-                <td className="mono">{nf.format(Math.round(s.area))}</td>
-                <td className="mono">{nf.format(Math.round(s.gfa))}</td>
-                <td className="mono">{devPct.toFixed(1)}%</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
 
         <footer className="exec-foot">

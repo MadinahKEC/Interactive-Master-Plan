@@ -514,14 +514,16 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   #root{display:none!important}
   .exec-overlay{position:static;overflow:visible;background:#fff;display:block}
   /* named landscape page — scoped so it doesn't clash with the report's portrait @page */
-  .exec-sheet{max-width:none;box-shadow:none;padding:5mm;min-height:auto;page:kecland}
+  .exec-sheet{max-width:none;box-shadow:none;padding:5mm 5mm 15mm;min-height:auto;page:kecland}
   /* force backgrounds, chart colours and bars to actually print */
   .exec-overlay, .exec-overlay *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .no-print{display:none!important}
-  .exec-chart,.exec-strip,.exec-sats,.exec-table-card,.exec-pipe{page-break-inside:avoid}
+  .exec-chart,.exec-strip,.exec-sats,.exec-pipe{page-break-inside:avoid}
   .exec-charts{grid-template-columns:repeat(3,1fr)}
   .exec-strip{grid-template-columns:repeat(6,1fr)}
   .exec-sats{grid-template-columns:repeat(7,1fr)}
+  /* footer pinned to the bottom of every printed page */
+  .exec-foot{position:fixed;bottom:0;left:0;right:0;margin:0;padding:3px 6mm 2mm;background:#fff}
   @page kecland{size:A4 landscape;margin:8mm}
 }
 

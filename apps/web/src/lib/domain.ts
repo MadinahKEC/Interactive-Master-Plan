@@ -340,6 +340,8 @@ export const DICT: Record<string, Entry> = {
   'exec.byOwnership':{ ar: 'حالة الملكية', en: 'Ownership status' },
   'exec.plotsBySector': { ar: 'عدد البلوت حسب القطاع', en: 'Plots by sector' },
   'exec.sectorTable':{ ar: 'ملخّص القطاعات', en: 'Sector summary' },
+  'exec.devBySector':{ ar: 'نسبة التطوير حسب القطاع', en: 'Developed % by sector' },
+  'exec.areaBySector':{ ar: 'المساحة حسب القطاع', en: 'Area by sector' },
   'exec.tSector':    { ar: 'القطاع', en: 'Sector' },
   'exec.tPlots':     { ar: 'البلوت', en: 'Plots' },
   'exec.tArea':      { ar: 'المساحة (م²)', en: 'Area (m²)' },
