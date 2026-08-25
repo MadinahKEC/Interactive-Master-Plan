@@ -127,12 +127,24 @@ export default function App() {
     document.documentElement.dataset.theme = 'light';
   }, [lang]);
 
+  const railOpen = useApp((s) => s.railOpen);
+  useEffect(() => {
+    document.documentElement.dataset.rail = railOpen ? 'open' : 'hidden';
+    const id = requestAnimationFrame(() => useApp.getState().reveal());
+    return () => cancelAnimationFrame(id);
+  }, [railOpen]);
+
   const openAdmin = (code?: string) => { setEditCode(code ?? null); setAdminOpen(true); };
 
   return (
     <>
       <MapView data={data} projects={projects} landUses={landUses} canAnnotate={canAnnotate} />
       <Sidebar onOpenAdmin={() => openAdmin()} onOpenDevPlan={() => setDevOpen(true)} />
+      {!railOpen && (
+        <button className="rail-reveal" onClick={() => useApp.getState().toggleRail()} title={t('tb.showMenu', lang)} aria-label={t('tb.showMenu', lang)}>
+          <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
+        </button>
+      )}
       <TopBar />
       {data && <ControlPanel data={data} landUses={landUses} projects={projects} />}
       <DetailPanel projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />

@@ -71,6 +71,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   const projRef = useRef(projects);
   const luRef = useRef(landUses);
   const annotations = useOverrides((s) => s.annotations);
+  const planStyle = useOverrides((s) => s.planStyle);
   const annotRef = useRef<Annotation[]>(annotations);
   const modeRef = useRef<'off' | 'text' | 'arrow' | 'rect'>('off');
   const colorRef = useRef('#B5462F');
@@ -252,12 +253,17 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const apply = () => {
-      const expr = plotFillColor(landUses);
+      const expr = plotFillColor(landUses, planStyle.fill);
       if (map.getLayer('plots-fill')) map.setPaintProperty('plots-fill', 'fill-color', expr);
       if (map.getLayer('plots-3d')) map.setPaintProperty('plots-3d', 'fill-extrusion-color', expr);
+      if (map.getLayer('plans-outline') || map.getLayer('plan-outline')) {
+        map.setPaintProperty('plan-outline', 'line-color', planStyle.outline);
+        map.setPaintProperty('plan-outline', 'line-dasharray', planStyle.dash ? [2, 1.4] : [1, 0]);
+      }
+      if (map.getLayer('plan-glow')) map.setLayoutProperty('plan-glow', 'visibility', planStyle.glow ? 'visible' : 'none');
     };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
-  }, [landUses]);
+  }, [landUses, planStyle]);
 
   // basemap (light + satellite only; light theme)
   useEffect(() => {

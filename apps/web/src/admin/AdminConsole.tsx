@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
-import { useOverrides, SUPER_ADMIN_EMAIL } from '../lib/overrides';
+import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary } from '../lib/firebase';
 import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
@@ -216,10 +216,20 @@ function DevPlanTab({ data, projects, onEdit }: { data: PlotCollection; projects
 /* ---------------- Land uses ---------------- */
 function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>; data: PlotCollection }) {
   const { lang } = useApp();
-  const { setLandUse } = useOverrides();
+  const { setLandUse, planStyle, setPlanStyle } = useOverrides();
   const counts = useMemo(() => { const c: Record<string, number> = {}; for (const f of data.features) c[f.properties.land_use ?? ''] = (c[f.properties.land_use ?? ''] || 0) + 1; return c; }, [data]);
   return (
     <div className="tab-lu">
+      <div className="lu-plan">
+        <div className="lu-plan-head"><b>{t('a.planStyle', lang)}</b><span>{t('a.planStyleHint', lang)}</span></div>
+        <div className="lu-plan-row">
+          <label className="lu-plan-c"><input type="color" value={planStyle.fill} onChange={(e) => setPlanStyle({ fill: e.target.value })} /><span>{t('a.planFill', lang)}</span></label>
+          <label className="lu-plan-c"><input type="color" value={planStyle.outline} onChange={(e) => setPlanStyle({ outline: e.target.value })} /><span>{t('a.planOutline', lang)}</span></label>
+          <label className="lu-plan-k"><input type="checkbox" checked={planStyle.dash} onChange={(e) => setPlanStyle({ dash: e.target.checked })} /><span>{t('a.planDash', lang)}</span></label>
+          <label className="lu-plan-k"><input type="checkbox" checked={planStyle.glow} onChange={(e) => setPlanStyle({ glow: e.target.checked })} /><span>{t('a.planGlow', lang)}</span></label>
+          <button className="btn sm" onClick={() => setPlanStyle(DEFAULT_PLAN_STYLE)}>{t('a.reset', lang)}</button>
+        </div>
+      </div>
       {Object.keys(landUses).sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).map((k) => (
         <div className="lu-row" key={k}>
           <input type="color" value={landUses[k].color} onChange={(e) => setLandUse(k, { color: e.target.value })} />

@@ -4,11 +4,11 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { t } from '../lib/domain';
 import { LayersFlyout } from './LayersFlyout';
-import { IconHome, IconCalendar, IconAdmin, IconLayers, IconPower, IconTag, IconExport, IconRuler, IconPlus } from './icons';
+import { IconHome, IconCalendar, IconAdmin, IconLayers, IconPower, IconTag, IconExport, IconRuler, IconPlus, IconChevron } from './icons';
 
 /** Vertical icon rail: navigation, a unified layers/view flyout, and map tools. */
 export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => void; onOpenDevPlan: () => void }) {
-  const { lang, dim, annotateMode, measuring, creating, toggleMeasure, setCreating, setAnnotateMode, fitAll, toggleLang, requestExport } = useApp();
+  const { lang, dim, annotateMode, measuring, creating, toggleMeasure, setCreating, setAnnotateMode, fitAll, toggleLang, requestExport, toggleRail } = useApp();
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const canAdmin = can(user?.role as any, 'plot:attr:update');
@@ -19,6 +19,7 @@ export function Sidebar({ onOpenAdmin, onOpenDevPlan }: { onOpenAdmin: () => voi
   return (
     <nav className="rail">
       <div className="rail-brand"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /></div>
+      <button className="rail-hide" onClick={toggleRail} data-tip={t('tb.hideMenu', lang)} aria-label={t('tb.hideMenu', lang)}><IconChevron size={16} /></button>
 
       <div className="rail-group">
         <RailBtn tip={t('d.fullPlan', lang)} onClick={fitAll}><IconHome size={20} /></RailBtn>

@@ -1,7 +1,17 @@
 /* App shell + panels — theme-aware, RTL/LTR, KEC design system */
 
 /* ---- Top bar ---- */
-:root{--rail-w:62px}
+:root{--rail-w-full:62px;--rail-w:62px}
+/* collapse the rail (mobile + desktop): the layout offset --rail-w → 0 and the rail slides out */
+:root[data-rail="hidden"]{--rail-w:0px}
+:root[data-rail="hidden"] .rail{inset-inline-start:calc(-1 * var(--rail-w-full));box-shadow:none}
+.rail-hide{position:absolute;top:8px;inset-inline-end:-9px;z-index:26;width:20px;height:20px;border-radius:50%;border:0;
+  background:var(--kec-gold);color:#16221B;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.rail-hide svg{transform:rotate(90deg)}
+html[dir="rtl"] .rail-hide svg{transform:rotate(-90deg)}
+.rail-reveal{position:fixed;top:9px;inset-inline-start:9px;z-index:30;width:42px;height:42px;border-radius:12px;border:0;cursor:pointer;
+  background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(11,26,16,.28);animation:fadeIn .2s}
+.rail-reveal img{width:30px;height:30px;object-fit:contain}
 #topbar{position:absolute;top:0;inset-inline-start:var(--rail-w);inset-inline-end:0;height:54px;z-index:20;display:flex;align-items:center;
   gap:14px;padding:0 20px;background:var(--panel-bg);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--kec-hairline);box-shadow:0 2px 14px rgba(0,0,0,.06)}
@@ -9,8 +19,8 @@
 .brand-logo{height:38px;width:auto;object-fit:contain;flex:none}
 
 /* ---- Left icon rail ---- */
-.rail{position:absolute;top:0;bottom:0;inset-inline-start:0;width:var(--rail-w);z-index:25;display:flex;flex-direction:column;align-items:center;
-  gap:8px;padding:10px 0 14px;overflow:visible;
+.rail{position:absolute;top:0;bottom:0;inset-inline-start:0;width:var(--rail-w-full);z-index:25;display:flex;flex-direction:column;align-items:center;
+  gap:8px;padding:10px 0 14px;overflow:visible;transition:inset-inline-start .28s cubic-bezier(.2,.8,.2,1);
   background:
     radial-gradient(150% 55% at 50% 0%, rgba(201,181,73,.16), transparent 55%),
     radial-gradient(130% 45% at 50% 100%, rgba(78,127,58,.40), transparent 62%),
@@ -83,6 +93,7 @@
 /* ---- Luxury detail card ---- */
 #detail{top:66px;inset-inline-start:calc(var(--rail-w) + 14px);width:376px;max-height:calc(100vh - 82px);display:flex;flex-direction:column;overflow:hidden;animation:slideIn .28s cubic-bezier(.2,.8,.2,1)}
 @keyframes slideIn{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .d-head{background:linear-gradient(135deg,var(--kec-green-mid),var(--kec-green-deep));color:#fff;padding:18px 18px 16px;position:relative;overflow:hidden}
 .d-head::after{content:"";position:absolute;inset-inline-end:-30px;top:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(201,181,73,.35),transparent 70%);pointer-events:none}
 .d-type{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px}
@@ -745,7 +756,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 /* ===== Mobile / touch (phones & small tablets) ===== */
 .cp-handle{display:none}
 @media (max-width: 768px) {
-  :root{--rail-w:52px}
+  :root{--rail-w-full:52px;--rail-w:52px}
   #topbar{height:50px;padding-inline:10px}
   .rail{width:var(--rail-w);padding-top:8px}
   .rail-btn{width:38px;height:38px}

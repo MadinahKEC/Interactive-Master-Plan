@@ -29,8 +29,8 @@ export function landUseColor(colors?: Record<string, { color: string }>): Expres
  *  status-coloured glow (below) so the plan state stays readable. */
 export const PLAN_FILL = '#2F6B3E';
 /** Fill a plot by its land use, but flip to the plan colour when it's in the plan. */
-export function plotFillColor(colors?: Record<string, { color: string }>): ExpressionSpecification {
-  return ['case', ['has', 'planStatus'], PLAN_FILL, landUseColor(colors)] as ExpressionSpecification;
+export function plotFillColor(colors?: Record<string, { color: string }>, planFill: string = PLAN_FILL): ExpressionSpecification {
+  return ['case', ['has', 'planStatus'], planFill, landUseColor(colors)] as ExpressionSpecification;
 }
 
 /**
