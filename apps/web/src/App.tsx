@@ -23,7 +23,6 @@ import { useProjects, t } from './lib/domain';
 import { can } from '@kec/types';
 import { useApp } from './store';
 import { useAuth } from './lib/auth';
-import { SyncDebug } from './components/SyncDebug';
 import { useOverrides } from './lib/overrides';
 import { effectiveCollection, effectiveLandUses, effectiveProjects } from './lib/effective';
 
@@ -169,7 +168,6 @@ export default function App() {
       {execOpen && data && <ExecDashboard data={data} projects={projects} landUses={landUses} onClose={() => { setExecOpen(false); useApp.getState().reveal(); }} />}
       <div className="credit">© {t('credit', lang)}</div>
       <div className="powered">{t('powered', lang)}</div>
-      {canAnnotate && <SyncDebug />}
       {!baseData && !error && (
         <div className="loading">
           <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" className="load-logo" />
