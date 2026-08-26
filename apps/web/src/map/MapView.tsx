@@ -274,11 +274,24 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     ref.current?.classList.toggle('map-sat', sat);
     const apply = () => {
       map.setLayoutProperty('base-sat', 'visibility', sat ? 'visible' : 'none');
-      // the light basemap is a set of OpenFreeMap vector layers (basev-*)
-      ['basev-landcover', 'basev-water', 'basev-building', 'basev-road-casing', 'basev-road', 'basev-place', 'basev-road-name'].forEach((id) => {
+      // the light basemap ground is a set of OpenFreeMap vector layers (hidden on sat)
+      ['basev-landcover', 'basev-water', 'basev-building', 'basev-road-casing', 'basev-road'].forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', sat ? 'none' : 'visible');
       });
-      if (map.getLayer('labels-sat')) map.setLayoutProperty('labels-sat', 'visibility', sat ? 'visible' : 'none');
+      // place / landmark / street labels stay ON in BOTH modes — just re-tinted:
+      // white text on satellite, dark text on the light basemap.
+      const tint = (id: string, dark: string, halo: string) => {
+        if (!map.getLayer(id)) return;
+        map.setPaintProperty(id, 'text-color', sat ? '#FFFFFF' : dark);
+        map.setPaintProperty(id, 'text-halo-color', sat ? '#0B1A10' : halo);
+      };
+      tint('basev-place', '#3A4A40', '#eef1ec');
+      tint('basev-road-name', '#6a7a6e', '#ffffff');
+      // landmarks: warm gold on satellite, deep-green on light
+      if (map.getLayer('basev-poi')) {
+        map.setPaintProperty('basev-poi', 'text-color', sat ? '#FBE7A8' : '#1C6034');
+        map.setPaintProperty('basev-poi', 'text-halo-color', sat ? '#0B1A10' : '#ffffff');
+      }
       map.setPaintProperty('plots-line', 'line-color', sat ? '#FBFCFA' : '#143D1E');
       map.setPaintProperty('plots-line', 'line-opacity', sat ? 0.8 : 0.55);
       map.setPaintProperty('plots-label', 'text-color', sat ? '#FFFFFF' : '#143D1E');

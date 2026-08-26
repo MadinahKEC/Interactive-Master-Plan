@@ -74,11 +74,6 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         maxzoom: 14,
         attribution: '© Mapzen / AWS Terrain Tiles',
       },
-      esriLabels: {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-      },
       // OpenFreeMap planet vector tiles (free, no key). Drives BOTH the clean light
       // basemap (real streets/water/buildings at high zoom over Medina — the Esri
       // canvas/street layers have no data there) and the 3D building footprints.
@@ -101,17 +96,6 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': ['match', ['get', 'class'], 'motorway', '#fdf3d3', 'trunk', '#fdf3d3', 'primary', '#ffffff', 'secondary', '#ffffff', 'tertiary', '#ffffff', '#f6f4ef'],
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 14, 1.6, 16, 5, 19, 15] } },
-      // place + street labels (Latin names only — the vendored Open Sans glyph range
-      // renders Latin; Arabic-only names simply resolve to empty and are skipped).
-      { id: 'basev-place', type: 'symbol', source: 'ofm', 'source-layer': 'place', minzoom: 9,
-        filter: ['all', ['in', ['get', 'class'], ['literal', ['city', 'town', 'suburb', 'neighbourhood', 'quarter', 'village']]], ['any', ['has', 'name:en'], ['has', 'name:latin']]],
-        layout: { 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 14, 13, 17, 15], 'text-max-width': 7 },
-        paint: { 'text-color': '#43524a', 'text-halo-color': '#eef1ec', 'text-halo-width': 1.6 } },
-      { id: 'basev-road-name', type: 'symbol', source: 'ofm', 'source-layer': 'transportation_name', minzoom: 14,
-        filter: ['any', ['has', 'name:en'], ['has', 'name:latin']],
-        layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'], 'text-size': 11 },
-        paint: { 'text-color': '#7a8a7e', 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 } },
       { id: 'base-sat', type: 'raster', source: 'esri', layout: { visibility: 'none' } },
       {
         id: 'plots-fill', type: 'fill', source: 'plots', ...srcLayer,
@@ -204,8 +188,26 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         },
         paint: { 'text-color': '#143D1E', 'text-halo-color': '#FBFCFA', 'text-halo-width': 1.7, 'text-halo-blur': 0.3 },
       },
-      // satellite place/street labels ON TOP (light mode gets its context from the vector layers)
-      { id: 'labels-sat', type: 'raster', source: 'esriLabels', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.95 } },
+      // ── place / landmark / street labels — ON TOP of everything, shown in BOTH
+      // light and satellite modes. Latin names only (the vendored Open Sans glyph
+      // range renders Latin; Arabic-only names resolve to empty and are skipped).
+      // Colours are re-tinted per basemap by MapView (dark on light, white on sat).
+      { id: 'basev-place', type: 'symbol', source: 'ofm', 'source-layer': 'place', minzoom: 8,
+        filter: ['all', ['in', ['get', 'class'], ['literal', ['city', 'town', 'suburb', 'neighbourhood', 'quarter', 'village']]], ['any', ['has', 'name:en'], ['has', 'name:latin']]],
+        layout: { 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 11, 14, 13.5, 17, 16], 'text-max-width': 7 },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#143D1E', 'text-halo-width': 1.7 } },
+      // notable Medina landmarks (mosques, universities, hospitals, attractions…)
+      { id: 'basev-poi', type: 'symbol', source: 'ofm', 'source-layer': 'poi', minzoom: 13.5,
+        filter: ['all', ['in', ['get', 'class'], ['literal', ['place_of_worship', 'college', 'university', 'hospital', 'attraction', 'stadium', 'museum', 'park', 'government', 'townhall', 'landmark']]], ['any', ['has', 'name:en'], ['has', 'name:latin']]],
+        layout: { 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 13.5, 10.5, 17, 13], 'text-max-width': 8,
+          'symbol-sort-key': ['coalesce', ['get', 'rank'], 99] },
+        paint: { 'text-color': '#FBE7A8', 'text-halo-color': '#143D1E', 'text-halo-width': 1.6 } },
+      { id: 'basev-road-name', type: 'symbol', source: 'ofm', 'source-layer': 'transportation_name', minzoom: 13.5,
+        filter: ['any', ['has', 'name:en'], ['has', 'name:latin']],
+        layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'], 'text-size': 11.5 },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#16221B', 'text-halo-width': 1.5 } },
     ],
   };
 }
