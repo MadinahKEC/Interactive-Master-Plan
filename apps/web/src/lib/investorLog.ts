@@ -14,6 +14,7 @@
  *                 e.g. "S19", to each record for it to appear on that plot's card).
  */
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 import { getFirestore, collection, getDocs, query, where, type Firestore } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
@@ -25,6 +26,11 @@ const INVESTOR_LOG_CONFIG = {
   messagingSenderId: '870716823065',
   appId: '1:870716823065:web:bde028421733f7d6febc88',
 };
+
+// App Check locks the investor data to registered apps/domains only. Once you enable
+// App Check + reCAPTCHA v3 on the kec-investor-log project, paste the reCAPTCHA v3
+// SITE key here; then enforce App Check on Cloud Firestore. Empty = App Check off.
+const APPCHECK_SITE_KEY = '';
 
 const COLLECTION = 'kec_investors';
 const FIELDS = {
@@ -43,6 +49,10 @@ function investorDb(): Firestore | null {
   if (cachedDb) return cachedDb;
   const name = 'kec-investor-log';
   const app = getApps().some((a) => a.name === name) ? getApp(name) : initializeApp(INVESTOR_LOG_CONFIG, name);
+  if (APPCHECK_SITE_KEY) {
+    try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider(APPCHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); }
+    catch { /* already initialised */ }
+  }
   cachedDb = getFirestore(app);
   return cachedDb;
 }
