@@ -22,7 +22,7 @@
 .dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .dash-kpi{background:linear-gradient(160deg,var(--card),var(--kec-surface));border:1px solid var(--kec-hairline);border-radius:14px;padding:15px 17px;position:relative;overflow:hidden}
 .dash-kpi::before{content:'';position:absolute;inset-inline-start:0;top:14px;bottom:14px;width:3px;border-radius:2px;background:var(--kec-gold)}
-.dash-kpi .v{font-size:24px;font-weight:800;color:var(--kec-title);font-family:var(--kec-mono);line-height:1}
+.dash-kpi .v{font-size:24px;font-weight:800;color:var(--kec-title);font-family:var(--kec-num);font-variant-numeric:tabular-nums;line-height:1}
 .dash-kpi .l{font-size:10.5px;color:var(--kec-muted);margin-top:6px}
 .dash-charts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
 .chart-card{background:var(--card);border:1px solid var(--kec-hairline);border-radius:16px;padding:14px;min-height:280px}
@@ -86,6 +86,18 @@
 .editor-foot .btn{flex:1}
 .ed-sec-row{display:flex;align-items:center;justify-content:space-between}
 .ed-sec-row .mini-btn{display:inline-flex;align-items:center;gap:5px;color:var(--kec-title)}
+/* show/hide plot-card fields & sections */
+.vis-hint{font-size:11px;color:var(--kec-muted);line-height:1.5;margin:-4px 0 10px}
+.vis-grouplabel{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--kec-muted);margin:10px 0 6px}
+.vis-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+.vis-chip{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:12px;font-weight:600;border-radius:20px;padding:6px 12px;cursor:pointer;transition:.14s;border:1px solid}
+.vis-chip.on{background:linear-gradient(135deg,var(--kec-surface-2),var(--kec-surface));border-color:rgba(47,107,62,.35);color:var(--kec-title)}
+.vis-chip.on:hover{border-color:var(--kec-green)}
+.vis-chip.off{background:transparent;border-color:var(--kec-hairline);color:var(--kec-muted);text-decoration:line-through;text-decoration-color:var(--kec-neg);opacity:.75}
+.vis-chip.off:hover{opacity:1}
+.vis-mark{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font-size:9px;font-weight:800;flex:none}
+.vis-chip.on .vis-mark{background:var(--kec-green);color:#fff}
+.vis-chip.off .vis-mark{background:var(--kec-neg);color:#fff}
 
 /* image upload (editor) */
 .img-upload{display:flex;flex-direction:column;gap:6px}

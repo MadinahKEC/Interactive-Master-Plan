@@ -18,6 +18,8 @@ export function PlotEditor({
 }) {
   const { lang } = useApp();
   const { setProject, setPlotAttr } = useOverrides();
+  const hiddenCards = useOverrides((s) => s.hiddenCards);
+  const toggleHiddenCard = useOverrides((s) => s.toggleHiddenCard);
   const feature = useMemo(() => data.features.find((f) => f.properties.code === code), [data, code]);
   const p = feature?.properties;
   const overlay = projects[code] ?? {};
@@ -93,6 +95,22 @@ export function PlotEditor({
     });
     onClose();
   };
+
+  // Which detail-card sections & fields are visible to viewers (display-only removal).
+  const sectionItems = [
+    { k: 's:ownership', label: t('sec.ownership', lang) }, { k: 's:summary', label: t('sec.summary', lang) },
+    { k: 's:gallery', label: t('sec.gallery', lang) }, { k: 's:land', label: t('sec.land', lang) },
+    { k: 's:analysis', label: t('sec.analysis', lang) }, { k: 's:devplan', label: t('sec.devplan', lang) },
+    { k: 's:invest', label: t('sec.invest', lang) }, { k: 's:project', label: t('sec.project', lang) },
+    { k: 's:comments', label: t('sec.comments', lang) },
+  ];
+  const landItems = [
+    { k: 'f:landuse', label: t('d.landuse', lang) }, { k: 'f:sector', label: t('d.sector', lang) },
+    { k: 'f:area', label: t('d.area', lang) }, { k: 'f:gfa', label: t('d.gfa', lang) },
+    { k: 'f:floors', label: t('d.floors', lang) }, { k: 'f:height', label: t('d.height', lang) },
+    { k: 'f:coverage', label: t('d.coverage', lang) }, { k: 'f:far', label: t('d.far', lang) },
+  ];
+  const invItems = INVEST_FIELDS.map((fld) => ({ k: `f:inv:${fld.key}`, label: lang === 'ar' ? fld.ar : fld.en }));
 
   if (!p) return null;
   return (
@@ -208,6 +226,22 @@ export function PlotEditor({
                 options={LICENSE_STAGES.map((x) => ({ value: x.key, label: lang === 'ar' ? x.ar : x.en }))} />
             </Field>
           </div>
+
+          {/* Show / hide plot card fields & sections (display-only, for all viewers) */}
+          <div className="ed-sec">{t('a.cardLayout', lang)}</div>
+          <p className="vis-hint">{t('a.cardLayoutHint', lang)}</p>
+          <div className="vis-grouplabel">{t('a.grpSections', lang)}</div>
+          <div className="vis-grid">
+            {sectionItems.map((it) => <VisChip key={it.k} label={it.label} on={!hiddenCards.includes(it.k)} onToggle={() => toggleHiddenCard(it.k)} />)}
+          </div>
+          <div className="vis-grouplabel">{t('a.grpLandFields', lang)}</div>
+          <div className="vis-grid">
+            {landItems.map((it) => <VisChip key={it.k} label={it.label} on={!hiddenCards.includes(it.k)} onToggle={() => toggleHiddenCard(it.k)} />)}
+          </div>
+          <div className="vis-grouplabel">{t('a.grpInvFields', lang)}</div>
+          <div className="vis-grid">
+            {invItems.map((it) => <VisChip key={it.k} label={it.label} on={!hiddenCards.includes(it.k)} onToggle={() => toggleHiddenCard(it.k)} />)}
+          </div>
         </div>
         <div className="editor-foot">
           <button className="btn" onClick={onClose}>{t('a.cancel', lang)}</button>
@@ -220,6 +254,15 @@ export function PlotEditor({
 
 function Field({ label, children, full }: { label: string; children: ReactNode; full?: boolean }) {
   return (<label className={`field ${full ? 'full' : ''}`}><span>{label}</span>{children}</label>);
+}
+
+/** A toggle chip: green = shown on the card, muted/struck = hidden from viewers. */
+function VisChip({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" className={`vis-chip ${on ? 'on' : 'off'}`} onClick={onToggle}>
+      <span className="vis-mark">{on ? '✓' : '✕'}</span>{label}
+    </button>
+  );
 }
 
 /** Show the raw number with thousands separators as the user types (stores a clean string). */

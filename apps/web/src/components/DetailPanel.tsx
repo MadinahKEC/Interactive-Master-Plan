@@ -12,13 +12,13 @@ import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconSettings, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
 
-// Lets any Section/Tile self-manage admin hide/show without prop-drilling.
-type CardMgr = { customize: boolean; hidden: string[]; toggle: (k: string) => void; canManage: boolean };
-const CardCtx = createContext<CardMgr>({ customize: false, hidden: [], toggle: () => {}, canManage: false });
+// Sections/fields the admin removed (via the plot editor) are simply omitted here.
+// The card itself is view-only — hiding is managed inside "Edit attributes".
+const CardCtx = createContext<string[]>([]);
 
 export function DetailPanel({
   data, projects, landUses, onEdit, onSubdivide,
@@ -34,8 +34,6 @@ export function DetailPanel({
   const createdPlots = useOverrides((s) => s.createdPlots);
   const removeCreatedPlot = useOverrides((s) => s.removeCreatedPlot);
   const hiddenCards = useOverrides((s) => s.hiddenCards);
-  const toggleHiddenCard = useOverrides((s) => s.toggleHiddenCard);
-  const [customize, setCustomize] = useState(false);
   const canAttr = can(role as any, 'plot:attr:update');
   const canGeom = can(role as any, 'plot:geometry:update');
   const shortlist = useShortlist();
@@ -44,7 +42,7 @@ export function DetailPanel({
   const [feasOpen, setFeasOpen] = useState(false);
   // reset any open sub-modal when the selection changes (or clears) so e.g. the QR
   // never re-opens by itself on the next plot.
-  useEffect(() => { setShareOpen(false); setPdfOpen(false); setFeasOpen(false); setCustomize(false); }, [selected?.code]);
+  useEffect(() => { setShareOpen(false); setPdfOpen(false); setFeasOpen(false); }, [selected?.code]);
   if (!selected) return null;
   const p = selected;
   const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
@@ -83,7 +81,6 @@ export function DetailPanel({
           <button className={`dq-btn ${shortlist.codes.includes(p.code) ? 'on' : ''}`} onClick={() => shortlist.toggle(p.code)} title={t(shortlist.codes.includes(p.code) ? 'd.unfavorite' : 'd.favorite', lang)}><IconStar size={15} /></button>
           <button className="dq-btn" onClick={() => setPdfOpen(true)} title={t('d.pdf', lang)}><IconDownload size={15} /></button>
           <button className="dq-btn" onClick={() => setShareOpen(true)} title={t('d.share', lang)}><IconShare size={15} /></button>
-          {canAttr && <button className={`dq-btn ${customize ? 'on' : ''}`} onClick={() => setCustomize((c) => !c)} title={t('d.customize', lang)}><IconSettings size={15} /></button>}
         </div>
         <div className="d-type"><TypeIcon typeKey={pr.type.key} size={14} />{typeLabel}</div>
         <div className="d-title">{title}</div>
@@ -95,8 +92,7 @@ export function DetailPanel({
       </div>
 
       <div className="d-scroll">
-        <CardCtx.Provider value={{ customize, hidden: hiddenCards, toggle: toggleHiddenCard, canManage: canAttr }}>
-        {customize && <div className="d-customize-hint"><IconSettings size={13} /> {t('d.customizeHint', lang)}</div>}
+        <CardCtx.Provider value={hiddenCards}>
         <Section k="s:ownership" title={t('sec.ownership', lang)}>
           <div className="own-row">
             <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
@@ -362,23 +358,16 @@ function Comments({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
   );
 }
 
-const hideLbl = (hidden: boolean) => (document.documentElement.lang === 'ar' ? (hidden ? 'إظهار' : 'إخفاء') : hidden ? 'Show' : 'Hide');
-
 function Section({ title, children, k, defaultOpen = true }: { title: string; children: ReactNode; k?: string; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
-  const ctx = useContext(CardCtx);
-  const hidden = k ? ctx.hidden.includes(k) : false;
-  if (hidden && !ctx.customize) return null;
-  const manage = ctx.canManage && ctx.customize && !!k;
+  const hidden = useContext(CardCtx);
+  if (k && hidden.includes(k)) return null;
   return (
-    <div className={`d-section ${open ? '' : 'collapsed'} ${hidden ? 'card-hidden' : ''}`}>
-      <div className="d-sec-titlewrap">
-        <button type="button" className="d-sec-title" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-          <span>{title}</span>
-          <IconChevron size={16} />
-        </button>
-        {manage && <button type="button" className={`card-hidebtn ${hidden ? 'restore' : ''}`} title={hideLbl(hidden)} onClick={() => ctx.toggle(k!)}>{hidden ? <IconPlus size={13} /> : <IconClose size={13} />}</button>}
-      </div>
+    <div className={`d-section ${open ? '' : 'collapsed'}`}>
+      <button type="button" className="d-sec-title" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span>{title}</span>
+        <IconChevron size={16} />
+      </button>
       {open && <div className="d-sec-body">{children}</div>}
     </div>
   );
@@ -405,18 +394,18 @@ function investIcon(unit: string): RN {
 }
 /** Premium stat tile — icon badge, label, value — two per row. */
 function Tile({ icon, l, v, chip, k, text }: { icon: RN; l: string; v: string; chip?: string; k?: string; text?: boolean }) {
-  const ctx = useContext(CardCtx);
-  const hidden = k ? ctx.hidden.includes(k) : false;
-  if (hidden && !ctx.customize) return null;
-  const manage = ctx.canManage && ctx.customize && !!k;
+  const hidden = useContext(CardCtx);
+  if (k && hidden.includes(k)) return null;
   return (
-    <div className={`d-tile ${hidden ? 'card-hidden' : ''}`}>
+    <div className="d-tile">
       <span className="d-tile-ic">{icon}</span>
       <div className="d-tile-body">
         <div className="d-tile-l">{l}</div>
-        <div className={`d-tile-v ${text ? 'text' : ''}`}>{chip && <span className="cell-chip" style={{ background: chip }} />}{v}</div>
+        <div className="d-tile-vrow">
+          {chip && <span className="cell-chip" style={{ background: chip }} />}
+          <span className={`d-tile-v ${text ? 'text' : ''}`}>{v}</span>
+        </div>
       </div>
-      {manage && <button type="button" className={`card-hidebtn tile ${hidden ? 'restore' : ''}`} title={hideLbl(hidden)} onClick={() => ctx.toggle(k!)}>{hidden ? <IconPlus size={12} /> : <IconClose size={12} />}</button>}
     </div>
   );
 }
