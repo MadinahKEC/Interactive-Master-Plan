@@ -274,6 +274,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .dlg-input:focus-within{border-color:var(--kec-green);box-shadow:0 0 0 3px rgba(47,107,62,.14)}
 .dlg-input input{flex:1;border:none;outline:none;background:transparent;padding:11px 0;font-size:14px;font-family:'IBM Plex Mono',monospace;color:var(--kec-ink)}
 .dlg-input em{font-style:normal;color:var(--kec-muted);font-size:12px}
+.dlg-input-color input[type=color]{flex:0 0 auto;width:52px;height:34px;padding:2px;margin:5px 0;border-radius:8px;cursor:pointer}
 .dlg-foot{background:var(--kec-surface)}
 .dlg-foot .btn{min-width:0;padding:9px 16px}
 /* comparison rows inside shape dialog */

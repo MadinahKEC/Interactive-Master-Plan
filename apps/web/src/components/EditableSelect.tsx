@@ -8,13 +8,17 @@ import { t } from '../lib/domain';
  * per `listKey` in the overrides store, so they persist and reappear next session.
  * Picking "➕ add" opens a themed dialog for the Arabic/English label.
  */
-export function EditableSelect({ listKey, value, onChange, options, allowNone, noneLabel }: {
+export function EditableSelect({ listKey, value, onChange, options, allowNone, noneLabel, addColor, onCreate }: {
   listKey: string;
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
   allowNone?: boolean;
   noneLabel?: string;
+  /** Also ask for a colour when adding (e.g. land uses). */
+  addColor?: boolean;
+  /** Persist a brand-new item to its own store (instead of the generic option list). */
+  onCreate?: (val: string, ar: string, en: string, extra: Record<string, string>) => void;
 }) {
   const { lang } = useApp();
   const custom = useOverrides((s) => s.optionLists[listKey]) ?? [];
@@ -34,6 +38,7 @@ export function EditableSelect({ listKey, value, onChange, options, allowNone, n
       fields: [
         { key: 'ar', label: t('opt.ar', lang), value: '' },
         { key: 'en', label: t('opt.en', lang), value: '' },
+        ...(addColor ? [{ key: 'color', label: t('opt.color', lang), value: '#2F6B3E', type: 'color' as const }] : []),
       ],
       buttons: [{ label: t('a.cancel', lang), value: 'cancel' }, { label: t('opt.add', lang), value: 'ok', variant: 'primary' }],
     });
@@ -41,7 +46,8 @@ export function EditableSelect({ listKey, value, onChange, options, allowNone, n
     const ar = (r.fields.ar || '').trim(), en = (r.fields.en || '').trim();
     const val = (en || ar).trim();
     if (!val) return;
-    addOption(listKey, { value: val, ar: ar || undefined, en: en || undefined });
+    if (onCreate) onCreate(val, ar, en, r.fields);
+    else addOption(listKey, { value: val, ar: ar || undefined, en: en || undefined });
     onChange(val);
   };
 

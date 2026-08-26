@@ -324,6 +324,7 @@ export const DICT: Record<string, Entry> = {
   'opt.addTitle':    { ar: 'إضافة خيار جديد للقائمة', en: 'Add a new option to the list' },
   'opt.ar':          { ar: 'الاسم بالعربية', en: 'Arabic label' },
   'opt.en':          { ar: 'الاسم بالإنجليزية', en: 'English label' },
+  'opt.color':       { ar: 'اللون على الخريطة', en: 'Map colour' },
   'merged.of':       { ar: 'مدموجة من', en: 'Merged from' },
   'd.unmerge':       { ar: 'إلغاء الدمج', en: 'Unmerge' },
   'd.copyLink':      { ar: 'نسخ رابط القطعة', en: 'Copy plot link' },

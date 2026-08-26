@@ -12,6 +12,13 @@ export function effectiveLandUses(over: Record<string, LandUseOverride>): Record
     const o = over[key] ?? {};
     out[key] = { key, labelAr: o.labelAr ?? base.labelAr, labelEn: o.labelEn ?? key, color: o.color ?? base.color };
   }
+  // admin-created land uses live only in the override map — surface them too, so a
+  // new class shows up in the Land uses tab, the dropdowns, the legend and the map.
+  for (const key of Object.keys(over)) {
+    if (out[key]) continue;
+    const o = over[key];
+    out[key] = { key, labelAr: o.labelAr ?? key, labelEn: o.labelEn ?? key, color: o.color ?? '#C9C9C9' };
+  }
   return out;
 }
 

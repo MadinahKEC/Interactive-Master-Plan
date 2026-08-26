@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { IconClose } from '../components/icons';
 
-export interface DialogField { key: string; label: string; value: string | number; type?: 'number' | 'text'; suffix?: string }
+export interface DialogField { key: string; label: string; value: string | number; type?: 'number' | 'text' | 'color'; suffix?: string }
 export interface DialogButton { label: string; value: string; variant?: 'primary' | 'danger' | 'default' }
 export interface DialogSpec {
   title: string;
@@ -76,12 +76,13 @@ export function DialogHost() {
               {spec.fields.map((f) => (
                 <label className="dlg-field" key={f.key}>
                   <span>{f.label}</span>
-                  <div className="dlg-input">
+                  <div className={`dlg-input ${f.type === 'color' ? 'dlg-input-color' : ''}`}>
                     <input
                       type={f.type ?? 'text'}
                       value={vals[f.key] ?? ''}
                       onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}
                     />
+                    {f.type === 'color' && <em className="mono">{vals[f.key] ?? ''}</em>}
                     {f.suffix && <em>{f.suffix}</em>}
                   </div>
                 </label>
