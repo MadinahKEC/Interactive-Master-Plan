@@ -98,7 +98,7 @@ export function PlotEditor({
 
   // Which detail-card sections & fields are visible to viewers (display-only removal).
   const sectionItems = [
-    { k: 's:ownership', label: t('sec.ownership', lang) }, { k: 's:summary', label: t('sec.summary', lang) },
+    { k: 's:ownership', label: t('sec.ownership', lang) }, { k: 's:investors', label: t('sec.investors', lang) }, { k: 's:summary', label: t('sec.summary', lang) },
     { k: 's:gallery', label: t('sec.gallery', lang) }, { k: 's:land', label: t('sec.land', lang) },
     { k: 's:analysis', label: t('sec.analysis', lang) }, { k: 's:devplan', label: t('sec.devplan', lang) },
     { k: 's:invest', label: t('sec.invest', lang) }, { k: 's:project', label: t('sec.project', lang) },

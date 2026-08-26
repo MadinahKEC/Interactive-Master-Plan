@@ -12,6 +12,7 @@ import { ShareModal } from './ShareModal';
 import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
+import { useInterestedInvestors, INVESTOR_LOG_ENABLED } from '../lib/investorLog';
 import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
@@ -113,6 +114,8 @@ export function DetailPanel({
             </div>
           )}
         </Section>
+
+        {INVESTOR_LOG_ENABLED && <InvestorInterest code={p.code} lang={lang} />}
 
         <Section k="s:summary" title={t('sec.summary', lang)}>
           {summary ? <p className="d-summary">{summary}</p> : <p className="d-summary muted">{lang === 'ar' ? 'لا يوجد وصف بعد.' : 'No overview yet.'}</p>}
@@ -355,6 +358,33 @@ function Comments({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Investors who registered interest in this plot, pulled live from the separate
+// kec-investor-log Firebase project. Renders only when there is interest to show.
+function InvestorInterest({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
+  const { rows, loading, error } = useInterestedInvestors(code);
+  if (!loading && !error && rows.length === 0) return null;
+  const money = (v: number | null) => (v == null ? '—' : `${new Intl.NumberFormat('en-US').format(Math.round(v))} ${lang === 'ar' ? 'ر.س' : 'SAR'}`);
+  return (
+    <Section k="s:investors" title={t('sec.investors', lang)}>
+      {loading && <div className="iv2-note">{t('iv2.loading', lang)}</div>}
+      {error && <div className="iv2-note err">{t('iv2.error', lang)}</div>}
+      {!loading && !error && rows.map((r) => (
+        <div className="iv2-card" key={r.id}>
+          <div className="iv2-top">
+            <span className="iv2-co"><IconOwner size={13} /> {r.company}</span>
+            {r.date && <span className="iv2-date">{r.date}</span>}
+          </div>
+          <div className="iv2-grid">
+            <div className="iv2-cell"><span className="iv2-l">{t('iv2.type', lang)}</span><span className="iv2-v">{r.investType}</span></div>
+            <div className="iv2-cell"><span className="iv2-l">{t('iv2.pricePerM', lang)}</span><span className="iv2-v">{money(r.pricePerM)}</span></div>
+            <div className="iv2-cell"><span className="iv2-l">{t('iv2.dealValue', lang)}</span><span className="iv2-v">{money(r.dealValue)}</span></div>
+          </div>
+        </div>
+      ))}
+    </Section>
   );
 }
 
