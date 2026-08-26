@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { can, type PlotProps } from '@kec/types';
 import { t, type ProjectInfo } from '../lib/domain';
@@ -11,6 +11,37 @@ import { IconClose } from './icons';
 
 const nf = new Intl.NumberFormat('en-US');
 const fmtSar = (v: number, lang: 'ar' | 'en') => `${nf.format(Math.round(v))} ${lang === 'ar' ? 'ر.س' : 'SAR'}`;
+
+/** Add thousands separators to a raw numeric string while it is being typed. */
+function fmtNum(raw: string): string {
+  if (raw === '' || raw === '.') return raw;
+  const dot = raw.indexOf('.');
+  const intPart = dot >= 0 ? raw.slice(0, dot) : raw;
+  const decPart = dot >= 0 ? raw.slice(dot + 1) : null;
+  const intF = intPart === '' ? '' : Number(intPart).toLocaleString('en-US');
+  return decPart !== null ? `${intF === '' ? '0' : intF}.${decPart}` : intF;
+}
+/** Number input that shows 1,000 separators as you type without ever yanking the caret. */
+function NumInput({ value, onChange }: { value: string; onChange: (raw: string) => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const caret = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (caret.current != null && ref.current) { ref.current.setSelectionRange(caret.current, caret.current); caret.current = null; }
+  });
+  const onIn = (e: ChangeEvent<HTMLInputElement>) => {
+    const el = e.target;
+    const digitsBefore = (el.value.slice(0, el.selectionStart ?? el.value.length).match(/[0-9]/g) || []).length;
+    let raw = el.value.replace(/[^0-9.]/g, '');
+    const i = raw.indexOf('.');
+    if (i >= 0) raw = raw.slice(0, i + 1) + raw.slice(i + 1).replace(/\./g, ''); // keep a single dot
+    const formatted = fmtNum(raw);
+    let pos = 0, seen = 0;
+    while (pos < formatted.length && seen < digitsBefore) { if (/[0-9]/.test(formatted[pos])) seen++; pos++; }
+    caret.current = pos;
+    onChange(raw);
+  };
+  return <input ref={ref} inputMode="decimal" value={fmtNum(value)} onChange={onIn} />;
+}
 
 type FStr = Record<keyof FeasInputs, string>;
 const toStr = (o: FeasInputs): FStr => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v ? String(v) : ''])) as FStr;
@@ -70,7 +101,7 @@ export function FeasibilityModal({ plot, projects, onClose }: {
           <div className="fe-grid">
             {FIELDS.map(({ k, label }) => (
               <label className="fe-field" key={k}><span>{label}</span>
-                <input inputMode="decimal" value={fs[k]} onChange={(e) => up(k, e.target.value)} />
+                <NumInput value={fs[k]} onChange={(raw) => up(k, raw)} />
               </label>
             ))}
           </div>
