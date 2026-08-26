@@ -287,6 +287,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       };
       tint('basev-place', '#3A4A40', '#eef1ec');
       tint('basev-road-name', '#6a7a6e', '#ffffff');
+      tint('flagship-label', '#16221B', '#ffffff'); // bold landmark names — dark on light, white on sat
       // landmarks: warm gold on satellite, deep-green on light
       if (map.getLayer('basev-poi')) {
         map.setPaintProperty('basev-poi', 'text-color', sat ? '#FBE7A8' : '#1C6034');

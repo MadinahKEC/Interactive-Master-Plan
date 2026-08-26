@@ -2,6 +2,44 @@ import type { StyleSpecification, ExpressionSpecification } from 'maplibre-gl';
 import { LAND_USES, LAND_USE_FALLBACK } from '@kec/types';
 
 export const KEC_CENTER: [number, number] = [39.678995, 24.469588];
+
+/** Curated flagship Medina landmarks (coords verified from OSM) — the notable places
+ *  the generic POI layer misses or under-ranks: the Haramain station, the distinctive
+ *  religious sites, the upscale malls and the luxury hotels. Rendered above everything. */
+const FLAGSHIP_POINTS: [number, number, string, string][] = [
+  // [lng, lat, name, category]  category ∈ rail | religious | mall | hotel
+  [39.6996, 24.4723, 'Haramain HSR Station', 'rail'],
+  [39.61116, 24.46868, "Prophet's Mosque", 'religious'],
+  [39.61726, 24.43959, 'Quba Mosque', 'religious'],
+  [39.60696, 24.46581, 'Al-Ghamama Mosque', 'religious'],
+  [39.60636, 24.46618, 'Abu Bakr Mosque', 'religious'],
+  [39.60636, 24.46699, 'Ali ibn Abi Talib Mosque', 'religious'],
+  [39.5956, 24.47746, 'Salman al-Farsi Mosque', 'religious'],
+  [39.61275, 24.50347, 'Sayyid al-Shuhada (Uhud)', 'religious'],
+  [39.61617, 24.46675, 'Jannat al-Baqi', 'religious'],
+  [39.61704, 24.52229, 'Jabal Uhud', 'religious'],
+  [39.59536, 24.49602, 'Al-Noor Mall', 'mall'],
+  [39.64952, 24.48731, 'Al Rashed Mall', 'mall'],
+  [39.61043, 24.48474, 'Mazaia Mall', 'mall'],
+  [39.60782, 24.47137, 'Mövenpick Anwar Al Madinah', 'hotel'],
+  [39.60877, 24.47135, 'InterContinental Dar Al Iman', 'hotel'],
+  [39.6108, 24.47211, 'Madinah Hilton', 'hotel'],
+  [39.60335, 24.467, 'Kempinski Al Madinah', 'hotel'],
+  [39.61011, 24.46387, 'Crowne Plaza Madinah', 'hotel'],
+  [39.61149, 24.47213, 'Sofitel Shahd Al Madinah', 'hotel'],
+  [39.61179, 24.46447, 'Pullman Zamzam Madinah', 'hotel'],
+  [39.61025, 24.47379, 'Shaza Regency Plaza', 'hotel'],
+  [39.60697, 24.46449, 'Al-Manakha Rotana', 'hotel'],
+];
+const CAT_PRIORITY: Record<string, number> = { rail: 0, religious: 1, mall: 2, hotel: 3 };
+const FLAGSHIPS = {
+  type: 'FeatureCollection' as const,
+  features: FLAGSHIP_POINTS.map(([lng, lat, name, cat]) => ({
+    type: 'Feature' as const,
+    properties: { name, cat, pri: CAT_PRIORITY[cat] },
+    geometry: { type: 'Point' as const, coordinates: [lng, lat] },
+  })),
+};
 export const KEC_BOUNDS: [[number, number], [number, number]] = [
   [39.65693, 24.45448],
   [39.70106, 24.48469],
@@ -78,6 +116,7 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
       // basemap (real streets/water/buildings at high zoom over Medina — the Esri
       // canvas/street layers have no data there) and the 3D building footprints.
       ofm: { type: 'vector' as const, url: 'https://tiles.openfreemap.org/planet', attribution: 'OpenFreeMap © OpenMapTiles · OpenStreetMap' },
+      flagships: { type: 'geojson' as const, data: FLAGSHIPS as any },
       plots: plotsSource,
     },
     layers: [
@@ -208,6 +247,22 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         filter: ['any', ['has', 'name:en'], ['has', 'name:latin']],
         layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'], 'text-size': 11.5 },
         paint: { 'text-color': '#ffffff', 'text-halo-color': '#16221B', 'text-halo-width': 1.5 } },
+      // ── curated flagship landmarks (Haramain station · distinctive mosques ·
+      // upscale malls · luxury hotels) — a category-coloured dot + bold label, on top. ──
+      { id: 'flagship-dot', type: 'circle', source: 'flagships', minzoom: 11.5,
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11.5, 3, 16, 5.5],
+          'circle-color': ['match', ['get', 'cat'], 'rail', '#37B24D', 'mall', '#3FA7C4', 'hotel', '#D9A441', /* religious */ '#E3B93B'],
+          'circle-stroke-color': '#0B1A10', 'circle-stroke-width': 1.4, 'circle-pitch-alignment': 'map',
+        } },
+      { id: 'flagship-label', type: 'symbol', source: 'flagships', minzoom: 12,
+        layout: {
+          'text-field': ['get', 'name'], 'text-font': ['Open Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 12, 11, 16, 14],
+          'text-anchor': 'left', 'text-offset': [0.7, 0], 'text-max-width': 9,
+          'symbol-sort-key': ['get', 'pri'], 'text-optional': false,
+        },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#0B1A10', 'text-halo-width': 1.9, 'text-halo-blur': 0.3 } },
     ],
   };
 }
