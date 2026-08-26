@@ -17,6 +17,7 @@
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getFirestore, doc, onSnapshot, runTransaction, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import LZString from 'lz-string';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence,
   browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword,
@@ -130,6 +131,18 @@ interface SyncableStore {
   importAll: (json: string) => boolean;
 }
 
+// The whole overrides state is one JSON blob. Uncompressed it can exceed Firestore's
+// 1 MB per-document limit (geometry edits especially) → writes fail with
+// `invalid-argument` and nothing persists. Compress it (LZ marker for back-compat).
+const packBlob = (obj: unknown): string => 'LZ:' + LZString.compressToBase64(JSON.stringify(obj));
+const parseBlob = (s: string | undefined): Record<string, any> => {
+  if (!s) return {};
+  try {
+    if (s.startsWith('LZ:')) { const d = LZString.decompressFromBase64(s.slice(3)); return d ? JSON.parse(d) : {}; }
+    return JSON.parse(s); // legacy uncompressed doc
+  } catch { return {}; }
+};
+
 /** Lightweight sync-event bus so an on-screen readout can show write/read status. */
 export type SyncEvt = { at: number; kind: 'write-ok' | 'write-err' | 'remote'; msg: string };
 const syncEvtListeners = new Set<(e: SyncEvt) => void>();
@@ -161,19 +174,15 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
     (snap) => {
       const d = snap.data() as { blob?: string; nonce?: string } | undefined;
       if (!d?.blob || d.nonce === lastNonce) return; // ignore our own echo
-      let blob = d.blob;
+      const remoteObj = parseBlob(d.blob);
       if (Date.now() < protectUntil) {
         // A recent local edit is still authoritative — keep our copy of the shielded
         // maps so an older remote blob can't roll it back.
-        try {
-          const remote = JSON.parse(d.blob) as Record<string, unknown>;
-          const local = store.getState() as unknown as Record<string, unknown>;
-          for (const k of SHIELDED_MAPS) remote[k] = local[k];
-          blob = JSON.stringify(remote);
-        } catch { /* fall back to the raw remote blob */ }
+        const local = store.getState() as unknown as Record<string, any>;
+        for (const k of SHIELDED_MAPS) remoteObj[k] = local[k];
       }
       try {
-        applyingRemote = true; store.getState().importAll(blob);
+        applyingRemote = true; store.getState().importAll(JSON.stringify(remoteObj));
         const luN = Object.keys((store.getState() as any).landUses || {}).length;
         emitSync('remote', `applied · LU=${luN}${Date.now() < protectUntil ? ' (shielded)' : ''}`);
       } finally { applyingRemote = false; }
@@ -197,19 +206,21 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       // MERGE-ON-WRITE: read the current remote inside a transaction and UNION our
       // maps onto it, so a concurrent write from another tab/device/session can never
       // erase an addition (the root cause of "new land use appears then vanishes").
+      let outKB = 0;
       runTransaction(db, async (tx) => {
         const snap = await tx.get(overridesDoc);
-        let remote: Record<string, any> = {};
-        try { const d = snap.data() as any; remote = d?.blob ? JSON.parse(d.blob) : {}; } catch { remote = {}; }
+        const remote = parseBlob((snap.data() as any)?.blob);
         const merged: Record<string, any> = { ...remote, ...localBlob };
         // object maps → union (local wins on key conflicts); nothing gets dropped
         for (const k of ['landUses', 'projects', 'plotAttrs', 'plotGeom']) merged[k] = { ...(remote[k] || {}), ...(localBlob[k] || {}) };
         // string arrays (tombstones/removals) → union so deletes stick and adds survive
         for (const k of ['hiddenCards', 'hiddenLandUses']) merged[k] = Array.from(new Set([...(remote[k] || []), ...(localBlob[k] || [])]));
-        tx.set(overridesDoc, { blob: JSON.stringify(merged), nonce: lastNonce, updatedAt: Date.now() });
+        const packed = packBlob(merged);
+        outKB = Math.round(packed.length / 1024);
+        tx.set(overridesDoc, { blob: packed, nonce: lastNonce, updatedAt: Date.now() });
       })
-        .then(() => emitSync('write-ok', `saved · LU=${Object.keys(localBlob.landUses || {}).length} · attrs=${Object.keys(localBlob.plotAttrs || {}).length}`))
-        .catch((e) => { emitSync('write-err', (e?.code || e?.message || 'failed')); console.warn('[firestore] write error — check security rules', e); });
+        .then(() => emitSync('write-ok', `saved · ${outKB}KB · LU=${Object.keys(localBlob.landUses || {}).length} · attrs=${Object.keys(localBlob.plotAttrs || {}).length}`))
+        .catch((e) => { emitSync('write-err', `${e?.code || e?.message || 'failed'} · ${outKB}KB`); console.warn('[firestore] write error — check security rules', e); });
     }, 500);
   });
 }
