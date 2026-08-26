@@ -15,7 +15,7 @@
  *     match /{doc=**} { allow read, write: if true; } } }
  */
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getFirestore, doc, onSnapshot, setDoc, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, runTransaction, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence,
@@ -172,15 +172,27 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
     protectUntil = Date.now() + SHIELD_MS;
     clearTimeout(writeTimer);
     writeTimer = setTimeout(() => {
-      const st = store.getState();
-      const blob = JSON.stringify({
+      const st = store.getState() as unknown as Record<string, any>;
+      const localBlob: Record<string, any> = {
         plotAttrs: st.plotAttrs, projects: st.projects, landUses: st.landUses,
         plotGeom: st.plotGeom, merges: st.merges, users: st.users, audit: st.audit,
         hiddenCards: st.hiddenCards, hiddenLandUses: st.hiddenLandUses,
-      });
+      };
       lastNonce = Math.random().toString(36).slice(2) + Date.now();
-      setDoc(overridesDoc, { blob, nonce: lastNonce, updatedAt: Date.now() })
-        .catch((e) => console.warn('[firestore] write error — check security rules', e));
+      // MERGE-ON-WRITE: read the current remote inside a transaction and UNION our
+      // maps onto it, so a concurrent write from another tab/device/session can never
+      // erase an addition (the root cause of "new land use appears then vanishes").
+      runTransaction(db, async (tx) => {
+        const snap = await tx.get(overridesDoc);
+        let remote: Record<string, any> = {};
+        try { const d = snap.data() as any; remote = d?.blob ? JSON.parse(d.blob) : {}; } catch { remote = {}; }
+        const merged: Record<string, any> = { ...remote, ...localBlob };
+        // object maps → union (local wins on key conflicts); nothing gets dropped
+        for (const k of ['landUses', 'projects', 'plotAttrs', 'plotGeom']) merged[k] = { ...(remote[k] || {}), ...(localBlob[k] || {}) };
+        // string arrays (tombstones/removals) → union so deletes stick and adds survive
+        for (const k of ['hiddenCards', 'hiddenLandUses']) merged[k] = Array.from(new Set([...(remote[k] || []), ...(localBlob[k] || [])]));
+        tx.set(overridesDoc, { blob: JSON.stringify(merged), nonce: lastNonce, updatedAt: Date.now() });
+      }).catch((e) => console.warn('[firestore] write error — check security rules', e));
     }, 500);
   });
 }

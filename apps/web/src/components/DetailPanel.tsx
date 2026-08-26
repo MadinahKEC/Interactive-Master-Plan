@@ -127,7 +127,7 @@ export function DetailPanel({
 
         <Section k="s:land" title={t('sec.land', lang)}>
           <div className="d-tiles">
-            <Tile k="f:landuse" icon={<IconPalette size={13} />} l={t('d.landuse', lang)} v={luLabel} chip={lu.color} text />
+            <Tile k="f:landuse" icon={<IconPalette size={13} />} l={t('d.landuse', lang)} v={luLabel} text />
             <Tile k="f:sector" icon={<IconGlobe size={13} />} l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} text />
             <Tile k="f:area" icon={<IconRuler size={13} />} l={t('d.area', lang)} v={num(p.area, 2)} />
             <Tile k="f:gfa" icon={<IconBuilding size={13} />} l={t('d.gfa', lang)} v={num(p.gfa, 1)} />
