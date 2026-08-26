@@ -15,7 +15,7 @@
  *     match /{doc=**} { allow read, write: if true; } } }
  */
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getFirestore, doc, onSnapshot, runTransaction, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, runTransaction, getDoc, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import LZString from 'lz-string';
 import {
@@ -155,72 +155,104 @@ function emitSync(kind: SyncEvt['kind'], msg: string) {
   syncEvtListeners.forEach((l) => { try { l(e); } catch { /* */ } });
 }
 
-/** Bidirectional sync: Firestore <-> overrides store. Call once at startup. */
-// Maps the admin edits directly. After a local change these WIN over any incoming
-// remote snapshot for a grace window, so a stale/concurrent write from another tab
-// or device can never make a just-made add/edit/delete "appear then vanish".
+/** Bidirectional sync: Firestore <-> overrides store. Call once at startup.
+ *
+ *  SHARDED STORAGE: the state is split across several documents in the `kec_state`
+ *  collection, each with its own 1 MB budget, so the store can grow far beyond a
+ *  single document's limit. Big per-plot data (attrs / projects / geometry) each get
+ *  their own doc; shared data (land uses, users, …) sits in `_core`. Each write is a
+ *  transaction that UNIONs onto the current remote, so no writer erases another's
+ *  data. A missing slice never wipes local state (importAll only touches present
+ *  keys), so a partial write is always safe. Migrates the old single doc on first run.
+ *  (Plot images live in Firebase Storage — only their URLs are stored here.)
+ */
+// After a local edit these maps WIN over any incoming remote for a grace window,
+// so a stale/concurrent snapshot can't make a just-made change "appear then vanish".
 const SHIELDED_MAPS = ['landUses', 'projects', 'plotAttrs', 'hiddenCards', 'hiddenLandUses'] as const;
 const SHIELD_MS = 12000;
 
+// slice name → { keys stored in it; which are object-maps / string-arrays to union }
+const SLICES: Record<string, { keys: string[]; maps: string[]; arrays: string[] }> = {
+  _core: { keys: ['landUses', 'users', 'merges', 'hiddenCards', 'hiddenLandUses', 'audit'], maps: ['landUses'], arrays: ['hiddenCards', 'hiddenLandUses'] },
+  attrs: { keys: ['plotAttrs'], maps: ['plotAttrs'], arrays: [] },
+  projects: { keys: ['projects'], maps: ['projects'], arrays: [] },
+  geom: { keys: ['plotGeom'], maps: ['plotGeom'], arrays: [] },
+};
+
 export function startFirestoreSync(store: StoreApi<SyncableStore>) {
   let applyingRemote = false;
-  let lastNonce = '';
-  let protectUntil = 0;   // local edits to SHIELDED_MAPS win until this timestamp
+  let protectUntil = 0;
   let writeTimer: ReturnType<typeof setTimeout> | undefined;
+  const pending = new Set<string>();
+  const sliceRef = (name: string) => doc(db, 'kec_state', name);
 
-  // remote -> local
-  onSnapshot(
-    overridesDoc,
-    (snap) => {
-      const d = snap.data() as { blob?: string; nonce?: string } | undefined;
-      if (!d?.blob || d.nonce === lastNonce) return; // ignore our own echo
-      const remoteObj = parseBlob(d.blob);
-      if (Date.now() < protectUntil) {
-        // A recent local edit is still authoritative — keep our copy of the shielded
-        // maps so an older remote blob can't roll it back.
-        const local = store.getState() as unknown as Record<string, any>;
-        for (const k of SHIELDED_MAPS) remoteObj[k] = local[k];
-      }
-      try {
-        applyingRemote = true; store.getState().importAll(JSON.stringify(remoteObj));
-        const luN = Object.keys((store.getState() as any).landUses || {}).length;
-        emitSync('remote', `applied · LU=${luN}${Date.now() < protectUntil ? ' (shielded)' : ''}`);
-      } finally { applyingRemote = false; }
-    },
-    (err) => { emitSync('write-err', 'snapshot: ' + ((err as any)?.code || (err as any)?.message)); console.warn('[firestore] snapshot error — check security rules', err); },
-  );
+  // ---- remote -> local (one listener per slice; a missing slice is simply skipped) ----
+  for (const name of Object.keys(SLICES)) {
+    onSnapshot(
+      sliceRef(name),
+      (snap) => {
+        if (!snap.exists()) return;
+        const data = parseBlob((snap.data() as any)?.b);
+        const slice: Record<string, any> = {};
+        for (const k of SLICES[name].keys) if (k in data) slice[k] = data[k];
+        if (Date.now() < protectUntil) {
+          const local = store.getState() as unknown as Record<string, any>;
+          for (const k of SHIELDED_MAPS) if (k in slice) slice[k] = local[k];
+        }
+        try { applyingRemote = true; store.getState().importAll(JSON.stringify(slice)); }
+        finally { applyingRemote = false; }
+        emitSync('remote', `${name} applied${Date.now() < protectUntil ? ' (shielded)' : ''}`);
+      },
+      (err) => { emitSync('write-err', `snapshot ${name}: ` + ((err as any)?.code || '')); console.warn('[firestore] snapshot error', err); },
+    );
+  }
 
-  // local -> remote (debounced)
-  store.subscribe(() => {
+  // ---- local -> remote (write only the slices that actually changed) ----
+  store.subscribe((state: any, prev: any) => {
     if (applyingRemote) return;
     protectUntil = Date.now() + SHIELD_MS;
+    for (const name of Object.keys(SLICES)) if (SLICES[name].keys.some((k) => state[k] !== prev[k])) pending.add(name);
     clearTimeout(writeTimer);
-    writeTimer = setTimeout(() => {
-      const st = store.getState() as unknown as Record<string, any>;
-      const localBlob: Record<string, any> = {
-        plotAttrs: st.plotAttrs, projects: st.projects, landUses: st.landUses,
-        plotGeom: st.plotGeom, merges: st.merges, users: st.users, audit: st.audit,
-        hiddenCards: st.hiddenCards, hiddenLandUses: st.hiddenLandUses,
-      };
-      lastNonce = Math.random().toString(36).slice(2) + Date.now();
-      // MERGE-ON-WRITE: read the current remote inside a transaction and UNION our
-      // maps onto it, so a concurrent write from another tab/device/session can never
-      // erase an addition (the root cause of "new land use appears then vanishes").
-      let outKB = 0;
-      runTransaction(db, async (tx) => {
-        const snap = await tx.get(overridesDoc);
-        const remote = parseBlob((snap.data() as any)?.blob);
-        const merged: Record<string, any> = { ...remote, ...localBlob };
-        // object maps → union (local wins on key conflicts); nothing gets dropped
-        for (const k of ['landUses', 'projects', 'plotAttrs', 'plotGeom']) merged[k] = { ...(remote[k] || {}), ...(localBlob[k] || {}) };
-        // string arrays (tombstones/removals) → union so deletes stick and adds survive
-        for (const k of ['hiddenCards', 'hiddenLandUses']) merged[k] = Array.from(new Set([...(remote[k] || []), ...(localBlob[k] || [])]));
-        const packed = packBlob(merged);
-        outKB = Math.round(packed.length / 1024);
-        tx.set(overridesDoc, { blob: packed, nonce: lastNonce, updatedAt: Date.now() });
-      })
-        .then(() => emitSync('write-ok', `saved · ${outKB}KB · LU=${Object.keys(localBlob.landUses || {}).length} · attrs=${Object.keys(localBlob.plotAttrs || {}).length}`))
-        .catch((e) => { emitSync('write-err', `${e?.code || e?.message || 'failed'} · ${outKB}KB`); console.warn('[firestore] write error — check security rules', e); });
-    }, 500);
+    writeTimer = setTimeout(flush, 500);
   });
+
+  async function writeSlice(name: string): Promise<number> {
+    const st = store.getState() as unknown as Record<string, any>;
+    const spec = SLICES[name];
+    let kb = 0;
+    await runTransaction(db, async (tx) => {
+      const remote = parseBlob((await tx.get(sliceRef(name))).data()?.b as any);
+      const merged: Record<string, any> = {};
+      for (const k of spec.keys) merged[k] = st[k];                                   // last-write-wins for plain keys
+      for (const k of spec.maps) merged[k] = { ...(remote[k] || {}), ...(st[k] || {}) }; // maps → union
+      for (const k of spec.arrays) merged[k] = Array.from(new Set([...(remote[k] || []), ...(st[k] || [])])); // arrays → union
+      const packed = packBlob(merged); kb = Math.round(packed.length / 1024);
+      tx.set(sliceRef(name), { b: packed, at: Date.now() });
+    });
+    return kb;
+  }
+
+  async function flush() {
+    const names = [...pending]; pending.clear();
+    try {
+      let kb = 0;
+      for (const name of names) kb = Math.max(kb, await writeSlice(name));
+      emitSync('write-ok', `saved · [${names.join(',')}] · max ${kb}KB/1024`);
+    } catch (e: any) { emitSync('write-err', (e?.code || e?.message || 'failed')); console.warn('[firestore] write error', e); }
+  }
+
+  // ---- one-time migration from the legacy single `kec/overrides` doc ----
+  (async () => {
+    try {
+      const core = await getDoc(sliceRef('_core'));
+      if (core.exists()) return;                               // already sharded
+      const legacy = await getDoc(overridesDoc);
+      const data = parseBlob((legacy.data() as any)?.blob);
+      if (!data || Object.keys(data).length === 0) return;     // nothing to migrate
+      try { applyingRemote = true; store.getState().importAll(JSON.stringify(data)); }
+      finally { applyingRemote = false; }
+      for (const name of Object.keys(SLICES)) await writeSlice(name);
+      emitSync('write-ok', 'migrated to sharded storage');
+    } catch (e: any) { emitSync('write-err', 'migrate: ' + (e?.code || e?.message)); }
+  })();
 }
