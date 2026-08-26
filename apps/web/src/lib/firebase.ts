@@ -130,6 +130,18 @@ interface SyncableStore {
   importAll: (json: string) => boolean;
 }
 
+/** Lightweight sync-event bus so an on-screen readout can show write/read status. */
+export type SyncEvt = { at: number; kind: 'write-ok' | 'write-err' | 'remote'; msg: string };
+const syncEvtListeners = new Set<(e: SyncEvt) => void>();
+export const syncLog: SyncEvt[] = [];
+export function onSyncEvent(cb: (e: SyncEvt) => void) { syncEvtListeners.add(cb); return () => { syncEvtListeners.delete(cb); }; }
+function emitSync(kind: SyncEvt['kind'], msg: string) {
+  const e = { at: Date.now(), kind, msg };
+  syncLog.unshift(e); if (syncLog.length > 30) syncLog.pop();
+  console.log('[sync]', kind, msg);
+  syncEvtListeners.forEach((l) => { try { l(e); } catch { /* */ } });
+}
+
 /** Bidirectional sync: Firestore <-> overrides store. Call once at startup. */
 // Maps the admin edits directly. After a local change these WIN over any incoming
 // remote snapshot for a grace window, so a stale/concurrent write from another tab
@@ -160,10 +172,13 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
           blob = JSON.stringify(remote);
         } catch { /* fall back to the raw remote blob */ }
       }
-      try { applyingRemote = true; store.getState().importAll(blob); }
-      finally { applyingRemote = false; }
+      try {
+        applyingRemote = true; store.getState().importAll(blob);
+        const luN = Object.keys((store.getState() as any).landUses || {}).length;
+        emitSync('remote', `applied · LU=${luN}${Date.now() < protectUntil ? ' (shielded)' : ''}`);
+      } finally { applyingRemote = false; }
     },
-    (err) => console.warn('[firestore] snapshot error — check security rules', err),
+    (err) => { emitSync('write-err', 'snapshot: ' + ((err as any)?.code || (err as any)?.message)); console.warn('[firestore] snapshot error — check security rules', err); },
   );
 
   // local -> remote (debounced)
@@ -192,7 +207,9 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
         // string arrays (tombstones/removals) → union so deletes stick and adds survive
         for (const k of ['hiddenCards', 'hiddenLandUses']) merged[k] = Array.from(new Set([...(remote[k] || []), ...(localBlob[k] || [])]));
         tx.set(overridesDoc, { blob: JSON.stringify(merged), nonce: lastNonce, updatedAt: Date.now() });
-      }).catch((e) => console.warn('[firestore] write error — check security rules', e));
+      })
+        .then(() => emitSync('write-ok', `saved · LU=${Object.keys(localBlob.landUses || {}).length} · attrs=${Object.keys(localBlob.plotAttrs || {}).length}`))
+        .catch((e) => { emitSync('write-err', (e?.code || e?.message || 'failed')); console.warn('[firestore] write error — check security rules', e); });
     }, 500);
   });
 }
