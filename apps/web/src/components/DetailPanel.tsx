@@ -379,7 +379,6 @@ function InvestorInterest({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
           </div>
           <div className="iv2-grid">
             <div className="iv2-cell"><span className="iv2-l">{t('iv2.type', lang)}</span><span className="iv2-v">{r.investType}</span></div>
-            <div className="iv2-cell"><span className="iv2-l">{t('iv2.pricePerM', lang)}</span><span className="iv2-v">{money(r.pricePerM)}</span></div>
             <div className="iv2-cell"><span className="iv2-l">{t('iv2.dealValue', lang)}</span><span className="iv2-v">{money(r.dealValue)}</span></div>
           </div>
         </div>
