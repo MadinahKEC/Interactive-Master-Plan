@@ -128,18 +128,19 @@ html[dir="rtl"] .rail-hide svg{transform:rotate(-90deg)}
 /* text-valued tiles (land use, sector) — keep long labels from dwarfing the numeric tiles beside them */
 .d-tile-v.text{font-size:12px;font-weight:600;line-height:1.2;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .cell-chip{width:10px;height:10px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.14)}
-/* interested-investors cards (live from the investor log) */
+/* interested-investors — one compact row per investor (premium & simple) */
 .iv2-note{padding:6px 14px 10px;font-size:12px;color:var(--kec-muted)}
 .iv2-note.err{color:var(--kec-neg)}
-.iv2-card{margin:0 14px 8px;background:linear-gradient(158deg,var(--kec-surface),var(--kec-paper));border:1px solid var(--kec-hairline);border-radius:12px;padding:10px 12px}
-.iv2-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.iv2-co{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--kec-title);min-width:0;overflow-wrap:anywhere}
+.iv2-list{margin:0 14px 8px;border:1px solid var(--kec-hairline);border-radius:12px;overflow:hidden;background:var(--kec-paper)}
+.iv2-row{padding:8px 12px;border-top:1px solid var(--kec-hairline)}
+.iv2-row:first-child{border-top:0}
+.iv2-line{display:flex;align-items:baseline;justify-content:space-between;gap:10px;min-width:0}
+.iv2-co{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--kec-title);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .iv2-co svg{flex:none;color:var(--kec-green)}
-.iv2-date{flex:none;font-size:10px;font-weight:600;color:var(--kec-olive);background:var(--kec-surface-2);border:1px solid var(--kec-hairline);border-radius:20px;padding:3px 9px;font-variant-numeric:tabular-nums}
-.iv2-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.iv2-cell{display:flex;flex-direction:column;gap:2px;background:var(--kec-paper);border:1px solid var(--kec-hairline);border-radius:9px;padding:6px 8px;min-width:0}
-.iv2-l{font-size:8.5px;font-weight:600;color:var(--kec-muted);letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.iv2-v{font-size:12px;font-weight:600;color:var(--kec-title);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.25}
+.iv2-deal{flex:none;font-size:12.5px;font-weight:700;color:var(--kec-green-deep);font-variant-numeric:tabular-nums;white-space:nowrap}
+.iv2-sub{margin-top:2px}
+.iv2-type{font-size:10.5px;color:var(--kec-muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iv2-date{flex:none;font-size:10px;color:var(--kec-olive);font-variant-numeric:tabular-nums}
 .d-actions{display:flex;gap:8px;padding:2px 12px 10px}
 .btn{flex:1;font-size:12.5px;font-weight:600;border-radius:10px;padding:10px;cursor:pointer;border:1px solid var(--kec-hairline);background:var(--card);color:var(--kec-title);transition:.15s}
 .btn:hover{background:var(--kec-surface-2)}

@@ -51,6 +51,10 @@
 .lu-add .lu-name{flex:1;min-width:0;border:1px solid var(--kec-hairline);border-radius:8px;padding:7px 10px;background:var(--card)}
 .lu-add .btn{flex:none;width:auto}
 .lu-row .mini-btn.danger{flex:none}
+.lu-removed{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;padding:10px 12px;border:1px dashed var(--kec-hairline);border-radius:12px;background:var(--kec-surface)}
+.lu-removed-t{font-size:11px;color:var(--kec-muted);font-weight:600}
+.lu-restore{font-family:inherit;font-size:12px;font-weight:600;color:var(--kec-green);background:var(--card);border:1px solid var(--kec-hairline);border-radius:20px;padding:4px 11px;cursor:pointer;transition:.15s}
+.lu-restore:hover{background:var(--kec-green);color:#fff;border-color:var(--kec-green)}
 .lu-key{font-size:10px;color:var(--kec-muted)}
 .lu-ct{font-size:11px;color:var(--kec-title);min-width:34px;text-align:end}
 

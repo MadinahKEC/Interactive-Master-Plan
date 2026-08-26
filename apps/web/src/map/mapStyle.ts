@@ -101,6 +101,17 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': ['match', ['get', 'class'], 'motorway', '#fdf3d3', 'trunk', '#fdf3d3', 'primary', '#ffffff', 'secondary', '#ffffff', 'tertiary', '#ffffff', '#f6f4ef'],
           'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 14, 1.6, 16, 5, 19, 15] } },
+      // place + street labels (Latin names only — the vendored Open Sans glyph range
+      // renders Latin; Arabic-only names simply resolve to empty and are skipped).
+      { id: 'basev-place', type: 'symbol', source: 'ofm', 'source-layer': 'place', minzoom: 9,
+        filter: ['all', ['in', ['get', 'class'], ['literal', ['city', 'town', 'suburb', 'neighbourhood', 'quarter', 'village']]], ['any', ['has', 'name:en'], ['has', 'name:latin']]],
+        layout: { 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 14, 13, 17, 15], 'text-max-width': 7 },
+        paint: { 'text-color': '#43524a', 'text-halo-color': '#eef1ec', 'text-halo-width': 1.6 } },
+      { id: 'basev-road-name', type: 'symbol', source: 'ofm', 'source-layer': 'transportation_name', minzoom: 14,
+        filter: ['any', ['has', 'name:en'], ['has', 'name:latin']],
+        layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name:latin']], 'text-font': ['Open Sans Regular'], 'text-size': 11 },
+        paint: { 'text-color': '#7a8a7e', 'text-halo-color': '#ffffff', 'text-halo-width': 1.4 } },
       { id: 'base-sat', type: 'raster', source: 'esri', layout: { visibility: 'none' } },
       {
         id: 'plots-fill', type: 'fill', source: 'plots', ...srcLayer,

@@ -84,7 +84,7 @@ export interface AppState {
 
 export const useApp = create<AppState>((set) => ({
   lang: 'en',
-  basemap: 'light',
+  basemap: 'satellite',
   dim: '2d',
   sector: 'all',
   uses: new Set(Object.keys(LAND_USES)),

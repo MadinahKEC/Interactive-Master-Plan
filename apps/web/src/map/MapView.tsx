@@ -173,10 +173,12 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       if (clickTimer.current) clearTimeout(clickTimer.current);
       clickTimer.current = window.setTimeout(() => { useApp.getState().select(p); clickTimer.current = null; }, 240);
     });
-    map.on('dblclick', HIT, (e) => {
+    // Google-Maps-style double-click: smooth, gradual zoom-in by one level toward the
+    // cursor (works anywhere on the map). Edit/measure modes keep their own dblclick.
+    map.on('dblclick', (e) => {
       if (useApp.getState().editGeom || modeRef.current !== 'off') return;
       if (clickTimer.current) { clearTimeout(clickTimer.current); clickTimer.current = null; }
-      const p = e.features?.[0]?.properties as PlotProps | undefined; if (p) zoomTo(p.code);
+      map.easeTo({ zoom: Math.min(map.getMaxZoom(), map.getZoom() + 1), around: e.lngLat, duration: 450, easing: (t) => t * (2 - t) });
     });
 
     // annotation drawing (admin): text / arrow / rectangle. Click an existing one to delete.
@@ -273,7 +275,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const apply = () => {
       map.setLayoutProperty('base-sat', 'visibility', sat ? 'visible' : 'none');
       // the light basemap is a set of OpenFreeMap vector layers (basev-*)
-      ['basev-landcover', 'basev-water', 'basev-building', 'basev-road-casing', 'basev-road'].forEach((id) => {
+      ['basev-landcover', 'basev-water', 'basev-building', 'basev-road-casing', 'basev-road', 'basev-place', 'basev-road-name'].forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', sat ? 'none' : 'visible');
       });
       if (map.getLayer('labels-sat')) map.setLayoutProperty('labels-sat', 'visibility', sat ? 'visible' : 'none');

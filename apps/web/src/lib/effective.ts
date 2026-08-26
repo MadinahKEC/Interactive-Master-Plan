@@ -5,9 +5,11 @@ import type { CreatedPlot, GeomOverride, LandUseOverride, MergeRecord, PlotAttrO
 export interface EffLandUse { key: string; labelAr: string; labelEn: string; color: string }
 
 /** Base land-use catalogue merged with admin colour/label overrides. */
-export function effectiveLandUses(over: Record<string, LandUseOverride>): Record<string, EffLandUse> {
+export function effectiveLandUses(over: Record<string, LandUseOverride>, hidden: string[] = []): Record<string, EffLandUse> {
   const out: Record<string, EffLandUse> = {};
+  const gone = new Set(hidden);
   for (const key of Object.keys(LAND_USES)) {
+    if (gone.has(key)) continue;
     const base = LAND_USES[key];
     const o = over[key] ?? {};
     out[key] = { key, labelAr: o.labelAr ?? base.labelAr, labelEn: o.labelEn ?? key, color: o.color ?? base.color };
@@ -15,7 +17,7 @@ export function effectiveLandUses(over: Record<string, LandUseOverride>): Record
   // admin-created land uses live only in the override map — surface them too, so a
   // new class shows up in the Land uses tab, the dropdowns, the legend and the map.
   for (const key of Object.keys(over)) {
-    if (out[key]) continue;
+    if (out[key] || gone.has(key)) continue;
     const o = over[key];
     out[key] = { key, labelAr: o.labelAr ?? key, labelEn: o.labelEn ?? key, color: o.color ?? '#C9C9C9' };
   }

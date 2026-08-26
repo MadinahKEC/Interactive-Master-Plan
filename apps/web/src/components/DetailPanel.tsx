@@ -371,18 +371,22 @@ function InvestorInterest({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
     <Section k="s:investors" title={t('sec.investors', lang)}>
       {loading && <div className="iv2-note">{t('iv2.loading', lang)}</div>}
       {error && <div className="iv2-note err">{t('iv2.error', lang)}</div>}
-      {!loading && !error && rows.map((r) => (
-        <div className="iv2-card" key={r.id}>
-          <div className="iv2-top">
-            <span className="iv2-co"><IconOwner size={13} /> {r.company}</span>
-            {r.date && <span className="iv2-date">{r.date}</span>}
-          </div>
-          <div className="iv2-grid">
-            <div className="iv2-cell"><span className="iv2-l">{t('iv2.type', lang)}</span><span className="iv2-v">{r.investType}</span></div>
-            <div className="iv2-cell"><span className="iv2-l">{t('iv2.dealValue', lang)}</span><span className="iv2-v">{money(r.dealValue)}</span></div>
-          </div>
+      {!loading && !error && (
+        <div className="iv2-list">
+          {rows.map((r) => (
+            <div className="iv2-row" key={r.id}>
+              <div className="iv2-line">
+                <span className="iv2-co"><IconOwner size={12} /> {r.company}</span>
+                <span className="iv2-deal">{money(r.dealValue)}</span>
+              </div>
+              <div className="iv2-line iv2-sub">
+                <span className="iv2-type">{r.investType}</span>
+                {r.date && <span className="iv2-date">{r.date}</span>}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </Section>
   );
 }

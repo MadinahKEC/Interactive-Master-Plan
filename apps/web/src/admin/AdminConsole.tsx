@@ -217,7 +217,8 @@ function DevPlanTab({ data, projects, onEdit }: { data: PlotCollection; projects
 /* ---------------- Land uses ---------------- */
 function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>; data: PlotCollection }) {
   const { lang } = useApp();
-  const { setLandUse, removeLandUse, planStyle, setPlanStyle } = useOverrides();
+  const { setLandUse, removeLandUse, restoreLandUse, planStyle, setPlanStyle } = useOverrides();
+  const hiddenLandUses = useOverrides((s) => s.hiddenLandUses);
   const counts = useMemo(() => { const c: Record<string, number> = {}; for (const f of data.features) c[f.properties.land_use ?? ''] = (c[f.properties.land_use ?? ''] || 0) + 1; return c; }, [data]);
   const [nu, setNu] = useState({ ar: '', en: '', color: '#2F6B3E' });
   const addLandUse = () => {
@@ -255,9 +256,17 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
             onChange={(e) => setLandUse(k, lang === 'ar' ? { labelAr: e.target.value } : { labelEn: e.target.value })} />
           <span className="lu-key mono">{k}</span>
           <span className="lu-ct mono">{counts[k] || 0}</span>
-          {!LAND_USES[k] && <button className="mini-btn danger" onClick={() => removeOne(k)}>{t('a.remove', lang)}</button>}
+          <button className="mini-btn danger" onClick={() => removeOne(k)}>{t('a.remove', lang)}</button>
         </div>
       ))}
+      {hiddenLandUses.length > 0 && (
+        <div className="lu-removed">
+          <span className="lu-removed-t">{t('a.removedLanduses', lang)}</span>
+          {hiddenLandUses.map((k) => (
+            <button key={k} className="lu-restore" onClick={() => restoreLandUse(k)}>↺ {LAND_USES[k] ? (lang === 'ar' ? LAND_USES[k].labelAr : k) : k}</button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -99,6 +99,7 @@ export const DICT: Record<string, Entry> = {
   'a.import':        { ar: 'استيراد البيانات', en: 'Import data' },
   'a.reset':         { ar: 'إعادة تعيين', en: 'Reset' },
   'a.addLanduse':    { ar: 'إضافة استخدام', en: 'Add land use' },
+  'a.removedLanduses': { ar: 'استخدامات محذوفة (اضغط للاسترجاع):', en: 'Removed (tap to restore):' },
   'a.resetConfirm':  { ar: 'حذف كل التعديلات المحلية؟', en: 'Delete all local edits?' },
   'a.planStyle':     { ar: 'تنسيق قطع خطة التطوير', en: 'Development-plan plot styling' },
   'a.planStyleHint': { ar: 'يُطبَّق على كل بلوت داخل خطة التطوير', en: 'Applied to every plot inside the development plan' },

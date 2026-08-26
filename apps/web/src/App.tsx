@@ -34,6 +34,7 @@ export default function App() {
   const role = useAuth((s) => s.user?.role);
   const canAnnotate = can(role as any, 'plot:attr:update');
   const { plotAttrs, projects: projOver, landUses: luOver, plotGeom, merges, splits, createdPlots } = useOverrides();
+  const luHidden = useOverrides((s) => s.hiddenLandUses);
 
   const [adminOpen, setAdminOpen] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
@@ -45,7 +46,7 @@ export default function App() {
 
   const projects = useMemo(() => effectiveProjects(baseProjects, projOver), [baseProjects, projOver]);
   const data = useMemo(() => effectiveCollection(baseData, plotAttrs, plotGeom, merges, projects, splits, createdPlots), [baseData, plotAttrs, plotGeom, merges, projects, splits, createdPlots]);
-  const landUses = useMemo(() => effectiveLandUses(luOver), [luOver]);
+  const landUses = useMemo(() => effectiveLandUses(luOver, luHidden), [luOver, luHidden]);
 
   useUrlSync(data);
 

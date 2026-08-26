@@ -126,15 +126,21 @@ export async function createUserSecondary(email: string, password: string) {
 
 interface SyncableStore {
   plotAttrs: unknown; projects: unknown; landUses: unknown; plotGeom: unknown;
-  merges: unknown; users: unknown; audit: unknown; hiddenCards: unknown;
+  merges: unknown; users: unknown; audit: unknown; hiddenCards: unknown; hiddenLandUses: unknown;
   importAll: (json: string) => boolean;
 }
 
 /** Bidirectional sync: Firestore <-> overrides store. Call once at startup. */
+// Maps the admin edits directly. After a local change these WIN over any incoming
+// remote snapshot for a grace window, so a stale/concurrent write from another tab
+// or device can never make a just-made add/edit/delete "appear then vanish".
+const SHIELDED_MAPS = ['landUses', 'projects', 'plotAttrs', 'hiddenCards', 'hiddenLandUses'] as const;
+const SHIELD_MS = 12000;
+
 export function startFirestoreSync(store: StoreApi<SyncableStore>) {
   let applyingRemote = false;
-  let pendingWrite = false;   // an admin edit is waiting to be saved — don't let a stale snapshot clobber it
   let lastNonce = '';
+  let protectUntil = 0;   // local edits to SHIELDED_MAPS win until this timestamp
   let writeTimer: ReturnType<typeof setTimeout> | undefined;
 
   // remote -> local
@@ -143,11 +149,18 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
     (snap) => {
       const d = snap.data() as { blob?: string; nonce?: string } | undefined;
       if (!d?.blob || d.nonce === lastNonce) return; // ignore our own echo
-      // A local edit is in flight (e.g. a just-added land use). Applying an older
-      // remote blob here would make that edit "appear then vanish", so skip until
-      // our write lands and becomes the source of truth.
-      if (pendingWrite) return;
-      try { applyingRemote = true; store.getState().importAll(d.blob); }
+      let blob = d.blob;
+      if (Date.now() < protectUntil) {
+        // A recent local edit is still authoritative — keep our copy of the shielded
+        // maps so an older remote blob can't roll it back.
+        try {
+          const remote = JSON.parse(d.blob) as Record<string, unknown>;
+          const local = store.getState() as unknown as Record<string, unknown>;
+          for (const k of SHIELDED_MAPS) remote[k] = local[k];
+          blob = JSON.stringify(remote);
+        } catch { /* fall back to the raw remote blob */ }
+      }
+      try { applyingRemote = true; store.getState().importAll(blob); }
       finally { applyingRemote = false; }
     },
     (err) => console.warn('[firestore] snapshot error — check security rules', err),
@@ -156,19 +169,18 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
   // local -> remote (debounced)
   store.subscribe(() => {
     if (applyingRemote) return;
-    pendingWrite = true;
+    protectUntil = Date.now() + SHIELD_MS;
     clearTimeout(writeTimer);
     writeTimer = setTimeout(() => {
       const st = store.getState();
       const blob = JSON.stringify({
         plotAttrs: st.plotAttrs, projects: st.projects, landUses: st.landUses,
         plotGeom: st.plotGeom, merges: st.merges, users: st.users, audit: st.audit,
-        hiddenCards: st.hiddenCards,
+        hiddenCards: st.hiddenCards, hiddenLandUses: st.hiddenLandUses,
       });
       lastNonce = Math.random().toString(36).slice(2) + Date.now();
       setDoc(overridesDoc, { blob, nonce: lastNonce, updatedAt: Date.now() })
-        .catch((e) => console.warn('[firestore] write error — check security rules', e))
-        .finally(() => { pendingWrite = false; });
-    }, 700);
+        .catch((e) => console.warn('[firestore] write error — check security rules', e));
+    }, 500);
   });
 }
