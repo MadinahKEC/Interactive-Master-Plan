@@ -115,8 +115,6 @@ export function DetailPanel({
           )}
         </Section>
 
-        {INVESTOR_LOG_ENABLED && <InvestorInterest code={p.code} lang={lang} />}
-
         <Section k="s:summary" title={t('sec.summary', lang)}>
           {summary ? <p className="d-summary">{summary}</p> : <p className="d-summary muted">{lang === 'ar' ? 'لا يوجد وصف بعد.' : 'No overview yet.'}</p>}
         </Section>
@@ -160,6 +158,8 @@ export function DetailPanel({
           </div>
           <button className="btn sm primary ia-feas" onClick={() => setFeasOpen(true)}>{t('ia.feasibility', lang)}</button>
         </Section>
+
+        {INVESTOR_LOG_ENABLED && <InvestorInterest code={p.code} lang={lang} />}
 
         {/* development plan is the gate: joining it unlocks the development + investment sections */}
         {!inPlan && canAttr && (

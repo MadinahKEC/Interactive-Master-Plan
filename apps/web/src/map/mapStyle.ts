@@ -58,23 +58,19 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
     // 0–255 range covers every plot code.
     glyphs: import.meta.env.BASE_URL + 'fonts/{fontstack}/{range}.pbf',
     sources: {
+      // Esri Canvas basemaps — key-free (same provider as the satellite layer).
+      // CARTO's public CDN now demands an API key and returns "api key required" tiles.
       carto: {
         type: 'raster',
-        tiles: [
-          'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
-          'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
-        ],
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
-        attribution: '© OpenStreetMap © CARTO',
+        attribution: '© Esri',
       },
       cartoDark: {
         type: 'raster',
-        tiles: [
-          'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-          'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-        ],
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
-        attribution: '© OpenStreetMap © CARTO',
+        attribution: '© Esri',
       },
       esri: {
         type: 'raster',
@@ -95,10 +91,7 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
       // labels-only overlays (drawn ABOVE the plots so place/street names stay legible)
       cartoLabels: {
         type: 'raster',
-        tiles: [
-          'https://a.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png',
-          'https://b.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png',
-        ],
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
       },
       esriLabels: {

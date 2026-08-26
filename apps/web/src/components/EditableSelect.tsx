@@ -8,7 +8,7 @@ import { t } from '../lib/domain';
  * per `listKey` in the overrides store, so they persist and reappear next session.
  * Picking "➕ add" opens a themed dialog for the Arabic/English label.
  */
-export function EditableSelect({ listKey, value, onChange, options, allowNone, noneLabel, addColor, onCreate }: {
+export function EditableSelect({ listKey, value, onChange, options, allowNone, noneLabel, addColor, onCreate, allowAdd = true }: {
   listKey: string;
   value: string;
   onChange: (v: string) => void;
@@ -19,6 +19,8 @@ export function EditableSelect({ listKey, value, onChange, options, allowNone, n
   addColor?: boolean;
   /** Persist a brand-new item to its own store (instead of the generic option list). */
   onCreate?: (val: string, ar: string, en: string, extra: Record<string, string>) => void;
+  /** Show the "➕ add" row. Off when adding is handled elsewhere (e.g. land uses in the admin console). */
+  allowAdd?: boolean;
 }) {
   const { lang } = useApp();
   const custom = useOverrides((s) => s.optionLists[listKey]) ?? [];
@@ -55,7 +57,7 @@ export function EditableSelect({ listKey, value, onChange, options, allowNone, n
     <select value={value} onChange={(e) => onSel(e.target.value)}>
       {allowNone && <option value="">{noneLabel ?? '—'}</option>}
       {all.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      <option value="__add__">➕ {t('opt.add', lang)}</option>
+      {allowAdd && <option value="__add__">➕ {t('opt.add', lang)}</option>}
     </select>
   );
 }

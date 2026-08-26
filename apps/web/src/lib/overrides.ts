@@ -96,6 +96,7 @@ interface OverridesState {
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
   setProject: (code: string, patch: ProjectInfo, actor?: string) => void;
   setLandUse: (key: string, patch: LandUseOverride, actor?: string) => void;
+  removeLandUse: (key: string, actor?: string) => void;
   setGeometry: (code: string, geom: GeomOverride, actor?: string) => void;
   resetGeometry: (code: string) => void;
   mergePlots: (codes: string[], patch?: Partial<MergeRecord>, actor?: string) => string;
@@ -234,6 +235,8 @@ export const useOverrides = create<OverridesState>()(
           landUses: { ...s.landUses, [key]: { ...s.landUses[key], ...patch } },
           audit: pushAudit(s, { actor, action: 'landuse.edit', target: key, detail: JSON.stringify(patch) }),
         })),
+      removeLandUse: (key, actor = 'admin') =>
+        set((s) => { const lu = { ...s.landUses }; delete lu[key]; return { landUses: lu, audit: pushAudit(s, { actor, action: 'landuse.remove', target: key, detail: 'removed' }) }; }),
 
       setGeometry: (code, geom, actor = 'admin') =>
         set((s) => ({

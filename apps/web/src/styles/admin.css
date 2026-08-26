@@ -46,6 +46,11 @@
 .lu-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:12px;padding:9px 12px}
 .lu-row input[type=color]{width:34px;height:34px;border:1px solid var(--kec-hairline);border-radius:8px;background:none;cursor:pointer;padding:2px}
 .lu-name{flex:1;background:transparent;border:0;outline:0;font-size:13.5px;color:var(--kec-ink)}
+.lu-add{display:flex;align-items:center;gap:10px;background:linear-gradient(160deg,var(--kec-surface),var(--kec-surface-2));border:1px solid var(--kec-hairline);border-radius:12px;padding:10px 12px;margin-bottom:4px}
+.lu-add input[type=color]{width:34px;height:34px;border:1px solid var(--kec-hairline);border-radius:8px;background:none;cursor:pointer;padding:2px;flex:none}
+.lu-add .lu-name{flex:1;min-width:0;border:1px solid var(--kec-hairline);border-radius:8px;padding:7px 10px;background:var(--card)}
+.lu-add .btn{flex:none;width:auto}
+.lu-row .mini-btn.danger{flex:none}
 .lu-key{font-size:10px;color:var(--kec-muted)}
 .lu-ct{font-size:11px;color:var(--kec-title);min-width:34px;text-align:end}
 

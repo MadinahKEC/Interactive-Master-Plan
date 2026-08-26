@@ -17,7 +17,7 @@ export function PlotEditor({
   landUses: Record<string, EffLandUse>; onClose: () => void;
 }) {
   const { lang } = useApp();
-  const { setProject, setPlotAttr, setLandUse } = useOverrides();
+  const { setProject, setPlotAttr } = useOverrides();
   const hiddenCards = useOverrides((s) => s.hiddenCards);
   const toggleHiddenCard = useOverrides((s) => s.toggleHiddenCard);
   const feature = useMemo(() => data.features.find((f) => f.properties.code === code), [data, code]);
@@ -161,9 +161,8 @@ export function PlotEditor({
           <div className="ed-sec">{t('a.plotAttrs', lang)}</div>
           <div className="ed-grid">
             <Field label={t('a.landuse', lang)}>
-              <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)}
-                options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))}
-                addColor onCreate={(val, ar, en, extra) => setLandUse(val, { labelAr: ar || val, labelEn: en || val, color: extra.color || '#2F6B3E' })} />
+              <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)} allowAdd={false}
+                options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))} />
             </Field>
             <Field label={t('a.sector', lang)}>
               <select value={f.sector} onChange={(e) => up('sector', e.target.value)}>

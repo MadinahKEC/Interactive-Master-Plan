@@ -19,6 +19,8 @@ import { useEffect, useState } from 'react';
 
 // ─── 1) kec-investor-log web config ──────────────────────────────────────────────
 const INVESTOR_LOG_CONFIG = {
+  // Filled in once the investor-log Firestore rules allow reads and the collection/
+  // field mapping below is confirmed. Left empty keeps the feature inert.
   apiKey: '',
   authDomain: '',
   projectId: '',            // e.g. 'kec-investor-log'

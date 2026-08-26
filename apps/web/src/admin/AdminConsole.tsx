@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SECTORS, type PlotCollection } from '@kec/types';
+import { SECTORS, LAND_USES, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary, watchAccessLog, type AccessSession } from '../lib/firebase';
@@ -217,10 +217,27 @@ function DevPlanTab({ data, projects, onEdit }: { data: PlotCollection; projects
 /* ---------------- Land uses ---------------- */
 function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>; data: PlotCollection }) {
   const { lang } = useApp();
-  const { setLandUse, planStyle, setPlanStyle } = useOverrides();
+  const { setLandUse, removeLandUse, planStyle, setPlanStyle } = useOverrides();
   const counts = useMemo(() => { const c: Record<string, number> = {}; for (const f of data.features) c[f.properties.land_use ?? ''] = (c[f.properties.land_use ?? ''] || 0) + 1; return c; }, [data]);
+  const [nu, setNu] = useState({ ar: '', en: '', color: '#2F6B3E' });
+  const addLandUse = () => {
+    const en = nu.en.trim(), ar = nu.ar.trim();
+    const key = (en || ar).trim();
+    if (!key || landUses[key]) return;
+    setLandUse(key, { labelAr: ar || key, labelEn: en || key, color: nu.color });
+    setNu({ ar: '', en: '', color: '#2F6B3E' });
+  };
+  const removeOne = async (k: string) => {
+    if (await confirmDialog({ title: t('a.remove', lang), body: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn, confirmLabel: t('a.remove', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) removeLandUse(k);
+  };
   return (
     <div className="tab-lu">
+      <div className="lu-add">
+        <input type="color" value={nu.color} onChange={(e) => setNu({ ...nu, color: e.target.value })} />
+        <input className="lu-name" placeholder={t('opt.ar', lang)} value={nu.ar} onChange={(e) => setNu({ ...nu, ar: e.target.value })} />
+        <input className="lu-name" placeholder={t('opt.en', lang)} value={nu.en} onChange={(e) => setNu({ ...nu, en: e.target.value })} />
+        <button className="btn primary" disabled={!nu.ar.trim() && !nu.en.trim()} onClick={addLandUse}>{t('a.addLanduse', lang)}</button>
+      </div>
       <div className="lu-plan">
         <div className="lu-plan-head"><b>{t('a.planStyle', lang)}</b><span>{t('a.planStyleHint', lang)}</span></div>
         <div className="lu-plan-row">
@@ -238,6 +255,7 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
             onChange={(e) => setLandUse(k, lang === 'ar' ? { labelAr: e.target.value } : { labelEn: e.target.value })} />
           <span className="lu-key mono">{k}</span>
           <span className="lu-ct mono">{counts[k] || 0}</span>
+          {!LAND_USES[k] && <button className="mini-btn danger" onClick={() => removeOne(k)}>{t('a.remove', lang)}</button>}
         </div>
       ))}
     </div>
