@@ -272,9 +272,10 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     ref.current?.classList.toggle('map-sat', sat);
     const apply = () => {
       map.setLayoutProperty('base-sat', 'visibility', sat ? 'visible' : 'none');
-      map.setLayoutProperty('base-light', 'visibility', sat ? 'none' : 'visible');
-      if (map.getLayer('base-dark')) map.setLayoutProperty('base-dark', 'visibility', 'none');
-      if (map.getLayer('labels-light')) map.setLayoutProperty('labels-light', 'visibility', sat ? 'none' : 'visible');
+      // the light basemap is a set of OpenFreeMap vector layers (basev-*)
+      ['basev-landcover', 'basev-water', 'basev-building', 'basev-road-casing', 'basev-road'].forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', sat ? 'none' : 'visible');
+      });
       if (map.getLayer('labels-sat')) map.setLayoutProperty('labels-sat', 'visibility', sat ? 'visible' : 'none');
       map.setPaintProperty('plots-line', 'line-color', sat ? '#FBFCFA' : '#143D1E');
       map.setPaintProperty('plots-line', 'line-opacity', sat ? 0.8 : 0.55);

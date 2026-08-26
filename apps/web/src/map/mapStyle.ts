@@ -58,20 +58,6 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
     // 0–255 range covers every plot code.
     glyphs: import.meta.env.BASE_URL + 'fonts/{fontstack}/{range}.pbf',
     sources: {
-      // Esri Canvas basemaps — key-free (same provider as the satellite layer).
-      // CARTO's public CDN now demands an API key and returns "api key required" tiles.
-      carto: {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-        attribution: '© Esri',
-      },
-      cartoDark: {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-        attribution: '© Esri',
-      },
       esri: {
         type: 'raster',
         tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
@@ -88,26 +74,33 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         maxzoom: 14,
         attribution: '© Mapzen / AWS Terrain Tiles',
       },
-      // labels-only overlays (drawn ABOVE the plots so place/street names stay legible)
-      cartoLabels: {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-      },
       esriLabels: {
         type: 'raster',
         tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
         tileSize: 256,
       },
-      // OpenFreeMap planet vector tiles (free, no key) — supplies real building
-      // footprints with heights for the Google-Earth-style 3D view.
+      // OpenFreeMap planet vector tiles (free, no key). Drives BOTH the clean light
+      // basemap (real streets/water/buildings at high zoom over Medina — the Esri
+      // canvas/street layers have no data there) and the 3D building footprints.
       ofm: { type: 'vector' as const, url: 'https://tiles.openfreemap.org/planet', attribution: 'OpenFreeMap © OpenMapTiles · OpenStreetMap' },
       plots: plotsSource,
     },
     layers: [
-      { id: 'bg', type: 'background', paint: { 'background-color': '#EAF3E4' } },
-      { id: 'base-light', type: 'raster', source: 'carto' },
-      { id: 'base-dark', type: 'raster', source: 'cartoDark', layout: { visibility: 'none' } },
+      { id: 'bg', type: 'background', paint: { 'background-color': '#eef1ec' } },
+      // ── clean light vector basemap (OpenFreeMap / OpenMapTiles), ids prefixed basev- ──
+      { id: 'basev-landcover', type: 'fill', source: 'ofm', 'source-layer': 'landcover',
+        paint: { 'fill-color': ['match', ['get', 'class'], 'wood', '#dde7d6', 'grass', '#e6ede1', 'park', '#e2ece1', '#e8ece5'], 'fill-opacity': 0.7 } },
+      { id: 'basev-water', type: 'fill', source: 'ofm', 'source-layer': 'water', paint: { 'fill-color': '#c4dcea' } },
+      { id: 'basev-building', type: 'fill', source: 'ofm', 'source-layer': 'building', minzoom: 13.5,
+        paint: { 'fill-color': '#e4e0d9', 'fill-outline-color': '#d3cec3', 'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13.5, 0, 15, 0.75] } },
+      { id: 'basev-road-casing', type: 'line', source: 'ofm', 'source-layer': 'transportation', minzoom: 11,
+        filter: ['in', ['get', 'class'], ['literal', ['motorway', 'trunk', 'primary', 'secondary', 'tertiary']]],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': '#e2ddd2', 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2, 16, 11, 19, 26] } },
+      { id: 'basev-road', type: 'line', source: 'ofm', 'source-layer': 'transportation', minzoom: 11,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': ['match', ['get', 'class'], 'motorway', '#fdf3d3', 'trunk', '#fdf3d3', 'primary', '#ffffff', 'secondary', '#ffffff', 'tertiary', '#ffffff', '#f6f4ef'],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.4, 14, 1.6, 16, 5, 19, 15] } },
       { id: 'base-sat', type: 'raster', source: 'esri', layout: { visibility: 'none' } },
       {
         id: 'plots-fill', type: 'fill', source: 'plots', ...srcLayer,
@@ -200,8 +193,7 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         },
         paint: { 'text-color': '#143D1E', 'text-halo-color': '#FBFCFA', 'text-halo-width': 1.7, 'text-halo-blur': 0.3 },
       },
-      // place/street labels ON TOP of everything
-      { id: 'labels-light', type: 'raster', source: 'cartoLabels', paint: { 'raster-opacity': 0.9 } },
+      // satellite place/street labels ON TOP (light mode gets its context from the vector layers)
       { id: 'labels-sat', type: 'raster', source: 'esriLabels', layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.95 } },
     ],
   };

@@ -133,6 +133,7 @@ interface SyncableStore {
 /** Bidirectional sync: Firestore <-> overrides store. Call once at startup. */
 export function startFirestoreSync(store: StoreApi<SyncableStore>) {
   let applyingRemote = false;
+  let pendingWrite = false;   // an admin edit is waiting to be saved — don't let a stale snapshot clobber it
   let lastNonce = '';
   let writeTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -142,6 +143,10 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
     (snap) => {
       const d = snap.data() as { blob?: string; nonce?: string } | undefined;
       if (!d?.blob || d.nonce === lastNonce) return; // ignore our own echo
+      // A local edit is in flight (e.g. a just-added land use). Applying an older
+      // remote blob here would make that edit "appear then vanish", so skip until
+      // our write lands and becomes the source of truth.
+      if (pendingWrite) return;
       try { applyingRemote = true; store.getState().importAll(d.blob); }
       finally { applyingRemote = false; }
     },
@@ -151,6 +156,7 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
   // local -> remote (debounced)
   store.subscribe(() => {
     if (applyingRemote) return;
+    pendingWrite = true;
     clearTimeout(writeTimer);
     writeTimer = setTimeout(() => {
       const st = store.getState();
@@ -161,7 +167,8 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       });
       lastNonce = Math.random().toString(36).slice(2) + Date.now();
       setDoc(overridesDoc, { blob, nonce: lastNonce, updatedAt: Date.now() })
-        .catch((e) => console.warn('[firestore] write error — check security rules', e));
+        .catch((e) => console.warn('[firestore] write error — check security rules', e))
+        .finally(() => { pendingWrite = false; });
     }, 700);
   });
 }
