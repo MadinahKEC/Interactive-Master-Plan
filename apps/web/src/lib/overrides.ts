@@ -90,6 +90,7 @@ interface OverridesState {
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
   setProject: (code: string, patch: ProjectInfo, actor?: string) => void;
   addPlotsToPlan: (codes: string[], phase: Phase, actor?: string) => number;
+  removePlotsFromPlan: (codes: string[], actor?: string) => number;
   setLandUse: (key: string, patch: LandUseOverride, actor?: string) => void;
   removeLandUse: (key: string, actor?: string) => void;
   restoreLandUse: (key: string) => void;
@@ -244,6 +245,22 @@ export const useOverrides = create<OverridesState>()(
           return { projects, audit: pushAudit(s, { actor, action: 'plan.addMany', target: `${added} plots`, detail: codes.join(', ') }) };
         });
         return added;
+      },
+
+      // Bulk-remove selected plots from the development plan (clears their phases).
+      removePlotsFromPlan: (codes, actor = 'admin') => {
+        let removed = 0;
+        set((s) => {
+          const projects = { ...s.projects };
+          for (const code of codes) {
+            if (!(projects[code]?.phases?.length)) continue; // not in the plan
+            projects[code] = { ...projects[code], phases: [] };
+            removed++;
+          }
+          if (!removed) return {} as any;
+          return { projects, audit: pushAudit(s, { actor, action: 'plan.removeMany', target: `${removed} plots`, detail: codes.join(', ') }) };
+        });
+        return removed;
       },
 
       setLandUse: (key, patch, actor = 'admin') =>

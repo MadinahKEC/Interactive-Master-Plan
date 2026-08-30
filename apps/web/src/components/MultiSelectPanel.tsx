@@ -4,7 +4,7 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
-import { IconClose, IconMerge, IconZoom, IconCalendar } from './icons';
+import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash } from './icons';
 
 const nf = new Intl.NumberFormat('en-US');
 const fmt = (x: number) => (x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : nf.format(Math.round(x)));
@@ -15,6 +15,8 @@ export function MultiSelectPanel({ data, projects }: { data: PlotCollection; pro
   const canMerge = can(role as any, 'plot:attr:update');
   const mergePlots = useOverrides((s) => s.mergePlots);
   const addPlotsToPlan = useOverrides((s) => s.addPlotsToPlan);
+  const removePlotsFromPlan = useOverrides((s) => s.removePlotsFromPlan);
+  const projOver = useOverrides((s) => s.projects);
   const [owner, setOwner] = useState('');
   const byCode = useMemo(() => new Map(data.features.map((f) => [f.properties.code, f.properties])), [data]);
   if (multi.length < 1) return null;
@@ -32,12 +34,14 @@ export function MultiSelectPanel({ data, projects }: { data: PlotCollection; pro
     clearMulti(); setOwner('');
     setTimeout(() => requestZoom(id), 60);
   };
+  const inPlanCount = multi.filter((c) => (projOver[c]?.phases?.length ?? 0) > 0).length;
   const doAddToPlan = () => {
     const today = new Date().toISOString().slice(0, 10);
     const end = new Date(Date.now() + 180 * 864e5).toISOString().slice(0, 10);
     addPlotsToPlan(multi, { name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' });
     clearMulti();
   };
+  const doRemoveFromPlan = () => { removePlotsFromPlan(multi); clearMulti(); };
 
   return (
     <div className="panel" id="multi">
@@ -66,7 +70,8 @@ export function MultiSelectPanel({ data, projects }: { data: PlotCollection; pro
       </div>
       {canMerge && (
         <div className="m-actions">
-          <button className="btn primary m-plan-btn" onClick={doAddToPlan}><IconCalendar size={15} /> {t('m.addToPlan', lang)}</button>
+          {inPlanCount < multi.length && <button className="btn primary m-plan-btn" onClick={doAddToPlan}><IconCalendar size={15} /> {t('m.addToPlan', lang)}</button>}
+          {inPlanCount > 0 && <button className="btn danger m-plan-btn" onClick={doRemoveFromPlan}><IconTrash size={15} /> {t('m.removeFromPlan', lang)}</button>}
         </div>
       )}
       {multi.length >= 2 && canMerge && (

@@ -134,7 +134,12 @@ interface SyncableStore {
 // The whole overrides state is one JSON blob. Uncompressed it can exceed Firestore's
 // 1 MB per-document limit (geometry edits especially) → writes fail with
 // `invalid-argument` and nothing persists. Compress it (LZ marker for back-compat).
-const packBlob = (obj: unknown): string => 'LZ:' + LZString.compressToBase64(JSON.stringify(obj));
+// Small slices are stored as raw JSON (instant, no CPU); only large ones are
+// compressed (to stay under the 1 MB doc limit). parseBlob handles both.
+const packBlob = (obj: unknown): string => {
+  const raw = JSON.stringify(obj);
+  return raw.length > 120000 ? 'LZ:' + LZString.compressToBase64(raw) : raw;
+};
 const parseBlob = (s: string | undefined): Record<string, any> => {
   if (!s) return {};
   try {
@@ -226,6 +231,9 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       for (const k of spec.keys) merged[k] = st[k];                                   // last-write-wins for plain keys
       for (const k of spec.maps) merged[k] = { ...(remote[k] || {}), ...(st[k] || {}) }; // maps → union
       for (const k of spec.arrays) merged[k] = Array.from(new Set([...(remote[k] || []), ...(st[k] || [])])); // arrays → union
+      // drop the audit log's in-memory `before` snapshots (full state copies) — they
+      // ballooned this slice to MBs and made compression freeze the UI on every save.
+      if (Array.isArray(merged.audit)) merged.audit = merged.audit.map(({ before, ...e }: any) => e);
       const packed = packBlob(merged); kb = Math.round(packed.length / 1024);
       tx.set(sliceRef(name), { b: packed, at: Date.now() });
     });

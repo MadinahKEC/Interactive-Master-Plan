@@ -873,7 +873,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .m-agg-grid>div{background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:11px;padding:9px 8px;text-align:center}
 .m-agg-grid span{display:block;font-size:16px;font-weight:700;color:var(--kec-title);font-family:var(--kec-mono)}
 .m-agg-grid small{font-size:9px;color:var(--kec-muted)}
-.m-actions{padding:10px 14px 4px;border-top:1px solid var(--kec-hairline)}
+.m-actions{padding:10px 14px 4px;border-top:1px solid var(--kec-hairline);display:flex;flex-direction:column;gap:8px}
 .m-plan-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px}
 .m-merge{padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px}
 .m-merge input{background:var(--card);border:1px solid var(--kec-hairline);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--kec-ink);outline:0}

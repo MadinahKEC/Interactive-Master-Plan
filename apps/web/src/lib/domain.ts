@@ -396,6 +396,7 @@ export const DICT: Record<string, Entry> = {
   'save.ok':         { ar: 'تم حفظ التعديل', en: 'Changes saved' },
   'save.err':        { ar: 'تعذّر الحفظ — جارٍ إعادة المحاولة', en: 'Save failed — retrying' },
   'm.addToPlan':     { ar: 'إضافة الكل لخطة التطوير', en: 'Add all to development plan' },
+  'm.removeFromPlan':{ ar: 'إزالة الكل من خطة التطوير', en: 'Remove all from development plan' },
   'cp.hide':         { ar: 'إخفاء لوحة الفلاتر', en: 'Hide filters' },
   'cp.show':         { ar: 'إظهار لوحة الفلاتر', en: 'Show filters' },
 };
