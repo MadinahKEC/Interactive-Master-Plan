@@ -255,14 +255,19 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const apply = () => {
-      const expr = plotFillColor(landUses, planStyle.fill);
+      const expr = plotFillColor(landUses);
       if (map.getLayer('plots-fill')) map.setPaintProperty('plots-fill', 'fill-color', expr);
       if (map.getLayer('plots-3d')) map.setPaintProperty('plots-3d', 'fill-extrusion-color', expr);
-      if (map.getLayer('plans-outline') || map.getLayer('plan-outline')) {
+      const oW = planStyle.outlineWidth ?? 2.6, dL = planStyle.dashLen ?? 2, dG = planStyle.dashGap ?? 1.4;
+      if (map.getLayer('plan-outline')) {
         map.setPaintProperty('plan-outline', 'line-color', planStyle.outline);
-        map.setPaintProperty('plan-outline', 'line-dasharray', planStyle.dash ? [2, 1.4] : [1, 0]);
+        map.setPaintProperty('plan-outline', 'line-width', oW);
+        map.setPaintProperty('plan-outline', 'line-dasharray', planStyle.dash ? [dL, dG] : [1, 0]);
       }
-      if (map.getLayer('plan-glow')) map.setLayoutProperty('plan-glow', 'visibility', planStyle.glow ? 'visible' : 'none');
+      if (map.getLayer('plan-glow')) {
+        map.setLayoutProperty('plan-glow', 'visibility', planStyle.glow ? 'visible' : 'none');
+        map.setPaintProperty('plan-glow', 'line-width', planStyle.glowWidth ?? 9);
+      }
     };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [landUses, planStyle]);

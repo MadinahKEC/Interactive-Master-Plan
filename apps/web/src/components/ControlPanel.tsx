@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { SECTORS, type PlotCollection, type SectorKey } from '@kec/types';
 import { useApp, matchPlot, advActive } from '../store';
 import { resolveProject, STATUS_META, t, type ProjectInfo } from '../lib/domain';
-import { IconFilter } from './icons';
+import { IconFilter, IconChevron } from './icons';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -11,7 +11,15 @@ const fmtBig = (x: number) =>
 
 export function ControlPanel({ data, landUses, projects }: { data: PlotCollection; landUses: Record<string, EffLandUse>; projects: Record<string, ProjectInfo> }) {
   const state = useApp();
-  const { lang, sector, uses, planOnly, adv, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select } = state;
+  const { lang, sector, uses, planOnly, adv, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select, toggleControls } = state;
+  // "In plan" = all plan plots; a status chip filters plan plots by that status.
+  const inPlanActive = planOnly && adv.statuses.length === 0;
+  const planClick = (k?: string) => {
+    if (!k) { if (inPlanActive) togglePlanOnly(); else { if (!planOnly) togglePlanOnly(); setAdv({ statuses: [] }); } return; }
+    const active = planOnly && adv.statuses.length === 1 && adv.statuses[0] === k;
+    if (active) setAdv({ statuses: [] });
+    else { if (!planOnly) togglePlanOnly(); setAdv({ statuses: [k] }); }
+  };
   const plannedCount = useMemo(() => data.features.filter((f) => f.properties.planStatus).length, [data]);
   const [advOpen, setAdvOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false); // mobile bottom-sheet expand
@@ -63,6 +71,7 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
   return (
     <div className={`panel ${sheetOpen ? 'sheet-open' : 'sheet-peek'}`} id="controls">
       <button className="cp-handle" onClick={() => setSheetOpen((o) => !o)} aria-label="toggle filters"><span className="cp-grip" /></button>
+      <button className="cp-hide" onClick={toggleControls} title={t('cp.hide', lang)} aria-label={t('cp.hide', lang)}><IconChevron size={16} /></button>
       <div className="ctl-scroll">
         <div className="search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
@@ -118,15 +127,17 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
         {plannedCount > 0 && (
           <>
             <div className="sect-title">{t('cp.planTitle', lang)} <span className="mini">{plannedCount} {t('cp.planned', lang)}</span></div>
-            <label className={`plan-toggle ${planOnly ? 'on' : ''}`}>
-              <input type="checkbox" checked={planOnly} onChange={togglePlanOnly} />
-              <span className="pt-switch" /><span className="pt-label">{t('cp.planOnly', lang)}</span>
-            </label>
-            <div className="plan-legend">
-              <span className="pl-item"><span className="pl-plan-sw" />{t('cp.planned', lang)}</span>
-              {['Completed', 'UnderConstruction', 'Future', 'Partner'].map((k) => (
-                <span className="pl-item" key={k}><span className="pl-dash" style={{ background: STATUS_META[k].color }} />{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}</span>
-              ))}
+            <div className="plan-chips">
+              <button className={`plan-chip in ${inPlanActive ? 'on' : ''}`} onClick={() => planClick()}>{t('cp.planOnly', lang)}</button>
+              {['Completed', 'UnderConstruction', 'Future', 'Partner'].map((k) => {
+                const on = planOnly && adv.statuses.length === 1 && adv.statuses[0] === k;
+                return (
+                  <button key={k} className={`plan-chip ${on ? 'on' : ''}`} style={on ? { background: STATUS_META[k].color, borderColor: STATUS_META[k].color, color: '#fff' } : { borderColor: STATUS_META[k].color }}
+                    onClick={() => planClick(k)}>
+                    <span className="plan-chip-dot" style={{ background: STATUS_META[k].color }} />{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}

@@ -232,13 +232,27 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
     return kb;
   }
 
+  // Serialised so two edits in quick succession never run overlapping transactions
+  // on the same slice doc (that contention is what made a save occasionally fail).
+  let flushing = false;
   async function flush() {
+    if (flushing) return;                 // a flush is running; it re-checks pending when it ends
+    flushing = true;
     const names = [...pending]; pending.clear();
-    try {
-      let kb = 0;
-      for (const name of names) kb = Math.max(kb, await writeSlice(name));
-      emitSync('write-ok', `saved · [${names.join(',')}] · max ${kb}KB/1024`);
-    } catch (e: any) { emitSync('write-err', (e?.code || e?.message || 'failed')); console.warn('[firestore] write error', e); }
+    let kb = 0; const failed: string[] = [];
+    for (const name of names) {
+      try { kb = Math.max(kb, await writeSlice(name)); }
+      catch (e: any) { failed.push(name); console.warn('[firestore] slice write failed', name, e); }
+    }
+    flushing = false;
+    if (failed.length) {
+      for (const n of failed) pending.add(n);                 // keep them queued and retry shortly
+      emitSync('write-err', `retrying [${failed.join(',')}]`);
+      clearTimeout(writeTimer); writeTimer = setTimeout(flush, 1500);
+    } else {
+      emitSync('write-ok', `saved · [${names.join(',')}] · ${kb}KB`);
+      if (pending.size) { clearTimeout(writeTimer); writeTimer = setTimeout(flush, 250); } // changes that arrived mid-flush
+    }
   }
 
   // ---- one-time migration from the legacy single `kec/overrides` doc ----

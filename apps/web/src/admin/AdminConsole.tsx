@@ -242,11 +242,16 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
       <div className="lu-plan">
         <div className="lu-plan-head"><b>{t('a.planStyle', lang)}</b><span>{t('a.planStyleHint', lang)}</span></div>
         <div className="lu-plan-row">
-          <label className="lu-plan-c"><input type="color" value={planStyle.fill} onChange={(e) => setPlanStyle({ fill: e.target.value })} /><span>{t('a.planFill', lang)}</span></label>
           <label className="lu-plan-c"><input type="color" value={planStyle.outline} onChange={(e) => setPlanStyle({ outline: e.target.value })} /><span>{t('a.planOutline', lang)}</span></label>
           <label className="lu-plan-k"><input type="checkbox" checked={planStyle.dash} onChange={(e) => setPlanStyle({ dash: e.target.checked })} /><span>{t('a.planDash', lang)}</span></label>
           <label className="lu-plan-k"><input type="checkbox" checked={planStyle.glow} onChange={(e) => setPlanStyle({ glow: e.target.checked })} /><span>{t('a.planGlow', lang)}</span></label>
           <button className="btn sm" onClick={() => setPlanStyle(DEFAULT_PLAN_STYLE)}>{t('a.reset', lang)}</button>
+        </div>
+        <div className="lu-plan-row lu-plan-adv">
+          <label className="lu-plan-s"><span>{t('a.planOutlineW', lang)}</span><input type="range" min={1} max={8} step={0.2} value={planStyle.outlineWidth ?? 2.6} onChange={(e) => setPlanStyle({ outlineWidth: +e.target.value })} /></label>
+          {planStyle.dash && <label className="lu-plan-s"><span>{t('a.planDashLen', lang)}</span><input type="range" min={0.5} max={6} step={0.5} value={planStyle.dashLen ?? 2} onChange={(e) => setPlanStyle({ dashLen: +e.target.value })} /></label>}
+          {planStyle.dash && <label className="lu-plan-s"><span>{t('a.planDashGap', lang)}</span><input type="range" min={0.5} max={6} step={0.5} value={planStyle.dashGap ?? 1.4} onChange={(e) => setPlanStyle({ dashGap: +e.target.value })} /></label>}
+          {planStyle.glow && <label className="lu-plan-s"><span>{t('a.planGlowW', lang)}</span><input type="range" min={3} max={18} step={1} value={planStyle.glowWidth ?? 9} onChange={(e) => setPlanStyle({ glowWidth: +e.target.value })} /></label>}
         </div>
       </div>
       {Object.keys(landUses).sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).map((k) => (

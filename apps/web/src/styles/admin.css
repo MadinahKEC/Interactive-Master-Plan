@@ -169,6 +169,9 @@
 .lu-plan-c input[type=color]{width:34px;height:34px;border:1px solid var(--kec-hairline);border-radius:8px;padding:0;cursor:pointer;background:none}
 .lu-plan-k{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--kec-ink);cursor:pointer}
 .lu-plan-k input{width:16px;height:16px;accent-color:var(--kec-green)}
+.lu-plan-adv{margin-top:12px;padding-top:12px;border-top:1px dashed var(--kec-hairline)}
+.lu-plan-s{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--kec-muted);min-width:120px}
+.lu-plan-s input[type=range]{accent-color:var(--kec-green);width:130px}
 
 /* ===== Mobile: admin console + editor ===== */
 @media (max-width: 768px) {

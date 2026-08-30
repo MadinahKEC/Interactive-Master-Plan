@@ -3,8 +3,8 @@ import { can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, t, type ProjectInfo } from '../lib/domain';
-import { IconClose, IconMerge, IconZoom } from './icons';
+import { resolveProject, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
+import { IconClose, IconMerge, IconZoom, IconCalendar } from './icons';
 
 const nf = new Intl.NumberFormat('en-US');
 const fmt = (x: number) => (x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : nf.format(Math.round(x)));
@@ -14,6 +14,7 @@ export function MultiSelectPanel({ data, projects }: { data: PlotCollection; pro
   const role = useAuth((s) => s.user?.role);
   const canMerge = can(role as any, 'plot:attr:update');
   const mergePlots = useOverrides((s) => s.mergePlots);
+  const addPlotsToPlan = useOverrides((s) => s.addPlotsToPlan);
   const [owner, setOwner] = useState('');
   const byCode = useMemo(() => new Map(data.features.map((f) => [f.properties.code, f.properties])), [data]);
   if (multi.length < 1) return null;
@@ -30,6 +31,12 @@ export function MultiSelectPanel({ data, projects }: { data: PlotCollection; pro
     const id = mergePlots(multi, owner ? { owner } : {});
     clearMulti(); setOwner('');
     setTimeout(() => requestZoom(id), 60);
+  };
+  const doAddToPlan = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const end = new Date(Date.now() + 180 * 864e5).toISOString().slice(0, 10);
+    addPlotsToPlan(multi, { name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' });
+    clearMulti();
   };
 
   return (
@@ -57,6 +64,11 @@ export function MultiSelectPanel({ data, projects }: { data: PlotCollection; pro
           <div><span className="mono">{fmt(totalGfa)}</span><small>{t('m.totalGfa', lang)}</small></div>
         </div>
       </div>
+      {canMerge && (
+        <div className="m-actions">
+          <button className="btn primary m-plan-btn" onClick={doAddToPlan}><IconCalendar size={15} /> {t('m.addToPlan', lang)}</button>
+        </div>
+      )}
       {multi.length >= 2 && canMerge && (
         <div className="m-merge">
           <input placeholder={t('a.owner', lang)} value={owner} onChange={(e) => setOwner(e.target.value)} />

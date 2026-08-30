@@ -40,6 +40,7 @@ export interface AppState {
   landmarks: boolean;             // show Madinah city landmarks
   lmCats: Set<string>;            // enabled landmark categories
   railOpen: boolean;              // left navigation rail visible
+  controlsOpen: boolean;          // right filter panel visible
   flyover: boolean;               // cinematic 3D fly-through running
   creating: boolean;              // draw-a-new-plot mode
   zoomCode: string | null;        // plot to zoom to
@@ -73,6 +74,7 @@ export interface AppState {
   toggleLandmarks: () => void;
   toggleLmCat: (key: string) => void;
   toggleRail: () => void;
+  toggleControls: () => void;
   toggleFlyover: () => void;
   setCreating: (v: boolean) => void;
   requestZoom: (code: string) => void;
@@ -84,7 +86,7 @@ export interface AppState {
 
 export const useApp = create<AppState>((set) => ({
   lang: 'en',
-  basemap: 'satellite',
+  basemap: 'light',
   dim: '2d',
   sector: 'all',
   uses: new Set(Object.keys(LAND_USES)),
@@ -104,6 +106,7 @@ export const useApp = create<AppState>((set) => ({
   landmarks: false,
   lmCats: new Set(LM_CAT_KEYS),
   railOpen: true,
+  controlsOpen: true,
   flyover: false,
   creating: false,
   zoomCode: null,
@@ -143,6 +146,7 @@ export const useApp = create<AppState>((set) => ({
   toggleLandmarks: () => set((s) => ({ landmarks: !s.landmarks })),
   toggleLmCat: (key) => set((s) => { const lmCats = new Set(s.lmCats); lmCats.has(key) ? lmCats.delete(key) : lmCats.add(key); return { lmCats }; }),
   toggleRail: () => set((s) => ({ railOpen: !s.railOpen })),
+  toggleControls: () => set((s) => ({ controlsOpen: !s.controlsOpen })),
   toggleFlyover: () => set((s) => ({ flyover: !s.flyover, dim: s.flyover ? s.dim : 'earth' })),
   setCreating: (creating) => set({ creating, measuring: false, annotateMode: 'off' }),
   requestZoom: (code) => set((s) => ({ zoomCode: code, zoomToken: s.zoomToken + 1 })),

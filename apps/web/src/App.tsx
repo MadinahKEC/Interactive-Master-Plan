@@ -23,6 +23,7 @@ import { useProjects, t } from './lib/domain';
 import { can } from '@kec/types';
 import { useApp } from './store';
 import { useAuth } from './lib/auth';
+import { SaveToast } from './components/SaveToast';
 import { useOverrides } from './lib/overrides';
 import { effectiveCollection, effectiveLandUses, effectiveProjects } from './lib/effective';
 
@@ -138,6 +139,13 @@ export default function App() {
     return () => cancelAnimationFrame(id);
   }, [railOpen]);
 
+  const controlsOpen = useApp((s) => s.controlsOpen);
+  useEffect(() => {
+    document.documentElement.dataset.controls = controlsOpen ? 'open' : 'hidden';
+    const id = requestAnimationFrame(() => useApp.getState().reveal());
+    return () => cancelAnimationFrame(id);
+  }, [controlsOpen]);
+
   const openAdmin = (code?: string) => { setEditCode(code ?? null); setAdminOpen(true); };
 
   return (
@@ -151,6 +159,11 @@ export default function App() {
       )}
       <TopBar />
       {data && <ControlPanel data={data} landUses={landUses} projects={projects} />}
+      {!controlsOpen && (
+        <button className="cp-reveal" onClick={() => useApp.getState().toggleControls()} title={t('cp.show', lang)} aria-label={t('cp.show', lang)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 5h18l-7 8v5l-4 2v-9L3 5Z" /></svg>
+        </button>
+      )}
       <DetailPanel data={data} projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
       {data && <MultiSelectPanel data={data} projects={projects} />}
       {data && <ShortlistBar data={data} projects={projects} landUses={landUses} />}
@@ -168,6 +181,7 @@ export default function App() {
       {execOpen && data && <ExecDashboard data={data} projects={projects} landUses={landUses} onClose={() => { setExecOpen(false); useApp.getState().reveal(); }} />}
       <div className="credit">© {t('credit', lang)}</div>
       <div className="powered">{t('powered', lang)}</div>
+      <SaveToast />
       {!baseData && !error && (
         <div className="loading">
           <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" className="load-logo" />
