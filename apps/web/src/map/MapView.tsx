@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl, { type FilterSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { LAND_USES, type PlotCollection, type PlotProps } from '@kec/types';
-import { buildStyle, plotFillColor, KEC_BOUNDS, KEC_CENTER } from './mapStyle';
+import { buildStyle, plotFillColor, planStatusColor, KEC_BOUNDS, KEC_CENTER } from './mapStyle';
 import { useApp, type AdvFilter } from '../store';
 import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
@@ -260,7 +260,8 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       if (map.getLayer('plots-3d')) map.setPaintProperty('plots-3d', 'fill-extrusion-color', expr);
       const oW = planStyle.outlineWidth ?? 2.6, dL = planStyle.dashLen ?? 2, dG = planStyle.dashGap ?? 1.4;
       if (map.getLayer('plan-outline')) {
-        map.setPaintProperty('plan-outline', 'line-color', planStyle.outline);
+        // border colour follows the plan status (links to the filter chips) unless a custom colour is chosen
+        map.setPaintProperty('plan-outline', 'line-color', (planStyle.outlineByStatus ?? true) ? planStatusColor() : planStyle.outline);
         map.setPaintProperty('plan-outline', 'line-width', oW);
         map.setPaintProperty('plan-outline', 'line-dasharray', planStyle.dash ? [dL, dG] : [1, 0]);
       }

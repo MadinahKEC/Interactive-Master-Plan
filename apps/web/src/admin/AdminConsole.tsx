@@ -242,7 +242,8 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
       <div className="lu-plan">
         <div className="lu-plan-head"><b>{t('a.planStyle', lang)}</b><span>{t('a.planStyleHint', lang)}</span></div>
         <div className="lu-plan-row">
-          <label className="lu-plan-c"><input type="color" value={planStyle.outline} onChange={(e) => setPlanStyle({ outline: e.target.value })} /><span>{t('a.planOutline', lang)}</span></label>
+          <label className="lu-plan-k"><input type="checkbox" checked={planStyle.outlineByStatus ?? true} onChange={(e) => setPlanStyle({ outlineByStatus: e.target.checked })} /><span>{t('a.planOutlineStatus', lang)}</span></label>
+          {!(planStyle.outlineByStatus ?? true) && <label className="lu-plan-c"><input type="color" value={planStyle.outline} onChange={(e) => setPlanStyle({ outline: e.target.value })} /><span>{t('a.planOutline', lang)}</span></label>}
           <label className="lu-plan-k"><input type="checkbox" checked={planStyle.dash} onChange={(e) => setPlanStyle({ dash: e.target.checked })} /><span>{t('a.planDash', lang)}</span></label>
           <label className="lu-plan-k"><input type="checkbox" checked={planStyle.glow} onChange={(e) => setPlanStyle({ glow: e.target.checked })} /><span>{t('a.planGlow', lang)}</span></label>
           <button className="btn sm" onClick={() => setPlanStyle(DEFAULT_PLAN_STYLE)}>{t('a.reset', lang)}</button>

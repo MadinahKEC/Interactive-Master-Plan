@@ -56,9 +56,10 @@ export interface InvestorLead { id: string; name: string; contact?: string; note
 /** Border/glow styling for development-plan plots (fill stays the land-use colour). */
 export interface PlanStyle {
   outline: string; dash: boolean; glow: boolean;
+  outlineByStatus?: boolean;   // border colour follows the plan status (links to the filter chips)
   outlineWidth?: number; glowWidth?: number; dashLen?: number; dashGap?: number;  // advanced border controls
 }
-export const DEFAULT_PLAN_STYLE: PlanStyle = { outline: '#9A8A1E', dash: true, glow: true, outlineWidth: 2.6, glowWidth: 9, dashLen: 2, dashGap: 1.4 };
+export const DEFAULT_PLAN_STYLE: PlanStyle = { outline: '#9A8A1E', dash: true, glow: true, outlineByStatus: true, outlineWidth: 2.6, glowWidth: 9, dashLen: 2, dashGap: 1.4 };
 /** A free annotation drawn on the map (admin only). */
 export interface Annotation {
   id: string;
