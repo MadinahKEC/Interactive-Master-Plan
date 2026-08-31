@@ -47,10 +47,8 @@ export function DetailPanel({
 
   // Drag to resize the card width (desktop); the tile grid & content reflow to fit.
   const DP_MIN = 320, DP_MAX = 620, DP_DEF = 376;
-  const [dpW, setDpW] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem('kec_dp_w')); if (v >= DP_MIN && v <= DP_MAX) return v; } catch { /* */ }
-    return DP_DEF;
-  });
+  // Not persisted on purpose: the card returns to its default width on page reload.
+  const [dpW, setDpW] = useState<number>(DP_DEF);
   const wRef = useRef(dpW);
   const onResizeDown = (e: ReactPointerEvent) => {
     if (window.matchMedia('(max-width:768px)').matches) return; // mobile = bottom sheet
@@ -67,7 +65,6 @@ export function DetailPanel({
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       document.body.classList.remove('dp-resizing');
-      try { localStorage.setItem('kec_dp_w', String(Math.round(wRef.current))); } catch { /* */ }
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -80,7 +77,6 @@ export function DetailPanel({
     e.preventDefault();
     w = Math.max(DP_MIN, Math.min(DP_MAX, w));
     wRef.current = w; setDpW(w);
-    try { localStorage.setItem('kec_dp_w', String(w)); } catch { /* */ }
   };
 
   if (!selected) return null;
