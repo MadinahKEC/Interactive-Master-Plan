@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
@@ -13,7 +13,7 @@ import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
 import { useInterestedInvestors, INVESTOR_LOG_ENABLED } from '../lib/investorLog';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
 
@@ -44,8 +44,50 @@ export function DetailPanel({
   // reset any open sub-modal when the selection changes (or clears) so e.g. the QR
   // never re-opens by itself on the next plot.
   useEffect(() => { setShareOpen(false); setPdfOpen(false); setFeasOpen(false); }, [selected?.code]);
+
+  // Drag to resize the card width (desktop); the tile grid & content reflow to fit.
+  const DP_MIN = 320, DP_MAX = 620, DP_DEF = 376;
+  const [dpW, setDpW] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem('kec_dp_w')); if (v >= DP_MIN && v <= DP_MAX) return v; } catch { /* */ }
+    return DP_DEF;
+  });
+  const wRef = useRef(dpW);
+  const onResizeDown = (e: ReactPointerEvent) => {
+    if (window.matchMedia('(max-width:768px)').matches) return; // mobile = bottom sheet
+    e.preventDefault();
+    const rtl = document.documentElement.dir === 'rtl';
+    const startX = e.clientX, startW = wRef.current;
+    document.body.classList.add('dp-resizing');
+    const move = (ev: PointerEvent) => {
+      const delta = rtl ? startX - ev.clientX : ev.clientX - startX; // toward the map = wider
+      const w = Math.max(DP_MIN, Math.min(DP_MAX, startW + delta));
+      wRef.current = w; setDpW(w);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.classList.remove('dp-resizing');
+      try { localStorage.setItem('kec_dp_w', String(Math.round(wRef.current))); } catch { /* */ }
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const onResizeKey = (e: ReactKeyboardEvent) => {
+    const step = e.shiftKey ? 24 : 8;
+    let w = wRef.current;
+    if (e.key === 'ArrowLeft') w -= step; else if (e.key === 'ArrowRight') w += step;
+    else if (e.key === 'Home') w = DP_MIN; else if (e.key === 'End') w = DP_MAX; else return;
+    e.preventDefault();
+    w = Math.max(DP_MIN, Math.min(DP_MAX, w));
+    wRef.current = w; setDpW(w);
+    try { localStorage.setItem('kec_dp_w', String(w)); } catch { /* */ }
+  };
+
   if (!selected) return null;
-  const p = selected;
+  // Read live from the effective feature so edits (attributes, electrical load…) reflect
+  // immediately; fall back to the click-time snapshot before data is ready.
+  const feat = data?.features.find((ft) => ft.properties.code === selected.code);
+  const p = feat?.properties ?? selected;
   const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
   const luLabel = lang === 'ar' ? lu.labelAr : lu.labelEn;
   const pr = resolveProject(p.code, p.land_use, projects);
@@ -60,7 +102,6 @@ export function DetailPanel({
   const hasDevDesc = Boolean(devDesc);
   const inPlan = phases.length > 0;
   const inv = pr.overlay.investment;
-  const feat = data?.features.find((ft) => ft.properties.code === p.code);
   const centroid = feat ? centroidOf(feat.geometry) : HARAM;
   const haramKm = haversineKm(centroid, HARAM);
   const analysis = computeInvestmentScore(p, pr.overlay, haramKm);
@@ -75,7 +116,9 @@ export function DetailPanel({
   const removeFromPlan = () => setProject(p.code, { phases: [] });
 
   return (
-    <div className="panel" id="detail">
+    <div className="panel" id="detail" style={{ ['--dp-w' as string]: `${dpW}px` }}>
+      <div className="d-resize" onPointerDown={onResizeDown} onKeyDown={onResizeKey} role="separator" aria-orientation="vertical"
+        aria-label={t('d.resize', lang)} tabIndex={0} title={t('d.resize', lang)}><span className="d-resize-grip" /></div>
       <div className="d-head">
         <button className="d-close" onClick={fitAll} title={t('d.fullPlan', lang)}><IconClose size={17} /></button>
         <div className="d-quick">
@@ -135,6 +178,11 @@ export function DetailPanel({
             <Tile k="f:height" icon={<IconRuler size={13} />} l={t('d.height', lang)} v={num(p.height)} />
             <Tile k="f:coverage" icon={<IconRect size={13} />} l={t('d.coverage', lang)} v={num(p.coverage, 2)} />
             <Tile k="f:far" icon={<IconCube size={13} />} l={t('d.far', lang)} v={num(p.far, 2)} />
+            {(() => {
+              const manual = p.elecLoad != null && !Number.isNaN(p.elecLoad as number);
+              const load = manual ? (p.elecLoad as number) : estimatedElecLoadKva(p.gfa, p.land_use);
+              return <Tile k="f:elecLoad" wide icon={<IconBolt size={13} />} l={t('d.elecLoad', lang)} v={load != null ? num(load, 1) : '—'} badge={manual ? t('d.manual', lang) : undefined} />;
+            })()}
           </div>
         </Section>
 
@@ -426,17 +474,18 @@ function investIcon(unit: string): RN {
   return <IconInvest size={13} />;
 }
 /** Premium stat tile — icon badge, label, value — two per row. */
-function Tile({ icon, l, v, chip, k, text }: { icon: RN; l: string; v: string; chip?: string; k?: string; text?: boolean }) {
+function Tile({ icon, l, v, chip, k, text, badge, wide }: { icon: RN; l: string; v: string; chip?: string; k?: string; text?: boolean; badge?: string; wide?: boolean }) {
   const hidden = useContext(CardCtx);
   if (k && hidden.includes(k)) return null;
   return (
-    <div className="d-tile">
+    <div className={`d-tile ${wide ? 'wide' : ''}`}>
       <span className="d-tile-ic">{icon}</span>
       <div className="d-tile-body">
         <div className="d-tile-l">{l}</div>
         <div className="d-tile-vrow">
           {chip && <span className="cell-chip" style={{ background: chip }} />}
           <span className={`d-tile-v ${text ? 'text' : ''}`}>{v}</span>
+          {badge && <span className="d-tile-badge">{badge}</span>}
         </div>
       </div>
     </div>

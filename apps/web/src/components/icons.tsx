@@ -51,6 +51,7 @@ export const IconLandmark = ({ size }: P) => (<svg {...S(size)}><path d="M12 3c2
 export const IconInvest = ({ size }: P) => (<svg {...S(size)}><path d="M4 19h16" /><path d="M4 19V9m5 10V5m5 14v-7m5 7V8" /><path d="m4 11 5-4 5 3 6-5" /></svg>);
 export const IconWalk = ({ size }: P) => (<svg {...S(size)}><circle cx="13" cy="4.5" r="1.6" /><path d="M13 8l-3 2 1 4 2 2v4M11 14l-3 6M14 11l3 1 2 3M10 10l-2 4" /></svg>);
 export const IconCar = ({ size }: P) => (<svg {...S(size)}><path d="M4 16v-3l2-5h12l2 5v3" /><path d="M3 16h18v2a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2Z" /><path d="M6.5 13h11" /></svg>);
+export const IconBolt = ({ size }: P) => (<svg {...S(size)}><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" /></svg>);
 const IconHotel = ({ size }: P) =>(<svg {...S(size)}><path d="M3 20V8l9-4 9 4v12" /><rect x="9" y="12" width="6" height="8" /><path d="M3 20h18M8 8h.01M16 8h.01" /></svg>);
 const IconHospital = ({ size }: P) => (<svg {...S(size)}><rect x="5" y="4" width="14" height="17" rx="1.5" /><path d="M12 8v6M9 11h6" /></svg>);
 const IconEducation = ({ size }: P) => (<svg {...S(size)}><path d="M12 5 3 9l9 4 9-4-9-4Z" /><path d="M7 11v4c0 1.5 2.5 3 5 3s5-1.5 5-3v-4" /></svg>);

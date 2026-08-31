@@ -88,6 +88,7 @@
 .field{display:flex;flex-direction:column;gap:5px}
 .field.full{grid-column:1/-1}
 .field span{font-size:10.5px;color:var(--kec-muted)}
+.field .field-hint{font-size:10px;color:var(--kec-muted);opacity:.85;line-height:1.5;margin-top:-1px}
 .field input,.field select,.field textarea{background:var(--card);border:1px solid var(--kec-hairline);border-radius:9px;padding:9px 11px;font-size:13px;color:var(--kec-ink);outline:0;font-family:inherit;width:100%}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--kec-green)}
 .field input[type=range]{padding:0;accent-color:var(--kec-green)}

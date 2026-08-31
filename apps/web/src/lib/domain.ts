@@ -35,6 +35,9 @@ export const DICT: Record<string, Entry> = {
   'd.height':         { ar: 'الارتفاع (م)', en: 'Height (m)' },
   'd.coverage':       { ar: 'نسبة التغطية', en: 'Coverage' },
   'd.far':            { ar: 'معامل الاستغلال FAR', en: 'FAR' },
+  'd.elecLoad':       { ar: 'الحمولة الكهربائية المتوقعة (ك.ف.أ)', en: 'Expected electrical load (kVA)' },
+  'd.manual':         { ar: 'يدوي', en: 'Manual' },
+  'd.resize':         { ar: 'اسحب لتغيير حجم البطاقة', en: 'Drag to resize card' },
   'd.landuse':        { ar: 'الاستخدام', en: 'Land use' },
   'd.unnamed':        { ar: 'لم تُسمّ بعد', en: 'Not yet named' },
   'd.progress':       { ar: 'نسبة الإنجاز', en: 'Progress' },
@@ -73,6 +76,9 @@ export const DICT: Record<string, Entry> = {
   'a.cancel':        { ar: 'إلغاء', en: 'Cancel' },
   'a.projectInfo':   { ar: 'بيانات المشروع', en: 'Project info' },
   'a.plotAttrs':     { ar: 'سمات البلوت', en: 'Plot attributes' },
+  'a.elecLoad':      { ar: 'الحمولة الكهربائية (ك.ف.أ)', en: 'Electrical load (kVA)' },
+  'a.elecLoadAuto':  { ar: 'تلقائي', en: 'Auto' },
+  'a.elecLoadHint':  { ar: 'يُحسب تلقائياً من المسطح الإجمالي والاستخدام وفق الكود السعودي لشركة الكهرباء. اتركه فارغاً للحساب التلقائي، أو أدخل رقماً لتجاوزه يدوياً.', en: 'Auto-calculated from GFA and land use per the Saudi Electricity code. Leave empty for auto, or enter a number to override manually.' },
   'a.nameAr':        { ar: 'الاسم (عربي)', en: 'Name (Arabic)' },
   'a.nameEn':        { ar: 'الاسم (إنجليزي)', en: 'Name (English)' },
   'a.type':          { ar: 'النوع', en: 'Type' },
@@ -435,6 +441,56 @@ export function inferType(landUse: string | null | undefined): ProjectType {
   if (l.includes('utilit')) return PROJECT_TYPES.Utilities;
   if (l.includes('train') || l.includes('station')) return PROJECT_TYPES.Transit;
   return PROJECT_TYPES.Residential;
+}
+
+// ---------- Expected electrical load (SEC / Saudi Building Code) ----------
+// Planning-level electrical demand density by land use, in VA per m² of GFA.
+// These are diversified demand densities consistent with the Saudi Electricity
+// Company distribution planning code and the Saudi Building Code (SBC 401), used
+// to size a plot's supply capacity in kVA:  kVA = GFA(m²) × density(VA/m²) ÷ 1000.
+export const ELEC_DENSITY_VA_M2: Record<string, number> = {
+  'Low/Med Density Residential': 30,
+  'Medium Density Residential': 40,
+  'High Density Residential & Commercial': 60,
+  'Low/Med Density Residential & Commercial': 45,
+  'Medium Density Residential & Commercial': 55,
+  'High Density Mixed-Use': 80,
+  'Medium Density Mixed-Use': 65,
+  'Commercial': 90,
+  'Cultural & Commercial': 85,
+  'Offices': 70,
+  'Hospitality': 90,
+  'Medical': 120,
+  'Education': 50,
+  'Community Facilities': 50,
+  'Open Space': 6,
+  'Utilities': 40,
+  'Train station and reservation': 80,
+};
+export const ELEC_DENSITY_DEFAULT = 60;
+
+/** Demand density (VA/m²) for a land use; keyword match then a mixed-use default. */
+export function elecDensity(landUse?: string | null): number {
+  if (landUse && ELEC_DENSITY_VA_M2[landUse] != null) return ELEC_DENSITY_VA_M2[landUse];
+  const l = (landUse ?? '').toLowerCase();
+  if (l.includes('medical') || l.includes('hospital')) return 120;
+  if (l.includes('hospitality') || l.includes('hotel')) return 90;
+  if (l.includes('commercial') || l.includes('retail') || l.includes('mall')) return 90;
+  if (l.includes('office')) return 70;
+  if (l.includes('mixed')) return 80;
+  if (l.includes('education')) return 50;
+  if (l.includes('community')) return 50;
+  if (l.includes('residential')) return 40;
+  if (l.includes('open space') || l.includes('park')) return 6;
+  if (l.includes('utilit')) return 40;
+  if (l.includes('train') || l.includes('station')) return 80;
+  return ELEC_DENSITY_DEFAULT;
+}
+
+/** Auto-estimated expected electrical load (kVA) from GFA + land use; null if no GFA. */
+export function estimatedElecLoadKva(gfa?: number | null, landUse?: string | null): number | null {
+  if (!gfa || gfa <= 0) return null;
+  return Math.round((gfa * elecDensity(landUse)) / 1000 * 10) / 10;
 }
 
 // ---------- Status ----------

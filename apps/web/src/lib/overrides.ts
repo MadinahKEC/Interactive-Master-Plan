@@ -23,7 +23,7 @@ export interface LandUseOverride { color?: string; labelAr?: string; labelEn?: s
 /** An admin-added dropdown choice (persisted and reused across sessions). */
 export interface OptionItem { value: string; ar?: string; en?: string }
 export interface AdminUser { id: string; name: string; email: string; role: string; active: boolean }
-export type PlotAttrOverride = Partial<Record<'land_use' | 'sector' | 'gfa' | 'area' | 'floors' | 'height' | 'coverage' | 'far' | 'name', string | number | null>>;
+export type PlotAttrOverride = Partial<Record<'land_use' | 'sector' | 'gfa' | 'area' | 'floors' | 'height' | 'coverage' | 'far' | 'name' | 'elecLoad', string | number | null>>;
 /** GeoJSON geometry override for a plot (from the shape editor). */
 export interface GeomOverride { type: 'Polygon' | 'MultiPolygon'; coordinates: any }
 /** A merged ownership unit built from >=2 source plots. */

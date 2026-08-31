@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, resolveProject, inferType, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, resolveProject, inferType, estimatedElecLoadKva, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { uploadPlotImage } from '../lib/firebase';
@@ -46,9 +46,12 @@ export function PlotEditor({
     gfa: p?.gfa ?? '',
     coverage: p?.coverage ?? '',
     far: p?.far ?? '',
+    elecLoad: p?.elecLoad ?? '',
   });
   const up = (k: keyof typeof f, v: any) => setF((s) => ({ ...s, [k]: v }));
   const numOrNull = (v: any) => (v === '' || v === null ? null : Number(v));
+  // Live auto-estimate shown as the electrical-load placeholder (updates with GFA/land use).
+  const autoLoad = estimatedElecLoadKva(numOrNull(f.gfa), f.land_use);
   const [inv, setInv] = useState<InvestmentInfo>(overlay.investment ?? {});
   const setInvField = (k: keyof InvestmentInfo, v: string) => setInv((s) => ({ ...s, [k]: v === '' ? undefined : Number(v) }));
   const [phases, setPhases] = useState<Phase[]>(overlay.phases ?? []);
@@ -92,6 +95,7 @@ export function PlotEditor({
       floors: numOrNull(f.floors), height: numOrNull(f.height),
       area: numOrNull(f.area), gfa: numOrNull(f.gfa),
       coverage: numOrNull(f.coverage), far: numOrNull(f.far),
+      elecLoad: numOrNull(f.elecLoad),
     });
     onClose();
   };
@@ -109,6 +113,7 @@ export function PlotEditor({
     { k: 'f:area', label: t('d.area', lang) }, { k: 'f:gfa', label: t('d.gfa', lang) },
     { k: 'f:floors', label: t('d.floors', lang) }, { k: 'f:height', label: t('d.height', lang) },
     { k: 'f:coverage', label: t('d.coverage', lang) }, { k: 'f:far', label: t('d.far', lang) },
+    { k: 'f:elecLoad', label: t('d.elecLoad', lang) },
   ];
   const invItems = INVEST_FIELDS.map((fld) => ({ k: `f:inv:${fld.key}`, label: lang === 'ar' ? fld.ar : fld.en }));
 
@@ -175,6 +180,11 @@ export function PlotEditor({
             <Field label={t('d.gfa', lang)}><NumberField value={f.gfa} onChange={(v) => up('gfa', v)} /></Field>
             <Field label={t('d.coverage', lang)}><NumberField value={f.coverage} onChange={(v) => up('coverage', v)} /></Field>
             <Field label={t('d.far', lang)}><NumberField value={f.far} onChange={(v) => up('far', v)} /></Field>
+            <Field label={t('a.elecLoad', lang)} full>
+              <NumberField value={f.elecLoad} onChange={(v) => up('elecLoad', v)}
+                placeholder={autoLoad != null ? `${t('a.elecLoadAuto', lang)}: ${autoLoad.toLocaleString('en-US')}` : undefined} />
+              <span className="field-hint">{t('a.elecLoadHint', lang)}</span>
+            </Field>
           </div>
 
           {/* Development plan */}
@@ -277,7 +287,7 @@ function fmtNum(raw: string): string {
   const body = decPart !== null ? `${intF === '' ? '0' : intF}.${decPart}` : intF;
   return (neg ? '-' : '') + body;
 }
-function NumberField({ value, onChange }: { value: string | number | ''; onChange: (raw: string) => void }) {
+function NumberField({ value, onChange, placeholder }: { value: string | number | ''; onChange: (raw: string) => void; placeholder?: string }) {
   const raw = value === '' || value == null ? '' : String(value);
   const onIn = (e: { target: { value: string } }) => {
     let s = e.target.value.replace(/,/g, '').replace(/[^0-9.\-]/g, '');
@@ -286,5 +296,5 @@ function NumberField({ value, onChange }: { value: string | number | ''; onChang
     if (i >= 0) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/\./g, ''); // only one dot
     onChange(s);
   };
-  return <input type="text" inputMode="decimal" value={fmtNum(raw)} onChange={onIn} />;
+  return <input type="text" inputMode="decimal" placeholder={placeholder} value={fmtNum(raw)} onChange={onIn} />;
 }
