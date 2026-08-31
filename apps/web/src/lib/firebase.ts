@@ -140,6 +140,21 @@ const packBlob = (obj: unknown): string => {
   const raw = JSON.stringify(obj);
   return raw.length > 120000 ? 'LZ:' + LZString.compressToBase64(raw) : raw;
 };
+
+// Drop empty values (''/null/undefined/[]/{}) so per-plot records stay lean as the
+// plan grows — smaller writes, faster compression, more headroom. In this data model
+// an absent field means the same as an empty one, so this is loss-less. Keeps 0/false.
+function compactVal(v: any): any {
+  if (Array.isArray(v)) { const a = v.map(compactVal).filter((x) => x !== undefined); return a.length ? a : undefined; }
+  if (v && typeof v === 'object') { const o: any = {}; for (const k in v) { const c = compactVal(v[k]); if (c !== undefined) o[k] = c; } return Object.keys(o).length ? o : undefined; }
+  return (v === '' || v == null) ? undefined : v;
+}
+/** Compact every record in a per-plot map (keeps the plot key even if it empties out). */
+function compactMap(m: Record<string, any> | undefined): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const code in (m || {})) out[code] = compactVal(m![code]) ?? {};
+  return out;
+}
 const parseBlob = (s: string | undefined): Record<string, any> => {
   if (!s) return {};
   try {
@@ -234,7 +249,11 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       // drop the audit log's in-memory `before` snapshots (full state copies) — they
       // ballooned this slice to MBs and made compression freeze the UI on every save.
       if (Array.isArray(merged.audit)) merged.audit = merged.audit.map(({ before, ...e }: any) => e);
+      // strip empty per-plot fields so records stay lean as the plan grows
+      for (const k of spec.maps) if (k === 'projects' || k === 'plotAttrs') merged[k] = compactMap(merged[k]);
       const packed = packBlob(merged); kb = Math.round(packed.length / 1024);
+      // Early warning well before the 1 MB ceiling, so we can shard proactively.
+      if (packed.length > 750000) { emitSync('write-err', `slice "${name}" is ${kb}KB — nearing the 1MB limit`); console.warn(`[firestore] slice "${name}" ${kb}KB approaching 1MB — consider per-plot sharding`); }
       tx.set(sliceRef(name), { b: packed, at: Date.now() });
     });
     return kb;
