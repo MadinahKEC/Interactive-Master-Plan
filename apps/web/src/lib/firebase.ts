@@ -246,9 +246,13 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       for (const k of spec.keys) merged[k] = st[k];                                   // last-write-wins for plain keys
       for (const k of spec.maps) merged[k] = { ...(remote[k] || {}), ...(st[k] || {}) }; // maps → union
       for (const k of spec.arrays) merged[k] = Array.from(new Set([...(remote[k] || []), ...(st[k] || [])])); // arrays → union
-      // drop the audit log's in-memory `before` snapshots (full state copies) — they
-      // ballooned this slice to MBs and made compression freeze the UI on every save.
-      if (Array.isArray(merged.audit)) merged.audit = merged.audit.map(({ before, ...e }: any) => e);
+      // Drop the legacy full-state `before` snapshots entirely, and keep the compact
+      // per-edit `prev` (undo image) only for the most recent 40 entries so the change
+      // log stays small while cross-session undo still works for recent edits.
+      if (Array.isArray(merged.audit)) merged.audit = merged.audit.map((e: any, i: number) => {
+        const { before, prev, ...rest } = e;
+        return i < 40 && prev ? { ...rest, prev } : rest;
+      });
       // strip empty per-plot fields so records stay lean as the plan grows
       for (const k of spec.maps) if (k === 'projects' || k === 'plotAttrs') merged[k] = compactMap(merged[k]);
       const packed = packBlob(merged); kb = Math.round(packed.length / 1024);

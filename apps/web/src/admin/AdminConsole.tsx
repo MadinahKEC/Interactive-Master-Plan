@@ -401,7 +401,7 @@ function auditCat(action: string): 'added' | 'edited' | 'deleted' {
 function AuditTab() {
   const { lang } = useApp();
   const audit = useOverrides((s) => s.audit);
-  const revertTo = useOverrides((s) => s.revertTo);
+  const revertOne = useOverrides((s) => s.revertOne);
   const clearAudit = useOverrides((s) => s.clearAudit);
   const [q, setQ] = useState('');
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -411,7 +411,7 @@ function AuditTab() {
       title: t('audit.revertTitle', lang), body: t('audit.revertBody', lang), icon: <IconUndo size={24} />,
       confirmLabel: t('audit.revert', lang), cancelLabel: t('a.cancel', lang), danger: true, dir,
     });
-    if (ok) revertTo(id);
+    if (ok) revertOne(id);
   };
   const doClear = async () => {
     if (await confirmDialog({ title: t('cl.clear', lang), body: t('cl.clearConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('cl.clear', lang), cancelLabel: t('a.cancel', lang), danger: true, dir })) clearAudit();
@@ -429,7 +429,7 @@ function AuditTab() {
   const people = new Set(audit.map((e) => e.actor).filter(Boolean)).size;
   const today = new Date().toDateString();
   const todayN = audit.filter((e) => new Date(e.at).toDateString() === today).length;
-  const latest = audit.find((e) => e.before);
+  const latest = audit.find((e) => e.prev);
 
   return (
     <div className="clog">
@@ -460,7 +460,7 @@ function AuditTab() {
                 </span>
                 <span className="clog-u" title={t('a.actor', lang)}>{e.actor ?? '—'}</span>
                 <span className="clog-when mono">{new Date(e.at).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                {e.before
+                {e.prev
                   ? <button className="clog-ib dg" onClick={() => doRevert(e.id)} title={t('audit.revert', lang)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>
                   : <span className="clog-old">{t('cl.olderNote', lang)}</span>}
               </li>
