@@ -122,6 +122,7 @@ interface OverridesState {
   removeInvestor: (code: string, id: string) => void;
   log: (e: Omit<AuditEntry, 'at' | 'id' | 'before'>) => void;
   revertTo: (id: string) => void;
+  clearAudit: () => void;
   exportAll: () => string;
   importAll: (json: string) => boolean;
   reset: () => void;
@@ -362,6 +363,7 @@ export const useOverrides = create<OverridesState>()(
         // restore the snapshot taken before this edit; drop this edit and every newer one
         return { ...s.audit[idx].before, audit: s.audit.slice(idx + 1) } as any;
       }),
+      clearAudit: () => set({ audit: [] }),
       reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], hiddenLandUses: [], hiddenCards: [], planStyle: DEFAULT_PLAN_STYLE, investors: {}, audit: [] }),
     }),
     // `before` snapshots stay in memory only — persisting them would bloat storage/sync.

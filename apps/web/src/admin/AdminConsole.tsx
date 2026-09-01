@@ -391,48 +391,82 @@ function AccessLogTab() {
 }
 
 /* ---------------- Audit ---------------- */
+/** Change-log action → category (colour + verb), matching the KEC register style. */
+function auditCat(action: string): 'added' | 'edited' | 'deleted' {
+  const a = action.toLowerCase();
+  if (/remove|hide|delete|unmerge/.test(a)) return 'deleted';
+  if (/edit|attr|project|planstyle|geometry|subdivide|option|update/.test(a)) return 'edited';
+  return 'added';
+}
 function AuditTab() {
   const { lang } = useApp();
-  const { audit, revertTo } = useOverrides();
+  const audit = useOverrides((s) => s.audit);
+  const revertTo = useOverrides((s) => s.revertTo);
+  const clearAudit = useOverrides((s) => s.clearAudit);
+  const [q, setQ] = useState('');
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+
   const doRevert = async (id: string) => {
     const ok = await confirmDialog({
       title: t('audit.revertTitle', lang), body: t('audit.revertBody', lang), icon: <IconUndo size={24} />,
-      confirmLabel: t('audit.revert', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr',
+      confirmLabel: t('audit.revert', lang), cancelLabel: t('a.cancel', lang), danger: true, dir,
     });
     if (ok) revertTo(id);
   };
-  const latest = audit.find((e) => e.before); // newest revertible entry
-  const anyRevertible = Boolean(latest);
+  const doClear = async () => {
+    if (await confirmDialog({ title: t('cl.clear', lang), body: t('cl.clearConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('cl.clear', lang), cancelLabel: t('a.cancel', lang), danger: true, dir })) clearAudit();
+  };
+  const doExport = () => {
+    const head = ['When', 'User', 'Action', 'Target', 'Details'].join(',');
+    const cell = (s: string) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const body = audit.map((e) => [new Date(e.at).toLocaleString(), e.actor ?? '', e.action, e.target ?? '', e.detail ?? ''].map(cell).join(','));
+    const blob = new Blob(['﻿' + [head, ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `kec-change-log-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  };
+
+  const query = q.trim().toLowerCase();
+  const rows = audit.filter((e) => !query || `${e.actor ?? ''} ${e.action} ${e.target ?? ''} ${e.detail ?? ''}`.toLowerCase().includes(query));
+  const people = new Set(audit.map((e) => e.actor).filter(Boolean)).size;
+  const today = new Date().toDateString();
+  const todayN = audit.filter((e) => new Date(e.at).toDateString() === today).length;
+  const latest = audit.find((e) => e.before);
+
   return (
-    <div className="undo-tab">
-      <div className="undo-head">
-        <div>
-          <div className="undo-title"><IconUndo size={16} /> {t('a.audit', lang)}</div>
-          <p className="undo-hint">{t('a.auditHint', lang)}</p>
-        </div>
-        {anyRevertible && <button className="btn danger undo-last" onClick={() => doRevert(latest!.id)}><IconUndo size={14} /> {t('a.undoLast', lang)}</button>}
+    <div className="clog">
+      <div className="clog-ttl">{t('a.audit', lang)}</div>
+      <p className="clog-sub">{t('a.auditHint', lang)}</p>
+      <div className="clog-bar">
+        <span className="clog-stat"><b>{audit.length}</b> {t('cl.changes', lang)}</span>
+        <span className="clog-stat"><b>{people}</b> {t('cl.people', lang)}</span>
+        <span className="clog-stat"><b>{todayN}</b> {t('cl.today', lang)}</span>
+        <span className="clog-sp" />
+        <input className="clog-q" placeholder={t('cl.filter', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
+        {latest && <button className="btn sm" onClick={() => doRevert(latest.id)}><IconUndo size={13} /> {t('a.undoLast', lang)}</button>}
+        {audit.length > 0 && <button className="btn sm" onClick={doExport}><IconExcel size={13} /> {t('cl.export', lang)}</button>}
+        {audit.length > 0 && <button className="btn sm danger" onClick={doClear}>{t('cl.clear', lang)}</button>}
       </div>
-      {!audit.length ? (
-        <div className="empty">{t('a.noEdits', lang)}</div>
+      {rows.length === 0 ? (
+        <div className="clog-empty">{audit.length ? t('cl.emptyFilter', lang) : t('cl.empty', lang)}</div>
       ) : (
-        <div className="table-scroll">
-          <table className="admin-table">
-            <thead><tr><th>{t('a.time', lang)}</th><th>{t('a.action', lang)}</th><th>{t('a.target', lang)}</th><th>{t('a.detail', lang)}</th><th></th></tr></thead>
-            <tbody>
-              {audit.map((e) => (
-                <tr key={e.id}>
-                  <td className="mono">{new Date(e.at).toLocaleString()}</td>
-                  <td>{e.action}</td>
-                  <td className="mono">{e.target ?? '—'}</td>
-                  <td className="dim">{e.detail}</td>
-                  <td>{e.before
-                    ? <button className="btn sm danger" onClick={() => doRevert(e.id)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>
-                    : <span className="undo-na">{t('audit.revertOlderNote', lang)}</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="clog-ol">
+          {rows.map((e) => {
+            const cat = auditCat(e.action);
+            return (
+              <li className="clog-o" key={e.id}>
+                <span className={`clog-tag ${cat}`}>{t(`cl.${cat}`, lang)}</span>
+                <span className="clog-t">
+                  <b>{e.target ?? e.action}</b>
+                  {e.detail && <span className="clog-dim"> · {e.detail}</span>}
+                </span>
+                <span className="clog-u" title={t('a.actor', lang)}>{e.actor ?? '—'}</span>
+                <span className="clog-when mono">{new Date(e.at).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                {e.before
+                  ? <button className="clog-ib dg" onClick={() => doRevert(e.id)} title={t('audit.revert', lang)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>
+                  : <span className="clog-old">{t('cl.olderNote', lang)}</span>}
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

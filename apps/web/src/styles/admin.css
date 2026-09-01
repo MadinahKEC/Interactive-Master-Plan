@@ -74,12 +74,31 @@
 .set-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--kec-hairline);border-radius:12px;padding:14px 16px;font-size:13.5px;color:var(--kec-ink)}
 .btn.danger{color:var(--kec-neg);border-color:var(--kec-neg);background:var(--card)}
 .empty{color:var(--kec-muted);font-size:13px;padding:30px;text-align:center}
-/* Undo / changes-history tab (administrator-only) */
-.undo-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
-.undo-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--kec-title)}
-.undo-hint{font-size:12px;color:var(--kec-muted);line-height:1.6;margin:5px 0 0;max-width:60ch}
-.undo-last{flex:none;display:inline-flex;align-items:center;gap:7px;margin-inline-start:auto;white-space:nowrap}
-.undo-na{font-size:11px;color:var(--kec-muted);opacity:.7}
+/* Change Log tab (administrator-only) — register-style list */
+.clog-ttl{font-size:15px;font-weight:700;color:var(--kec-title);margin-bottom:3px}
+.clog-sub{font-size:12px;color:var(--kec-muted);line-height:1.6;margin:0 0 14px;max-width:70ch}
+.clog-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--kec-muted);margin-bottom:14px}
+.clog-stat b{color:var(--kec-title);font-size:14px;font-family:var(--kec-num,inherit);margin-inline-end:3px}
+.clog-sp{flex:1}
+.clog-q{height:32px;min-width:220px;flex:1 1 220px;max-width:320px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:9px;padding:0 12px;font-size:12.5px;color:var(--kec-ink);outline:none}
+.clog-q:focus{border-color:var(--kec-green)}
+.clog-bar .btn.sm{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.clog-ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.clog-o{display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--kec-hairline);border-radius:9px;background:var(--card);transition:border-color .12s}
+.clog-o:hover{border-color:var(--kec-green-mid)}
+.clog-tag{flex:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid transparent;min-width:54px;text-align:center}
+.clog-tag.added{background:rgba(47,107,62,.12);color:var(--kec-green);border-color:rgba(47,107,62,.24)}
+.clog-tag.edited{background:rgba(154,138,30,.15);color:var(--kec-gold);border-color:rgba(154,138,30,.30)}
+.clog-tag.deleted{background:rgba(181,70,47,.10);color:var(--kec-neg);border-color:rgba(181,70,47,.30)}
+.clog-t{flex:1;min-width:0;font-size:12.5px;color:var(--kec-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clog-t b{color:var(--kec-title);font-weight:600}
+.clog-dim{color:var(--kec-muted);font-size:11.5px}
+.clog-u{flex:none;font-size:10px;color:var(--kec-muted);background:var(--kec-surface);border:1px solid var(--kec-hairline);padding:2px 8px;border-radius:20px}
+.clog-when{flex:none;font-size:10.5px;color:var(--kec-muted)}
+.clog-ib{flex:none;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;background:transparent;color:var(--kec-muted);cursor:pointer;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:600;transition:.12s}
+.clog-ib.dg:hover{background:rgba(181,70,47,.10);color:var(--kec-neg);border-color:rgba(181,70,47,.30)}
+.clog-old{flex:none;font-size:10px;color:var(--kec-muted);opacity:.6;padding-inline:6px}
+.clog-empty{font-size:12.5px;color:var(--kec-muted);text-align:center;padding:44px 10px}
 
 /* editor drawer */
 .editor-wrap{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.32);display:flex;justify-content:flex-start}
