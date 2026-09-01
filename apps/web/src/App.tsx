@@ -165,7 +165,7 @@ export default function App() {
         </button>
       )}
       <DetailPanel data={data} projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
-      {data && <MultiSelectPanel data={data} projects={projects} />}
+      {data && <MultiSelectPanel data={data} projects={projects} landUses={landUses} />}
       {data && <ShortlistBar data={data} projects={projects} landUses={landUses} />}
       <AnnotateToolbar />
       <ReportView data={data} landUses={landUses} projects={projects} />
