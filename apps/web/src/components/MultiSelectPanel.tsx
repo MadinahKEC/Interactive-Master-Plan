@@ -4,8 +4,9 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, estimatedElecLoadKva, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
-import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt } from './icons';
+import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt, IconPlots, IconRuler, IconBuilding, IconCube } from './icons';
 import type { EffLandUse } from '../lib/effective';
+import type { ReactNode } from 'react';
 
 const nf = new Intl.NumberFormat('en-US');
 const fmt = (x: number) => (x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : nf.format(Math.round(x)));
@@ -51,7 +52,6 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   });
   const luLabel = (k: string) => (k === '—' ? '—' : (lang === 'ar' ? landUses[k]?.labelAr : landUses[k]?.labelEn) ?? k);
   const luColor = (k: string) => landUses[k]?.color ?? '#C9C9C9';
-  const maxUseArea = Math.max(1, ...agg.useList.map((u) => u.area));
   const TOP = 5;
   const topUses = agg.useList.slice(0, TOP);
   const restUses = agg.useList.slice(TOP);
@@ -92,40 +92,40 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
       </div>
       <div className="m-agg">
         <div className="m-agg-title">{t('m.aggregate', lang)}</div>
-        <div className="m-elec">
-          <span className="m-elec-ic"><IconBolt size={16} /></span>
-          <div className="m-elec-body">
-            <div className="m-elec-l">{t('m.totalElec', lang)}</div>
-            <div className="m-elec-v mono">{fmt(agg.elec)} <em>kVA</em></div>
-          </div>
+        <div className="m-stats">
+          <MStat icon={<IconPlots size={15} />} v={fmt(multi.length)} l={t('m.selected', lang)} />
+          <MStat icon={<IconRuler size={15} />} v={fmt(agg.area)} l={t('m.totalArea', lang)} />
+          <MStat icon={<IconBuilding size={15} />} v={fmt(agg.gfa)} l={t('m.totalGfa', lang)} />
+          <MStat icon={<IconBolt size={15} />} v={fmt(agg.elec)} l={t('m.totalElec', lang)} />
+          <MStat icon={<IconCube size={15} />} v={agg.avgFar.toFixed(2)} l={t('m.avgFar', lang)} />
+          <MStat icon={<IconCalendar size={15} />} v={fmt(agg.planned)} l={t('m.inPlan', lang)} />
         </div>
-        <div className="m-kpis">
-          <div className="m-kpi"><span className="mono">{multi.length}</span><small>{t('m.selected', lang)}</small></div>
-          <div className="m-kpi"><span className="mono">{fmt(agg.area)}</span><small>{t('m.totalArea', lang)}</small></div>
-          <div className="m-kpi"><span className="mono">{fmt(agg.gfa)}</span><small>{t('m.totalGfa', lang)}</small></div>
-          <div className="m-kpi"><span className="mono">{agg.avgFar.toFixed(2)}</span><small>{t('m.avgFar', lang)}</small></div>
-          <div className="m-kpi"><span className="mono">{agg.useList.length}</span><small>{t('m.landUses', lang)}</small></div>
-          <div className="m-kpi"><span className="mono">{agg.planned}</span><small>{t('m.inPlan', lang)}</small></div>
-        </div>
-        {agg.useList.length > 0 && (
-          <div className="m-break">
+        {agg.useList.length > 0 && agg.area > 0 && (
+          <div className="m-comp">
             <div className="m-sub">{t('m.byUse', lang)}</div>
-            {topUses.map((u) => (
-              <div className="m-bk-row" key={u.key}>
-                <span className="m-sw" style={{ background: luColor(u.key) }} />
-                <span className="m-bk-name">{luLabel(u.key)}</span>
-                <span className="m-bk-ct mono">{u.count}</span>
-                <span className="m-bk-bar"><span style={{ width: `${(u.area / maxUseArea) * 100}%`, background: luColor(u.key) }} /></span>
-              </div>
-            ))}
-            {restUses.length > 0 && (
-              <div className="m-bk-row">
-                <span className="m-sw" style={{ background: 'var(--kec-muted)' }} />
-                <span className="m-bk-name">{t('m.otherUses', lang)} ({restUses.length})</span>
-                <span className="m-bk-ct mono">{restCount}</span>
-                <span className="m-bk-bar"><span style={{ width: `${(restArea / maxUseArea) * 100}%`, background: 'var(--kec-muted)' }} /></span>
-              </div>
-            )}
+            <div className="m-comp-bar">
+              {agg.useList.map((u) => (
+                <span key={u.key} style={{ width: `${(u.area / agg.area) * 100}%`, background: luColor(u.key) }} title={luLabel(u.key)} />
+              ))}
+            </div>
+            <div className="m-comp-legend">
+              {topUses.map((u) => (
+                <div className="m-cl" key={u.key}>
+                  <span className="m-sw" style={{ background: luColor(u.key) }} />
+                  <span className="m-cl-name">{luLabel(u.key)}</span>
+                  <span className="m-cl-ct mono">{u.count}</span>
+                  <span className="m-cl-pct mono">{Math.round((u.area / agg.area) * 100)}%</span>
+                </div>
+              ))}
+              {restUses.length > 0 && (
+                <div className="m-cl">
+                  <span className="m-sw" style={{ background: 'var(--kec-muted)' }} />
+                  <span className="m-cl-name">{t('m.otherUses', lang)} ({restUses.length})</span>
+                  <span className="m-cl-ct mono">{restCount}</span>
+                  <span className="m-cl-pct mono">{Math.round((restArea / agg.area) * 100)}%</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -143,6 +143,19 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
           <div className="m-merge-hint">{t('m.mergeHint', lang)}</div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Uniform premium stat tile — icon badge, value, label — used across the selection summary. */
+function MStat({ icon, v, l }: { icon: ReactNode; v: string; l: string }) {
+  return (
+    <div className="m-stat">
+      <span className="m-stat-ic">{icon}</span>
+      <div className="m-stat-body">
+        <div className="m-stat-v mono">{v}</div>
+        <div className="m-stat-l">{l}</div>
+      </div>
     </div>
   );
 }

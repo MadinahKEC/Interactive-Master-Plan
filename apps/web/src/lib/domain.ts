@@ -154,7 +154,7 @@ export const DICT: Record<string, Entry> = {
   'm.mergeHint':     { ar: 'دمج البلوت المحدّدة في وحدة ملكية واحدة', en: 'Merge selected plots into one ownership unit' },
   'm.clear':         { ar: 'مسح التحديد', en: 'Clear selection' },
   'm.aggregate':     { ar: 'ملخّص الأراضي المحدّدة', en: 'Selection summary' },
-  'm.totalElec':     { ar: 'إجمالي الحمولة الكهربائية المتوقعة', en: 'Total expected electrical load' },
+  'm.totalElec':     { ar: 'الحمولة الكهربائية (ك.ف.أ)', en: 'Electrical load (kVA)' },
   'm.avgFar':        { ar: 'متوسط FAR', en: 'Avg FAR' },
   'm.landUses':      { ar: 'الاستخدامات', en: 'Land uses' },
   'm.inPlan':        { ar: 'ضمن الخطة', en: 'In plan' },

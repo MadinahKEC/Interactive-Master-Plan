@@ -889,31 +889,31 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .m-name{flex:1;font-size:12px;color:var(--kec-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .m-area{font-size:11px;color:var(--kec-muted)}
 .m-row .mini-btn{padding:4px 7px;display:inline-flex;align-items:center}
-.m-agg{padding:12px 14px;border-top:1px solid var(--kec-hairline)}
-.m-agg-title{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
-/* hero stat: total expected electrical load */
-.m-elec{display:flex;align-items:center;gap:11px;background:linear-gradient(135deg,var(--kec-surface-2),var(--kec-surface));
-  border:1px solid var(--kec-hairline);border-radius:13px;padding:11px 13px;margin-bottom:10px}
-.m-elec-ic{width:34px;height:34px;flex:none;border-radius:10px;background:var(--card);border:1px solid var(--kec-hairline);
-  display:flex;align-items:center;justify-content:center;color:var(--kec-gold);box-shadow:0 1px 2px rgba(20,61,30,.08)}
-.m-elec-body{min-width:0}
-.m-elec-l{font-size:9.5px;font-weight:600;color:var(--kec-muted);letter-spacing:.03em;text-transform:uppercase;line-height:1.3}
-.m-elec-v{font-size:20px;font-weight:700;color:var(--kec-title);line-height:1.15}
-.m-elec-v em{font-style:normal;font-size:11px;font-weight:600;color:var(--kec-muted)}
-/* compact KPI grid */
-.m-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:7px}
-.m-kpi{background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:11px;padding:8px 8px;text-align:center}
-.m-kpi span{display:block;font-size:15px;font-weight:700;color:var(--kec-title);font-family:var(--kec-mono);line-height:1.15}
-.m-kpi small{font-size:9px;color:var(--kec-muted)}
-/* land-use breakdown */
-.m-break{margin-top:12px}
-.m-sub{font-size:9.5px;font-weight:700;color:var(--kec-muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:7px}
-.m-bk-row{display:grid;grid-template-columns:12px 1fr auto;grid-template-rows:auto auto;column-gap:8px;row-gap:4px;align-items:center;margin-bottom:7px}
-.m-sw{width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.14);grid-row:1}
-.m-bk-name{font-size:11.5px;color:var(--kec-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;grid-row:1}
-.m-bk-ct{font-size:11px;color:var(--kec-muted);grid-row:1;text-align:end}
-.m-bk-bar{grid-column:2/4;grid-row:2;height:5px;background:var(--kec-surface);border-radius:4px;overflow:hidden}
-.m-bk-bar>span{display:block;height:100%;border-radius:4px;opacity:.85}
+.m-agg{padding:14px;border-top:1px solid var(--kec-hairline)}
+.m-agg-title{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.08em;text-transform:uppercase;margin-bottom:11px}
+/* uniform premium stat tiles — every metric treated equally */
+.m-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.m-stat{display:flex;align-items:center;gap:10px;background:linear-gradient(158deg,var(--kec-surface),var(--kec-paper));
+  border:1px solid var(--kec-hairline);border-radius:13px;padding:10px 11px;min-width:0;transition:border-color .15s,box-shadow .15s}
+.m-stat:hover{border-color:var(--kec-green-mid);box-shadow:0 3px 12px rgba(20,61,30,.07)}
+.m-stat-ic{width:30px;height:30px;flex:none;border-radius:9px;background:var(--card);border:1px solid var(--kec-hairline);
+  display:flex;align-items:center;justify-content:center;color:var(--kec-green);box-shadow:0 1px 2px rgba(20,61,30,.06)}
+.m-stat-body{min-width:0}
+.m-stat-v{font-size:17px;font-weight:700;color:var(--kec-title);line-height:1.1}
+.m-stat-l{font-size:9px;font-weight:600;color:var(--kec-muted);letter-spacing:.02em;text-transform:uppercase;line-height:1.3;margin-top:2px;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* land-use area composition — one elegant stacked bar + legend */
+.m-comp{margin-top:16px}
+.m-sub{font-size:9.5px;font-weight:700;color:var(--kec-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:9px}
+.m-comp-bar{display:flex;height:14px;border-radius:8px;overflow:hidden;border:1px solid var(--kec-hairline);background:var(--kec-surface)}
+.m-comp-bar>span{height:100%;min-width:2px;transition:filter .15s}
+.m-comp-bar>span:hover{filter:brightness(1.08)}
+.m-comp-legend{display:flex;flex-direction:column;gap:6px;margin-top:11px}
+.m-cl{display:flex;align-items:center;gap:9px}
+.m-sw{width:11px;height:11px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.14)}
+.m-cl-name{flex:1;font-size:11.5px;color:var(--kec-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-cl-ct{font-size:11px;color:var(--kec-muted);min-width:20px;text-align:end}
+.m-cl-pct{font-size:11px;font-weight:700;color:var(--kec-title);min-width:34px;text-align:end}
 .m-actions{padding:10px 14px 4px;border-top:1px solid var(--kec-hairline);display:flex;flex-direction:column;gap:8px}
 .m-plan-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:7px}
 .m-merge{padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px}
@@ -1101,7 +1101,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .rp-kpi .v,.kpi .v,.dash-kpi .v,
 .d-tile-v,.ia-ring-n,.ia-fac-v,.ia-haram b,
 .fe-res-v,.fe-sens-v,.epr-v,.inv-v,
-.m-count b,.m-kpi span,.m-elec-v{
+.m-count b,.m-stat-v,.m-cl-pct{
   font-family:var(--kec-num);
   font-variant-numeric:tabular-nums;
   letter-spacing:0;
