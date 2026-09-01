@@ -109,7 +109,15 @@ export function DetailPanel({
     setProject(p.code, { phases: [{ name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' }] });
     onEdit(p.code);
   };
-  const removeFromPlan = () => setProject(p.code, { phases: [] });
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const removeFromPlan = async () => {
+    if (!(await confirmDialog({ title: t('d.removeFromPlan', lang), body: t('d.removeFromPlanConfirm', lang), icon: <IconCalendar size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir }))) return;
+    setProject(p.code, { phases: [] });
+  };
+  const doUnmerge = async () => {
+    if (!(await confirmDialog({ title: t('d.unmerge', lang), body: t('d.unmergeConfirm', lang), icon: <IconMerge size={24} />, confirmLabel: t('d.unmerge', lang), cancelLabel: t('a.cancel', lang), danger: true, dir }))) return;
+    if (mergeRec) { unmerge(mergeRec.id); fitAll(); }
+  };
 
   return (
     <div className="panel" id="detail" style={{ ['--dp-w' as string]: `${dpW}px` }}>
@@ -149,7 +157,7 @@ export function DetailPanel({
                   ))}
                 </ul>
               </div>
-              {canAttr && <button className="btn sm danger" onClick={() => { unmerge(mergeRec.id); fitAll(); }}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
+              {canAttr && <button className="btn sm danger" onClick={doUnmerge}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
             </div>
           )}
         </Section>
@@ -252,7 +260,7 @@ export function DetailPanel({
           {canAttr && <button className="btn primary" onClick={() => onEdit(p.code)}><IconEdit size={15} /> {t('d.editAttrs', lang)}</button>}
           {canGeom && <button className="btn icon-only" onClick={() => setEditGeom(p.code)} title={t('d.editShape', lang)}><IconShape size={15} /></button>}
           {canAttr && <button className="btn icon-only" onClick={() => onSubdivide(Object.keys(splits).find((par) => splits[par].some((pt) => pt.code === p.code)) ?? p.code)} title={t('d.subdivide', lang)}><IconSplit size={15} /></button>}
-          {canAttr && createdPlots[p.code] && <button className="btn icon-only danger" title={t('d.deletePlot', lang)} onClick={async () => { if (await confirmDialog({ title: t('d.deletePlot', lang), body: `${p.code}`, confirmLabel: t('d.deletePlot', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) { removeCreatedPlot(p.code); fitAll(); } }}><IconTrash size={15} /></button>}
+          {canAttr && createdPlots[p.code] && <button className="btn icon-only danger" title={t('d.deletePlot', lang)} onClick={async () => { if (await confirmDialog({ title: t('d.deletePlot', lang), body: <>{t('d.deletePlotConfirm', lang)} <b>{p.code}</b></>, icon: <IconTrash size={24} />, confirmLabel: t('d.deletePlot', lang), cancelLabel: t('a.cancel', lang), danger: true, dir })) { removeCreatedPlot(p.code); fitAll(); } }}><IconTrash size={15} /></button>}
           <button className="btn icon-only" onClick={() => requestZoom(p.code)} title={t('d.zoom', lang)}><IconZoom size={15} /></button>
         </div>
         </CardCtx.Provider>
@@ -388,7 +396,7 @@ function Comments({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
                 <span className="cm-avatar">{(c.author || '?').trim().charAt(0).toUpperCase()}</span>
                 <span className="cm-author">{c.author}</span>
                 <span className="cm-time">{rel(c.at)}</span>
-                {(isAdmin || c.author === author) && <button className="cm-del" title="×" onClick={() => removeComment(code, c.id)}>×</button>}
+                {(isAdmin || c.author === author) && <button className="cm-del" title={t('cm.delete', lang)} onClick={async () => { if (await confirmDialog({ title: t('cm.delete', lang), body: t('cm.deleteConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('cm.delete', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) removeComment(code, c.id); }}>×</button>}
               </div>
               <div className="cm-text">{c.text}</div>
             </div>

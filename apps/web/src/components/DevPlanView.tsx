@@ -4,7 +4,8 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, STATUS_META, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
-import { IconClose, IconPlus, IconZoom, IconEdit, IconTrash, TypeIcon } from './icons';
+import { IconClose, IconPlus, IconZoom, IconEdit, IconTrash, IconCalendar, TypeIcon } from './icons';
+import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
@@ -92,7 +93,7 @@ export function DevPlanView({
                   <span className="dpv-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
                   <button className="mini-btn" onClick={() => viewOnMap(p.code)}><IconZoom size={13} /> {t('dp.viewOnMap', lang)}</button>
                   {canEdit && <button className="mini-btn" onClick={() => onEdit(p.code)} title={t('d.editAttrs', lang)}><IconEdit size={13} /></button>}
-                  {canEdit && <button className="mini-btn danger" onClick={() => setProject(p.code, { phases: [] })} title={t('d.removeFromPlan', lang)}><IconTrash size={13} /></button>}
+                  {canEdit && <button className="mini-btn danger" onClick={async () => { if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{p.code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconCalendar size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(p.code, { phases: [] }); }} title={t('d.removeFromPlan', lang)}><IconTrash size={13} /></button>}
                 </div>
               </div>
 

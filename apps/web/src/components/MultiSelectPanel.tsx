@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, estimatedElecLoadKva, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
+import { useDialog, confirmDialog } from '../lib/dialog';
 import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt, IconPlots, IconRuler, IconBuilding, IconCube } from './icons';
 import type { EffLandUse } from '../lib/effective';
 import type { ReactNode } from 'react';
@@ -19,7 +20,6 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   const addPlotsToPlan = useOverrides((s) => s.addPlotsToPlan);
   const removePlotsFromPlan = useOverrides((s) => s.removePlotsFromPlan);
   const projOver = useOverrides((s) => s.projects);
-  const [owner, setOwner] = useState('');
   const byCode = useMemo(() => new Map(data.features.map((f) => [f.properties.code, f.properties])), [data]);
 
   // Aggregate richer stats across the selection (elegant summary of the chosen lands).
@@ -58,9 +58,28 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   const restCount = restUses.reduce((a, u) => a + u.count, 0);
   const restArea = restUses.reduce((a, u) => a + u.area, 0);
 
-  const doMerge = () => {
-    const id = mergePlots(multi, owner ? { owner } : {});
-    clearMulti(); setOwner('');
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const doMerge = async () => {
+    const codes = [...multi];
+    const r = await useDialog.getState().open({
+      title: t('m.mergeTitle', lang),
+      icon: <IconMerge size={24} />,
+      body: t('m.mergeBody', lang).replace('{n}', String(codes.length)),
+      dir,
+      fields: [
+        { key: 'name', label: t('m.mergeName', lang), value: '', placeholder: t('m.mergeNamePh', lang) },
+        { key: 'owner', label: t('a.owner', lang), value: '' },
+      ],
+      buttons: [
+        { label: t('a.cancel', lang), value: 'cancel' },
+        { label: t('m.merge', lang), value: 'ok', variant: 'primary' },
+      ],
+    });
+    if (r.value !== 'ok') return;
+    const name = (r.fields.name ?? '').trim();
+    const own = (r.fields.owner ?? '').trim();
+    const id = mergePlots(codes, { ...(own ? { owner: own } : {}), ...(name ? { name_ar: name, name_en: name } : {}) });
+    clearMulti();
     setTimeout(() => requestZoom(id), 60);
   };
   const inPlanCount = multi.filter((c) => (projOver[c]?.phases?.length ?? 0) > 0).length;
@@ -70,7 +89,10 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
     addPlotsToPlan(multi, { name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' });
     clearMulti();
   };
-  const doRemoveFromPlan = () => { removePlotsFromPlan(multi); clearMulti(); };
+  const doRemoveFromPlan = async () => {
+    if (!(await confirmDialog({ title: t('m.removeFromPlan', lang), body: t('m.removeFromPlanConfirm', lang), icon: <IconCalendar size={24} />, confirmLabel: t('m.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir }))) return;
+    removePlotsFromPlan(multi); clearMulti();
+  };
 
   return (
     <div className="panel" id="multi">
@@ -138,7 +160,6 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
       )}
       {multi.length >= 2 && canMerge && (
         <div className="m-merge">
-          <input placeholder={t('a.owner', lang)} value={owner} onChange={(e) => setOwner(e.target.value)} />
           <button className="btn primary" onClick={doMerge}><IconMerge size={15} /> {t('m.merge', lang)}</button>
           <div className="m-merge-hint">{t('m.mergeHint', lang)}</div>
         </div>

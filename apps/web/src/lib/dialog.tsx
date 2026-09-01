@@ -2,11 +2,12 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { IconClose } from '../components/icons';
 
-export interface DialogField { key: string; label: string; value: string | number; type?: 'number' | 'text' | 'color'; suffix?: string }
+export interface DialogField { key: string; label: string; value: string | number; type?: 'number' | 'text' | 'color'; suffix?: string; placeholder?: string }
 export interface DialogButton { label: string; value: string; variant?: 'primary' | 'danger' | 'default' }
 export interface DialogSpec {
   title: string;
   body?: ReactNode;
+  icon?: ReactNode;
   fields?: DialogField[];
   buttons: DialogButton[];
   tone?: 'default' | 'danger';
@@ -29,10 +30,11 @@ export const useDialog = create<DState>((set, get) => ({
 }));
 
 /** Convenience themed confirm. Resolves true when the confirm button is pressed. */
-export async function confirmDialog(opts: { title: string; body?: ReactNode; confirmLabel: string; cancelLabel: string; danger?: boolean; dir?: 'rtl' | 'ltr' }): Promise<boolean> {
+export async function confirmDialog(opts: { title: string; body?: ReactNode; icon?: ReactNode; confirmLabel: string; cancelLabel: string; danger?: boolean; dir?: 'rtl' | 'ltr' }): Promise<boolean> {
   const r = await useDialog.getState().open({
     title: opts.title,
     body: opts.body,
+    icon: opts.icon,
     tone: opts.danger ? 'danger' : 'default',
     dir: opts.dir,
     buttons: [
@@ -41,6 +43,25 @@ export async function confirmDialog(opts: { title: string; body?: ReactNode; con
     ],
   });
   return r.value === 'ok';
+}
+
+/** Convenience themed prompt for a single text value. Resolves the trimmed value, or null on cancel. */
+export async function promptDialog(opts: {
+  title: string; body?: ReactNode; icon?: ReactNode; label: string; placeholder?: string; value?: string;
+  confirmLabel: string; cancelLabel: string; dir?: 'rtl' | 'ltr';
+}): Promise<string | null> {
+  const r = await useDialog.getState().open({
+    title: opts.title,
+    body: opts.body,
+    icon: opts.icon,
+    dir: opts.dir,
+    fields: [{ key: 'value', label: opts.label, value: opts.value ?? '', placeholder: opts.placeholder }],
+    buttons: [
+      { label: opts.cancelLabel, value: 'cancel' },
+      { label: opts.confirmLabel, value: 'ok', variant: 'primary' },
+    ],
+  });
+  return r.value === 'ok' ? (r.fields.value ?? '').trim() : null;
 }
 
 export function DialogHost() {
@@ -61,15 +82,15 @@ export function DialogHost() {
 
   if (!spec) return null;
   const done = (value: string | null) => close({ value, fields: { ...vals } });
+  const confirmValue = spec.buttons.find((b) => b.variant === 'primary' || b.variant === 'danger')?.value ?? null;
 
   return (
     <div className="modal-wrap dlg-wrap" onClick={() => done(null)}>
       <div className={`modal dlg ${spec.tone === 'danger' ? 'dlg-danger' : ''}`} dir={spec.dir ?? 'rtl'} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <b>{spec.title}</b>
-          <button className="ic-btn" onClick={() => done(null)}><IconClose size={17} /></button>
-        </div>
-        <div className="modal-body dlg-body">
+        <button className="dlg-x" onClick={() => done(null)} aria-label="close"><IconClose size={16} /></button>
+        <div className="dlg-main">
+          {spec.icon && <div className="dlg-icon">{spec.icon}</div>}
+          <div className="dlg-title">{spec.title}</div>
           {spec.body && <div className="dlg-text">{spec.body}</div>}
           {spec.fields && spec.fields.length > 0 && (
             <div className="dlg-fields">
@@ -79,8 +100,11 @@ export function DialogHost() {
                   <div className={`dlg-input ${f.type === 'color' ? 'dlg-input-color' : ''}`}>
                     <input
                       type={f.type ?? 'text'}
+                      autoFocus={spec.fields![0].key === f.key}
+                      placeholder={f.placeholder}
                       value={vals[f.key] ?? ''}
                       onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && confirmValue) done(confirmValue); }}
                     />
                     {f.type === 'color' && <em className="mono">{vals[f.key] ?? ''}</em>}
                     {f.suffix && <em>{f.suffix}</em>}

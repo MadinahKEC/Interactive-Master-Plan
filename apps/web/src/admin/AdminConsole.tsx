@@ -8,7 +8,7 @@ import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { Chart } from './Chart';
 import { PlotEditor } from './PlotEditor';
-import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock } from '../components/icons';
+import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash } from '../components/icons';
 
 type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: { id: Tab; Icon: (p: { size?: number }) => JSX.Element }[] = [
@@ -229,7 +229,7 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
     setNu({ ar: '', en: '', color: '#2F6B3E' });
   };
   const removeOne = async (k: string) => {
-    if (await confirmDialog({ title: t('a.remove', lang), body: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn, confirmLabel: t('a.remove', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) removeLandUse(k);
+    if (await confirmDialog({ title: t('a.remove', lang), body: <b>{lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}</b>, icon: <IconTrash size={24} />, confirmLabel: t('a.remove', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) removeLandUse(k);
   };
   return (
     <div className="tab-lu">
@@ -318,7 +318,7 @@ function UsersTab() {
                   {['administrator', 'editor', 'contributor', 'viewer'].map((r) => <option key={r} value={r}>{t(`role.${r}`, lang)}</option>)}
                 </select></td>
                 <td><input type="checkbox" checked={u.active} disabled={u.email === SUPER_ADMIN_EMAIL} onChange={(e) => updateUser(u.id, { active: e.target.checked })} /></td>
-                <td>{u.email !== SUPER_ADMIN_EMAIL && <button className="mini-btn danger" onClick={() => removeUser(u.id)}>{t('a.remove', lang)}</button>}</td>
+                <td>{u.email !== SUPER_ADMIN_EMAIL && <button className="mini-btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.removeUser', lang), body: <><b>{u.name || u.email}</b> — {t('a.removeUserConfirm', lang)}</>, icon: <IconTrash size={24} />, confirmLabel: t('a.removeUser', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) removeUser(u.id); }}>{t('a.remove', lang)}</button>}</td>
               </tr>
             ))}
           </tbody>
@@ -393,7 +393,7 @@ function AuditTab() {
   if (!audit.length) return <div className="empty">{t('a.noEdits', lang)}</div>;
   const doRevert = async (id: string) => {
     const ok = await confirmDialog({
-      title: t('audit.revertTitle', lang), body: t('audit.revertBody', lang),
+      title: t('audit.revertTitle', lang), body: t('audit.revertBody', lang), icon: <IconUndo size={24} />,
       confirmLabel: t('audit.revert', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr',
     });
     if (ok) revertTo(id);
@@ -455,7 +455,7 @@ function SettingsTab({ data, projects }: { data: PlotCollection | null; projects
       <div className="set-row"><span>{t('a.excel', lang)}</span><button className="btn primary" onClick={doExcel}><IconExcel size={15} /> {t('a.excel', lang)} ({data?.features.length ?? 0})</button></div>
       <div className="set-row"><span>{t('a.export', lang)}</span><button className="btn" onClick={doExport}>⬇ {t('a.export', lang)}</button></div>
       <div className="set-row"><span>{t('a.import', lang)}</span><label className="btn">⬆ {t('a.import', lang)}<input type="file" accept="application/json" hidden onChange={doImport} /></label></div>
-      <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button></div>
+      <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button></div>
     </div>
   );
 }
