@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SECTORS, LAND_USES, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
+import { useAuth } from '../lib/auth';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary, watchAccessLog, type AccessSession } from '../lib/firebase';
 import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
@@ -23,6 +24,9 @@ export function AdminConsole({
   data: PlotCollection | null; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>;
 }) {
   const { lang } = useApp();
+  const role = useAuth((s) => s.user?.role);
+  const isAdmin = role === 'administrator';
+  const tabs = TABS.filter((x) => x.id !== 'audit' || isAdmin); // undo/history is administrator-only
   const [tab, setTab] = useState<Tab>('dashboard');
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -39,7 +43,7 @@ export function AdminConsole({
       </div>
       <div className="admin-main">
         <nav className="admin-nav">
-          {TABS.map((x) => (
+          {tabs.map((x) => (
             <button key={x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>
               <span className="ni"><x.Icon size={18} /></span>{t(`a.${x.id}`, lang)}
             </button>
@@ -52,7 +56,7 @@ export function AdminConsole({
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
           {tab === 'users' && <UsersTab />}
           {tab === 'access' && <AccessLogTab />}
-          {tab === 'audit' && <AuditTab />}
+          {tab === 'audit' && isAdmin && <AuditTab />}
           {tab === 'settings' && <SettingsTab data={data} projects={projects} />}
         </section>
       </div>
@@ -390,7 +394,6 @@ function AccessLogTab() {
 function AuditTab() {
   const { lang } = useApp();
   const { audit, revertTo } = useOverrides();
-  if (!audit.length) return <div className="empty">{t('a.noEdits', lang)}</div>;
   const doRevert = async (id: string) => {
     const ok = await confirmDialog({
       title: t('audit.revertTitle', lang), body: t('audit.revertBody', lang), icon: <IconUndo size={24} />,
@@ -398,22 +401,39 @@ function AuditTab() {
     });
     if (ok) revertTo(id);
   };
+  const latest = audit.find((e) => e.before); // newest revertible entry
+  const anyRevertible = Boolean(latest);
   return (
-    <div className="table-scroll">
-      <table className="admin-table">
-        <thead><tr><th>{t('a.time', lang)}</th><th>{t('a.action', lang)}</th><th>{t('a.target', lang)}</th><th>{t('a.detail', lang)}</th><th></th></tr></thead>
-        <tbody>
-          {audit.map((e) => (
-            <tr key={e.id}>
-              <td className="mono">{new Date(e.at).toLocaleString()}</td>
-              <td>{e.action}</td>
-              <td className="mono">{e.target ?? '—'}</td>
-              <td className="dim">{e.detail}</td>
-              <td>{e.before && <button className="btn sm danger" onClick={() => doRevert(e.id)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="undo-tab">
+      <div className="undo-head">
+        <div>
+          <div className="undo-title"><IconUndo size={16} /> {t('a.audit', lang)}</div>
+          <p className="undo-hint">{t('a.auditHint', lang)}</p>
+        </div>
+        {anyRevertible && <button className="btn danger undo-last" onClick={() => doRevert(latest!.id)}><IconUndo size={14} /> {t('a.undoLast', lang)}</button>}
+      </div>
+      {!audit.length ? (
+        <div className="empty">{t('a.noEdits', lang)}</div>
+      ) : (
+        <div className="table-scroll">
+          <table className="admin-table">
+            <thead><tr><th>{t('a.time', lang)}</th><th>{t('a.action', lang)}</th><th>{t('a.target', lang)}</th><th>{t('a.detail', lang)}</th><th></th></tr></thead>
+            <tbody>
+              {audit.map((e) => (
+                <tr key={e.id}>
+                  <td className="mono">{new Date(e.at).toLocaleString()}</td>
+                  <td>{e.action}</td>
+                  <td className="mono">{e.target ?? '—'}</td>
+                  <td className="dim">{e.detail}</td>
+                  <td>{e.before
+                    ? <button className="btn sm danger" onClick={() => doRevert(e.id)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>
+                    : <span className="undo-na">{t('audit.revertOlderNote', lang)}</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
