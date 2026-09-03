@@ -11,11 +11,28 @@ import { Chart } from './Chart';
 import { PlotEditor } from './PlotEditor';
 import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
 
-type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'backups' | 'settings';
-const TABS: { id: Tab; Icon: (p: { size?: number }) => JSX.Element }[] = [
-  { id: 'dashboard', Icon: IconDashboard }, { id: 'plots', Icon: IconPlots }, { id: 'devplan', Icon: IconCalendar },
-  { id: 'landuses', Icon: IconPalette }, { id: 'users', Icon: IconUsers }, { id: 'access', Icon: IconClock }, { id: 'audit', Icon: IconAudit }, { id: 'backups', Icon: IconDownload }, { id: 'settings', Icon: IconSettings },
+type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
+const TABS: Record<Tab, (p: { size?: number }) => JSX.Element> = {
+  dashboard: IconDashboard, plots: IconPlots, devplan: IconCalendar, landuses: IconPalette,
+  users: IconUsers, access: IconClock, audit: IconAudit, settings: IconSettings,
+};
+// Grouped, labelled navigation for a cleaner, more professional console.
+const NAV_GROUPS: { label?: string; ids: Tab[]; adminOnly?: Tab[] }[] = [
+  { ids: ['dashboard'] },
+  { label: 'a.grpData', ids: ['plots', 'devplan', 'landuses'] },
+  { label: 'a.grpAdmin', ids: ['users', 'access', 'audit'], adminOnly: ['audit'] },
+  { label: 'a.grpSystem', ids: ['settings'] },
 ];
+
+/**
+ * Google-Drive backup web app (deployed Apps Script). Same pattern as the Investor
+ * Registration Log: set once here, kept out of the UI. Leave `url` blank to hide the
+ * in-app restore browser (the file-based Import/Export still works either way).
+ */
+const BACKUP_WEBAPP = {
+  url: 'https://script.google.com/macros/s/AKfycbybkJa7wawyzyp9hMC6I-jf6ZygAGSmuxP5EBhTNrnKb0TPPviDBkugrT_wNEsgkIEHGw/exec',
+  token: 'kec-bk-9f3Kd82m',
+};
 
 export function AdminConsole({
   open, onClose, editCode, data, projects, landUses,
@@ -26,7 +43,6 @@ export function AdminConsole({
   const { lang } = useApp();
   const role = useAuth((s) => s.user?.role);
   const isAdmin = role === 'administrator';
-  const tabs = TABS.filter((x) => (x.id !== 'audit' && x.id !== 'backups') || isAdmin); // change-log & backups are administrator-only
   const [tab, setTab] = useState<Tab>('dashboard');
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -43,11 +59,20 @@ export function AdminConsole({
       </div>
       <div className="admin-main">
         <nav className="admin-nav">
-          {tabs.map((x) => (
-            <button key={x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>
-              <span className="ni"><x.Icon size={18} /></span>{t(`a.${x.id}`, lang)}
-            </button>
-          ))}
+          {NAV_GROUPS.map((g, i) => {
+            const ids = g.ids.filter((id) => !(g.adminOnly?.includes(id)) || isAdmin);
+            if (!ids.length) return null;
+            return (
+              <div className="nav-grp" key={i}>
+                {g.label && <div className="nav-grp-l">{t(g.label, lang)}</div>}
+                {ids.map((id) => { const Icon = TABS[id]; return (
+                  <button key={id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
+                    <span className="ni"><Icon size={18} /></span>{t(`a.${id}`, lang)}
+                  </button>
+                ); })}
+              </div>
+            );
+          })}
         </nav>
         <section className="admin-content">
           {tab === 'dashboard' && <Dashboard data={data} projects={projects} landUses={landUses} />}
@@ -57,8 +82,7 @@ export function AdminConsole({
           {tab === 'users' && <UsersTab />}
           {tab === 'access' && <AccessLogTab />}
           {tab === 'audit' && isAdmin && <AuditTab />}
-          {tab === 'backups' && isAdmin && <BackupsTab />}
-          {tab === 'settings' && <SettingsTab data={data} projects={projects} />}
+          {tab === 'settings' && <SettingsTab data={data} projects={projects} isAdmin={isAdmin} />}
         </section>
       </div>
       {editing && <PlotEditor code={editing} data={data} projects={projects} landUses={landUses} onClose={() => setEditing(null)} />}
@@ -473,36 +497,27 @@ function AuditTab() {
   );
 }
 
-/* ---------------- Backups (Google Drive) ---------------- */
+/* ---------------- Drive restore (inside Settings) ---------------- */
 type BackupFile = { id: string; name: string; date: string; size: number };
-function BackupsTab() {
+function DriveRestore() {
   const { lang } = useApp();
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
-  const saved = (() => { try { return JSON.parse(localStorage.getItem('kec_backup_cfg') || '{}'); } catch { return {}; } })();
-  const [url, setUrl] = useState<string>(saved.url || '');
-  const [token, setToken] = useState<string>(saved.token || '');
+  const [open, setOpen] = useState(false);
   const [files, setFiles] = useState<BackupFile[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  const api = (u: string, tk: string, params: string) =>
-    fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'token=' + encodeURIComponent(tk) + '&' + params).then((r) => r.json());
+  const api = (params: string) =>
+    fetch(BACKUP_WEBAPP.url + (BACKUP_WEBAPP.url.indexOf('?') < 0 ? '?' : '&') + 'token=' + encodeURIComponent(BACKUP_WEBAPP.token) + '&' + params).then((r) => r.json());
 
-  const load = async (u = url, tk = token) => {
-    if (!u.trim()) { setErr(t('bk.needConfig', lang)); return; }
+  const load = async () => {
     setBusy(true); setErr(''); setFiles(null);
     try {
-      const res = await api(u.trim(), tk.trim(), 'action=list');
-      if (res.error) setErr(res.error === 'unauthorized' ? t('bk.err', lang) : String(res.error));
-      else setFiles(res.files || []);
+      const res = await api('action=list');
+      if (res.error) setErr(t('bk.err', lang)); else setFiles(res.files || []);
     } catch { setErr(t('bk.err', lang)); } finally { setBusy(false); }
   };
-  const connect = () => {
-    const cfg = { url: url.trim(), token: token.trim() };
-    try { localStorage.setItem('kec_backup_cfg', JSON.stringify(cfg)); } catch { /* */ }
-    load(cfg.url, cfg.token);
-  };
-  useEffect(() => { if (saved.url) load(saved.url, saved.token || ''); /* eslint-disable-next-line */ }, []);
+  const toggle = () => { const n = !open; setOpen(n); if (n && !files) load(); };
 
   const fmtDate = (d: string) => {
     const p = d.split('-'); if (p.length !== 3) return d;
@@ -519,47 +534,47 @@ function BackupsTab() {
     if (!ok) return;
     setBusy(true); setErr('');
     try {
-      const res = await api(url.trim(), token.trim(), 'action=get&id=' + encodeURIComponent(f.id));
+      const res = await api('action=get&id=' + encodeURIComponent(f.id));
       if (res.error || !res.content) throw new Error(res.error || 'no content');
-      const payload = JSON.parse(res.content);
-      await restoreFromBackup(payload.docs || {});
+      await restoreFromBackup(JSON.parse(res.content).docs || {});
       setTimeout(() => window.location.reload(), 600);
     } catch { setErr(t('bk.err', lang)); setBusy(false); }
   };
 
+  if (!BACKUP_WEBAPP.url) return null;
   return (
-    <div className="clog">
-      <div className="clog-ttl">{t('a.backups', lang)}</div>
-      <p className="clog-sub">{t('bk.hint', lang)}</p>
-      <div className="bk-cfg">
-        <label className="field"><span>{t('bk.webUrl', lang)}</span>
-          <input value={url} placeholder="https://script.google.com/macros/s/…/exec" onChange={(e) => setUrl(e.target.value)} /></label>
-        <label className="field"><span>{t('bk.token', lang)}</span>
-          <input value={token} onChange={(e) => setToken(e.target.value)} /></label>
-        <button className="btn primary bk-connect" onClick={connect} disabled={busy}><IconDownload size={14} /> {t('bk.connect', lang)}</button>
+    <div className="set-row set-row--col">
+      <div className="set-row__head">
+        <span>{t('bk.restoreTitle', lang)}</span>
+        <button className="btn" onClick={toggle}><IconDownload size={14} /> {open ? t('bk.hideList', lang) : t('bk.browse', lang)}</button>
       </div>
-      {err && <div className="clog-empty" style={{ color: 'var(--kec-neg)' }}>{err}</div>}
-      {busy && !files && <div className="clog-empty">{t('bk.loading', lang)}</div>}
-      {files && files.length === 0 && <div className="clog-empty">{t('bk.none', lang)}</div>}
-      {files && files.length > 0 && (
-        <ul className="clog-ol">
-          {files.map((f) => (
-            <li className="clog-o" key={f.id}>
-              {f.date === new Date().toISOString().slice(0, 10)
-                ? <span className="clog-tag added">{t('cl.today', lang)}</span>
-                : <span className="bk-dot" />}
-              <span className="clog-t"><b>{fmtDate(f.date)}</b> <span className="clog-dim">· {fmtSize(f.size)}</span></span>
-              <button className="clog-ib dg" disabled={busy} onClick={() => doRestore(f)}><IconUndo size={13} /> {t('bk.restore', lang)}</button>
-            </li>
-          ))}
-        </ul>
+      {open && (
+        <div className="bk-list">
+          <div className="bk-note">{t('bk.hint', lang)}</div>
+          {err && <div className="clog-empty" style={{ color: 'var(--kec-neg)' }}>{err}</div>}
+          {busy && !files && <div className="clog-empty">{t('bk.loading', lang)}</div>}
+          {files && files.length === 0 && <div className="clog-empty">{t('bk.none', lang)}</div>}
+          {files && files.length > 0 && (
+            <ul className="clog-ol">
+              {files.map((f) => (
+                <li className="clog-o" key={f.id}>
+                  {f.date === new Date().toISOString().slice(0, 10)
+                    ? <span className="clog-tag added">{t('cl.today', lang)}</span>
+                    : <span className="bk-dot" />}
+                  <span className="clog-t"><b>{fmtDate(f.date)}</b> <span className="clog-dim">· {fmtSize(f.size)}</span></span>
+                  <button className="clog-ib dg" disabled={busy} onClick={() => doRestore(f)}><IconUndo size={13} /> {t('bk.restore', lang)}</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
 /* ---------------- Settings ---------------- */
-function SettingsTab({ data, projects }: { data: PlotCollection | null; projects: Record<string, ProjectInfo> }) {
+function SettingsTab({ data, projects, isAdmin }: { data: PlotCollection | null; projects: Record<string, ProjectInfo>; isAdmin: boolean }) {
   const { lang, toggleLang } = useApp();
   const { exportAll, importAll, reset } = useOverrides();
   const doExport = () => {
@@ -590,12 +605,20 @@ function SettingsTab({ data, projects }: { data: PlotCollection | null; projects
   };
   return (
     <div className="tab-settings">
+      <div className="set-sec">{t('a.grpGeneral', lang)}</div>
       <div className="set-row"><span>اللغة / Language</span>
         <button className="btn" onClick={toggleLang}>{lang === 'ar' ? 'English' : 'العربية'}</button></div>
+
+      <div className="set-sec">{t('a.grpBackup', lang)}</div>
       <div className="set-row"><span>{t('a.excel', lang)}</span><button className="btn primary" onClick={doExcel}><IconExcel size={15} /> {t('a.excel', lang)} ({data?.features.length ?? 0})</button></div>
       <div className="set-row"><span>{t('a.export', lang)}</span><button className="btn" onClick={doExport}>⬇ {t('a.export', lang)}</button></div>
       <div className="set-row"><span>{t('a.import', lang)}</span><label className="btn">⬆ {t('a.import', lang)}<input type="file" accept="application/json" hidden onChange={doImport} /></label></div>
-      <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button></div>
+      {isAdmin && <DriveRestore />}
+
+      {isAdmin && <>
+        <div className="set-sec set-sec--danger">{t('a.grpDanger', lang)}</div>
+        <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button></div>
+      </>}
     </div>
   );
 }
