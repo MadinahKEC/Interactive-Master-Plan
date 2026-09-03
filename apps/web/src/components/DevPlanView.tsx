@@ -9,6 +9,8 @@ import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 
 const nf = new Intl.NumberFormat('en-US');
+const compact = (v: number) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : v >= 1e3 ? (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : nf.format(Math.round(v)));
+const PLAN_STATUSES = ['Completed', 'UnderConstruction', 'Future', 'Partner'];
 
 export function DevPlanView({
   open, onClose, data, projects, landUses, onEdit,
@@ -22,10 +24,25 @@ export function DevPlanView({
   const setProject = useOverrides((s) => s.setProject);
   const [addCode, setAddCode] = useState('');
   const [notFound, setNotFound] = useState(false);
+  const [filter, setFilter] = useState<string | null>(null);
+  const sar = lang === 'ar' ? 'ر.س' : 'SAR';
 
   const planned = useMemo(
     () => (data ? data.features.filter((f) => (projects[f.properties.code]?.phases?.length ?? 0) > 0) : []),
     [data, projects],
+  );
+  const stats = useMemo(() => {
+    let area = 0, gfa = 0, invest = 0; const byStatus: Record<string, number> = {};
+    for (const f of planned) {
+      const p = f.properties; const pr = resolveProject(p.code, p.land_use, projects);
+      area += p.area || 0; gfa += p.gfa || 0; invest += projects[p.code]?.investment?.totalValue || 0;
+      byStatus[pr.status.key] = (byStatus[pr.status.key] || 0) + 1;
+    }
+    return { area, gfa, invest, byStatus };
+  }, [planned, projects]);
+  const shown = useMemo(
+    () => (filter ? planned.filter((f) => resolveProject(f.properties.code, f.properties.land_use, projects).status.key === filter) : planned),
+    [planned, filter, projects],
   );
   const times = planned.flatMap((f) => (projects[f.properties.code].phases ?? []).filter((p) => p.start && p.end).flatMap((p) => [new Date(p.start!).getTime(), new Date(p.end!).getTime()]));
   const min = times.length ? Math.min(...times) : 0;
@@ -72,15 +89,37 @@ export function DevPlanView({
         </div>
       )}
 
+      {planned.length > 0 && (
+        <div className="dpv-summary">
+          <div className="dpv-kpis">
+            <div className="dpv-kpi"><span className="dk-v">{planned.length}</span><span className="dk-l">{t('dp.count', lang)}</span></div>
+            <div className="dpv-kpi"><span className="dk-v">{compact(stats.area)}</span><span className="dk-l">{t('kpi.area', lang)} (m²)</span></div>
+            <div className="dpv-kpi"><span className="dk-v">{compact(stats.gfa)}</span><span className="dk-l">{t('kpi.gfa', lang)} (m²)</span></div>
+            {stats.invest > 0 && <div className="dpv-kpi accent"><span className="dk-v">{compact(stats.invest)} {sar}</span><span className="dk-l">{t('exec.portfolio', lang)}</span></div>}
+          </div>
+          <div className="dpv-filters">
+            <button className={`dpf ${!filter ? 'on' : ''}`} onClick={() => setFilter(null)}>{t('cp.all', lang)}</button>
+            {PLAN_STATUSES.filter((k) => stats.byStatus[k]).map((k) => {
+              const on = filter === k; const m = STATUS_META[k];
+              return (
+                <button key={k} className={`dpf ${on ? 'on' : ''}`} style={on ? { background: m.color, borderColor: m.color, color: '#fff' } : { borderColor: m.color }} onClick={() => setFilter(on ? null : k)}>
+                  <span className="dpf-dot" style={{ background: m.color }} />{lang === 'ar' ? m.ar : m.en} <b>{stats.byStatus[k]}</b>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="admin-content">
         {planned.length === 0 && <div className="empty">{t('dp.noPlan', lang)}</div>}
-        {planned.map((f) => {
+        {shown.map((f) => {
           const p = f.properties;
           const pr = resolveProject(p.code, p.land_use, projects);
           const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : p.code;
           const lu = landUses[p.land_use as string];
           return (
-            <div className="dpv-card" key={p.code}>
+            <div className="dpv-card" key={p.code} style={{ ['--st' as string]: pr.status.color }}>
               <div className="dpv-head">
                 <div className="dpv-title">
                   <span className="dpv-ic"><TypeIcon typeKey={pr.type.key} size={18} /></span>

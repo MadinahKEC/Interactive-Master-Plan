@@ -176,7 +176,23 @@
 .dp-addbar .btn{display:flex;align-items:center;gap:6px}
 .dp-nf{font-size:12px;color:var(--kec-neg)}
 .devplan-view .admin-content{display:flex;flex-direction:column;gap:14px}
-.dpv-card{background:var(--card);border:1px solid var(--kec-hairline);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);max-width:1000px}
+/* premium plan summary ribbon + status filters */
+.dpv-summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:14px 26px;border-bottom:1px solid var(--kec-hairline);background:linear-gradient(180deg,var(--kec-surface),transparent);flex:none}
+.dpv-kpis{display:flex;gap:10px;flex-wrap:wrap}
+.dpv-kpi{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:12px;padding:9px 16px;min-width:96px}
+.dpv-kpi.accent{background:linear-gradient(160deg,var(--card),#F6F1DC);border-color:#E4D9A8}
+.dk-v{font-family:var(--kec-num,'IBM Plex Mono',monospace);font-size:20px;font-weight:700;color:var(--kec-green-deep);line-height:1.1;font-variant-numeric:tabular-nums}
+.dpv-kpi.accent .dk-v{color:#8A7A16}
+.dk-l{font-size:10px;font-weight:600;color:var(--kec-muted);letter-spacing:.02em}
+.dpv-filters{display:flex;gap:7px;flex-wrap:wrap}
+.dpf{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--kec-ink);background:var(--card);border:1px solid var(--kec-hairline);border-radius:20px;padding:6px 13px;cursor:pointer;transition:.15s}
+.dpf:hover{border-color:var(--kec-green-mid)}
+.dpf.on{color:#fff}
+.dpf-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dpf b{font-family:var(--kec-num,monospace);font-weight:700;opacity:.85}
+.dpf.on .dpf-dot{background:#fff!important}
+.dpv-card{background:var(--card);border:1px solid var(--kec-hairline);border-inline-start:4px solid var(--st,var(--kec-green));border-radius:16px;padding:16px 18px;box-shadow:var(--shadow);max-width:1000px;transition:box-shadow .15s}
+.dpv-card:hover{box-shadow:0 8px 26px rgba(20,61,30,.10)}
 .dpv-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
 .dpv-title{display:flex;align-items:center;gap:12px}
 .dpv-ic{width:42px;height:42px;border-radius:12px;background:var(--kec-surface-2);color:var(--kec-title);display:flex;align-items:center;justify-content:center;flex:none}
