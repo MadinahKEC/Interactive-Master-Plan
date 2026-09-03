@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapView } from './map/MapView';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
@@ -148,21 +148,18 @@ export default function App() {
 
   const openAdmin = (code?: string) => { setEditCode(code ?? null); setAdminOpen(true); };
 
-  // Branded "entering" splash: a short, deliberate loading moment right after sign-in
-  // (and on first entry) so the app feels like it's opening, not snapping to the map.
-  const [entering, setEntering] = useState(false);
-  const prevStatus = useRef(status);
+  // One-time branded splash: it stays up continuously from first paint until the app is
+  // truly ready (signed in + data loaded), then latches off for good. Latching avoids the
+  // flicker of the map peeking through for a frame before a second "loading" pass.
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (prevStatus.current !== 'in' && status === 'in') {
-      setEntering(true);
-      const id = setTimeout(() => setEntering(false), 900);
-      prevStatus.current = status;
+    if (ready || status === 'out') return;
+    if (status === 'in' && baseData && !error) {
+      const id = setTimeout(() => setReady(true), 350); // one short, deliberate beat
       return () => clearTimeout(id);
     }
-    prevStatus.current = status;
-  }, [status]);
-  // The branded splash covers auth resolution, first data load, and the entering beat.
-  const showSplash = status === 'loading' || entering || (status === 'in' && !baseData && !error);
+  }, [status, baseData, error, ready]);
+  const showSplash = !ready && !error && status !== 'out';
 
   return (
     <>

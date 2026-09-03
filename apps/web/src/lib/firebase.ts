@@ -15,7 +15,7 @@
  *     match /{doc=**} { allow read, write: if true; } } }
  */
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getFirestore, doc, onSnapshot, runTransaction, getDoc, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, runTransaction, getDoc, setDoc, collection, addDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import LZString from 'lz-string';
 import {
@@ -69,6 +69,25 @@ export async function uploadPlotImage(code: string, file: File): Promise<string>
   const r = storageRef(storage, path);
   await uploadBytes(r, blob, { contentType: 'image/jpeg' });
   return getDownloadURL(r);
+}
+
+/**
+ * Restore the whole app state from a Drive backup's parsed content. Writes each slice's
+ * packed blob straight back into `kec_state` (reusing the exact stored format) and clears
+ * the local cache. The caller should reload afterwards so the app rehydrates cleanly.
+ * Returns how many slices were written.
+ */
+export async function restoreFromBackup(docs: Record<string, any>): Promise<number> {
+  let n = 0;
+  for (const id of ['_core', 'attrs', 'projects', 'geom']) {
+    const b = docs?.[id]?.fields?.b?.stringValue;
+    if (typeof b === 'string' && b.length) {
+      await setDoc(doc(db, 'kec_state', id), { b, at: Date.now() });
+      n++;
+    }
+  }
+  try { localStorage.removeItem('kec_overrides'); } catch { /* */ }
+  return n;
 }
 
 // ---------- Auth ----------

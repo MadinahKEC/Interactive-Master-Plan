@@ -3,18 +3,18 @@ import { SECTORS, LAND_USES, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
-import { createUserSecondary, watchAccessLog, type AccessSession } from '../lib/firebase';
+import { createUserSecondary, watchAccessLog, restoreFromBackup, type AccessSession } from '../lib/firebase';
 import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { Chart } from './Chart';
 import { PlotEditor } from './PlotEditor';
-import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash } from '../components/icons';
+import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
 
-type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
+type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'backups' | 'settings';
 const TABS: { id: Tab; Icon: (p: { size?: number }) => JSX.Element }[] = [
   { id: 'dashboard', Icon: IconDashboard }, { id: 'plots', Icon: IconPlots }, { id: 'devplan', Icon: IconCalendar },
-  { id: 'landuses', Icon: IconPalette }, { id: 'users', Icon: IconUsers }, { id: 'access', Icon: IconClock }, { id: 'audit', Icon: IconAudit }, { id: 'settings', Icon: IconSettings },
+  { id: 'landuses', Icon: IconPalette }, { id: 'users', Icon: IconUsers }, { id: 'access', Icon: IconClock }, { id: 'audit', Icon: IconAudit }, { id: 'backups', Icon: IconDownload }, { id: 'settings', Icon: IconSettings },
 ];
 
 export function AdminConsole({
@@ -26,7 +26,7 @@ export function AdminConsole({
   const { lang } = useApp();
   const role = useAuth((s) => s.user?.role);
   const isAdmin = role === 'administrator';
-  const tabs = TABS.filter((x) => x.id !== 'audit' || isAdmin); // undo/history is administrator-only
+  const tabs = TABS.filter((x) => (x.id !== 'audit' && x.id !== 'backups') || isAdmin); // change-log & backups are administrator-only
   const [tab, setTab] = useState<Tab>('dashboard');
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -57,6 +57,7 @@ export function AdminConsole({
           {tab === 'users' && <UsersTab />}
           {tab === 'access' && <AccessLogTab />}
           {tab === 'audit' && isAdmin && <AuditTab />}
+          {tab === 'backups' && isAdmin && <BackupsTab />}
           {tab === 'settings' && <SettingsTab data={data} projects={projects} />}
         </section>
       </div>
@@ -466,6 +467,91 @@ function AuditTab() {
               </li>
             );
           })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Backups (Google Drive) ---------------- */
+type BackupFile = { id: string; name: string; date: string; size: number };
+function BackupsTab() {
+  const { lang } = useApp();
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('kec_backup_cfg') || '{}'); } catch { return {}; } })();
+  const [url, setUrl] = useState<string>(saved.url || '');
+  const [token, setToken] = useState<string>(saved.token || '');
+  const [files, setFiles] = useState<BackupFile[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const api = (u: string, tk: string, params: string) =>
+    fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + 'token=' + encodeURIComponent(tk) + '&' + params).then((r) => r.json());
+
+  const load = async (u = url, tk = token) => {
+    if (!u.trim()) { setErr(t('bk.needConfig', lang)); return; }
+    setBusy(true); setErr(''); setFiles(null);
+    try {
+      const res = await api(u.trim(), tk.trim(), 'action=list');
+      if (res.error) setErr(res.error === 'unauthorized' ? t('bk.err', lang) : String(res.error));
+      else setFiles(res.files || []);
+    } catch { setErr(t('bk.err', lang)); } finally { setBusy(false); }
+  };
+  const connect = () => {
+    const cfg = { url: url.trim(), token: token.trim() };
+    try { localStorage.setItem('kec_backup_cfg', JSON.stringify(cfg)); } catch { /* */ }
+    load(cfg.url, cfg.token);
+  };
+  useEffect(() => { if (saved.url) load(saved.url, saved.token || ''); /* eslint-disable-next-line */ }, []);
+
+  const fmtDate = (d: string) => {
+    const p = d.split('-'); if (p.length !== 3) return d;
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+  const fmtSize = (n: number) => (n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB');
+
+  const doRestore = async (f: BackupFile) => {
+    const ok = await confirmDialog({
+      title: t('bk.restore', lang), icon: <IconUndo size={24} />,
+      body: <><div>{t('bk.restoreConfirm', lang)}</div><b>{fmtDate(f.date)}</b></>,
+      confirmLabel: t('bk.restore', lang), cancelLabel: t('a.cancel', lang), danger: true, dir,
+    });
+    if (!ok) return;
+    setBusy(true); setErr('');
+    try {
+      const res = await api(url.trim(), token.trim(), 'action=get&id=' + encodeURIComponent(f.id));
+      if (res.error || !res.content) throw new Error(res.error || 'no content');
+      const payload = JSON.parse(res.content);
+      await restoreFromBackup(payload.docs || {});
+      setTimeout(() => window.location.reload(), 600);
+    } catch { setErr(t('bk.err', lang)); setBusy(false); }
+  };
+
+  return (
+    <div className="clog">
+      <div className="clog-ttl">{t('a.backups', lang)}</div>
+      <p className="clog-sub">{t('bk.hint', lang)}</p>
+      <div className="bk-cfg">
+        <label className="field"><span>{t('bk.webUrl', lang)}</span>
+          <input value={url} placeholder="https://script.google.com/macros/s/…/exec" onChange={(e) => setUrl(e.target.value)} /></label>
+        <label className="field"><span>{t('bk.token', lang)}</span>
+          <input value={token} onChange={(e) => setToken(e.target.value)} /></label>
+        <button className="btn primary bk-connect" onClick={connect} disabled={busy}><IconDownload size={14} /> {t('bk.connect', lang)}</button>
+      </div>
+      {err && <div className="clog-empty" style={{ color: 'var(--kec-neg)' }}>{err}</div>}
+      {busy && !files && <div className="clog-empty">{t('bk.loading', lang)}</div>}
+      {files && files.length === 0 && <div className="clog-empty">{t('bk.none', lang)}</div>}
+      {files && files.length > 0 && (
+        <ul className="clog-ol">
+          {files.map((f) => (
+            <li className="clog-o" key={f.id}>
+              {f.date === new Date().toISOString().slice(0, 10)
+                ? <span className="clog-tag added">{t('cl.today', lang)}</span>
+                : <span className="bk-dot" />}
+              <span className="clog-t"><b>{fmtDate(f.date)}</b> <span className="clog-dim">· {fmtSize(f.size)}</span></span>
+              <button className="clog-ib dg" disabled={busy} onClick={() => doRestore(f)}><IconUndo size={13} /> {t('bk.restore', lang)}</button>
+            </li>
+          ))}
         </ul>
       )}
     </div>

@@ -108,6 +108,50 @@ function pruneOld_(folder, days) {
   }
 }
 
+/* ===================== WEB APP (in-app restore browser) =====================
+ * Deploy this script as a Web app (Deploy ▸ New deployment ▸ Web app,
+ * "Execute as: Me", "Who has access: Anyone"). The interactive map's admin
+ * console calls these read-only endpoints to list and read your daily backups.
+ * Protected by a shared token: set WEB_SECRET in Script properties and paste the
+ * SAME value into the app's Backups tab. */
+
+function json_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  try {
+    var p = PropertiesService.getScriptProperties();
+    var secret = p.getProperty('WEB_SECRET');
+    var q = (e && e.parameter) || {};
+    if (secret && q.token !== secret) return json_({ error: 'unauthorized' });
+    var folderId = cleanFolderId_(p.getProperty('DRIVE_FOLDER_ID'));
+    if (!folderId) return json_({ error: 'DRIVE_FOLDER_ID not set' });
+    var folder = DriveApp.getFolderById(folderId);
+
+    if (q.action === 'list') {
+      var files = [];
+      var it = folder.getFilesByType('application/json');
+      while (it.hasNext()) {
+        var f = it.next();
+        var m = /KEC-Map-Backup-(\d{4}-\d{2}-\d{2})\.json$/.exec(f.getName());
+        if (!m) continue;
+        files.push({ id: f.getId(), name: f.getName(), date: m[1], size: f.getSize() });
+      }
+      files.sort(function (a, b) { return a.date < b.date ? 1 : -1; }); // newest first
+      return json_({ files: files });
+    }
+    if (q.action === 'get') {
+      if (!q.id) return json_({ error: 'missing id' });
+      var file = DriveApp.getFileById(q.id);
+      return json_({ name: file.getName(), content: file.getBlob().getDataAsString() });
+    }
+    return json_({ error: 'unknown action' });
+  } catch (err) {
+    return json_({ error: String(err) });
+  }
+}
+
 /** Run ONCE to schedule the daily backup (about 02:00 script-time). */
 function installDailyTrigger() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
