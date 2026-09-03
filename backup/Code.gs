@@ -23,12 +23,20 @@ function getConfig_() {
     FB_PROJECT_ID: p.getProperty('FB_PROJECT_ID') || 'interactive-master-plan',
     BACKUP_EMAIL: p.getProperty('BACKUP_EMAIL'),
     BACKUP_PASSWORD: p.getProperty('BACKUP_PASSWORD'),
-    DRIVE_FOLDER_ID: p.getProperty('DRIVE_FOLDER_ID'),
+    DRIVE_FOLDER_ID: cleanFolderId_(p.getProperty('DRIVE_FOLDER_ID')),
     RETENTION_DAYS: Number(p.getProperty('RETENTION_DAYS') || 30)
   };
   if (!cfg.BACKUP_EMAIL || !cfg.BACKUP_PASSWORD) throw new Error('Set BACKUP_EMAIL and BACKUP_PASSWORD in Script properties.');
   if (!cfg.DRIVE_FOLDER_ID) throw new Error('Set DRIVE_FOLDER_ID (the id of the "KEC-Interactive Map-Backups" folder) in Script properties.');
   return cfg;
+}
+
+/** Accepts a bare id OR a pasted Drive URL and returns just the folder id. */
+function cleanFolderId_(raw) {
+  if (!raw) return raw;
+  var s = String(raw).trim();
+  var m = s.match(/[-\w]{25,}/);   // a Drive id is a long token; ignores "/folders/" and "?dmr=…"
+  return m ? m[0] : s;
 }
 
 /** Signs in with the backup account and returns a Firebase ID token. */
