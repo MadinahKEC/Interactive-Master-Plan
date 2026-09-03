@@ -512,99 +512,59 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .fe-note{font-size:10.5px;color:var(--kec-muted);margin:14px 0 0;line-height:1.5;font-style:italic}
 
 /* ---- Executive dashboard (item 17) + print/PDF export (item B) — KEC register identity ---- */
-.exec-overlay{position:fixed;inset:0;z-index:82;background:#e9ece7;overflow:auto;display:flex;justify-content:center;animation:fadeIn .2s}
-.exec-sheet{width:100%;max-width:1180px;background:var(--kec-paper);min-height:100%;box-shadow:0 2px 18px rgba(0,0,0,.12);display:flex;flex-direction:column;padding:24px 34px 20px}
-/* header: title + gold subtitle, logo right, gold accent under the rule */
-.exec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid var(--kec-hairline);padding-bottom:8px;margin-bottom:16px;position:relative}
-.exec-head::after{content:'';position:absolute;bottom:-2px;inset-inline-end:0;width:120px;height:3px;background:var(--kec-gold)}
-.exec-title{flex:1;min-width:0}
-.exec-h1{font-family:var(--kec-serif);font-size:27px;font-weight:700;color:var(--kec-title);line-height:1.15;letter-spacing:-.2px}
-.exec-sub{font-size:13px;font-weight:500;color:var(--kec-gold);margin-top:3px}
-.exec-logo{height:46px;width:auto;object-fit:contain;flex:none}
-.exec-acts{display:flex;align-items:center;gap:8px;align-self:flex-start}
-.exec-print{display:inline-flex;align-items:center;gap:6px;font-family:var(--kec-font);font-size:12.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--kec-green),var(--kec-green-deep));border:0;border-radius:10px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(20,61,30,.2);transition:.15s}
+/* ===== Executive dashboard: a real A4-landscape sheet (prints at exactly 100%) ===== */
+.exec-overlay{position:fixed;inset:0;z-index:82;background:#e6ebe4;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:18px;animation:fadeIn .2s}
+.exec-acts{position:fixed;top:16px;inset-inline-end:16px;z-index:3;display:flex;align-items:center;gap:8px}
+.exec-print{display:inline-flex;align-items:center;gap:6px;font-family:var(--kec-font);font-size:12.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,var(--kec-green),var(--kec-green-deep));border:0;border-radius:10px;padding:9px 15px;cursor:pointer;box-shadow:0 4px 14px rgba(20,61,30,.25);transition:.15s}
 .exec-print:hover{filter:brightness(1.08)}
-/* KPI strip: uniform centred white cards */
-.exec-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
-.exec-kpi{background:#fff;border:1px solid var(--kec-hairline);border-radius:12px;padding:18px 12px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;min-width:0}
+.exec-fit{position:relative;flex:none}
+.exec-page{position:absolute;top:0;left:0;transform:scale(var(--exec-scale,1));transform-origin:top left;
+  width:297mm;height:210mm;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.22);display:flex;flex-direction:column;
+  padding:8mm 9mm;gap:3.4mm;color:var(--kec-ink);overflow:hidden}
+/* header */
+.exec-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2px solid var(--kec-hairline);padding-bottom:7px;position:relative;flex:none}
+.exec-head::after{content:'';position:absolute;bottom:-2px;inset-inline-end:0;width:140px;height:3px;background:var(--kec-gold)}
+.exec-title{flex:1;min-width:0}
+.exec-h1{font-family:var(--kec-serif);font-size:26px;font-weight:700;color:var(--kec-title);line-height:1.1;letter-spacing:-.2px}
+.exec-sub{font-size:12.5px;font-weight:500;color:var(--kec-gold);margin-top:3px}
+.exec-logo{height:44px;width:auto;object-fit:contain;flex:none}
+/* KPI strip */
+.exec-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;flex:none}
+.exec-kpi{background:linear-gradient(160deg,#fff,var(--kec-surface));border:1px solid var(--kec-hairline);border-radius:12px;padding:11px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;min-width:0}
+.exec-kpi.accent{background:linear-gradient(160deg,#fff,#F6F1DC);border-color:#E4D9A8}
 .ek-top{display:flex;align-items:center;gap:6px;justify-content:center;min-width:0;max-width:100%}
 .ek-top svg{color:var(--kec-green);flex:none}
-.ek-l{font-size:10.5px;font-weight:500;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ek-v{font-family:'IBM Plex Mono',monospace;font-size:27px;font-weight:600;color:var(--kec-green-deep);line-height:1;white-space:nowrap;font-feature-settings:'tnum' 1}
-.exec-kpi.accent .ek-v{color:var(--kec-gold)}
-/* hero developed-land card (white) */
-.exec-hero{display:grid;grid-template-columns:220px 1fr;gap:22px;align-items:center;background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:16px 20px;margin-bottom:14px}
-.exec-hero-pct{font-family:'IBM Plex Mono',monospace;font-size:46px;font-weight:600;color:var(--kec-green-deep);line-height:1;text-align:center}
-.exec-hero-pct span{font-size:22px;margin-inline-start:2px;color:var(--kec-gold)}
-.exec-hero-l{font-size:13px;color:var(--kec-ink);font-weight:600;margin-top:4px;text-align:center}
-.exec-hero-l em{font-style:normal;color:var(--kec-muted);font-weight:400;font-size:11px;display:block}
-.ehb-track{display:flex;height:20px;border-radius:10px;overflow:hidden;background:var(--kec-surface)}
-.ehb-seg{display:block;height:100%}
-.ehb-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:11px;color:var(--kec-muted)}
-.ehb-legend span{display:flex;align-items:center;gap:6px}
-.ehb-legend i{width:11px;height:11px;border-radius:3px;flex:none}
-/* secondary stat strip */
-.exec-sats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px;margin-bottom:14px}
-.exec-sat{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:11px 8px;text-align:center;min-width:0}
-.es-dot{width:8px;height:8px;border-radius:50%;margin-bottom:2px}
-.es-v{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--kec-green-deep);line-height:1}
-.es-l{font-size:9px;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.exec-charts{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
-.exec-chart{background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:8px 11px}
-/* sector summary table (register-app style) */
-.exec-table-card{background:#fff;border:1px solid var(--kec-hairline);border-radius:11px;padding:12px 14px;margin-bottom:6px}
-.exec-table-h{font-size:13px;font-weight:600;color:var(--kec-green-deep);margin-bottom:10px}
-.exec-table{width:100%;border-collapse:collapse;font-size:12px}
-.exec-table thead th{text-align:start;color:var(--kec-green-deep);font-weight:500;font-size:10px;padding:6px 8px;background:var(--kec-surface);border-bottom:1px solid var(--kec-hairline);white-space:nowrap}
-.exec-table thead th:first-child{border-start-start-radius:6px}
-.exec-table thead th:last-child{border-start-end-radius:6px}
-.exec-table td{padding:6px 8px;border-bottom:1px solid #EEF2EA;color:var(--kec-ink)}
-.exec-table td.mono{font-family:'IBM Plex Mono',monospace}
-.exec-table-total td{font-weight:700;color:var(--kec-title);border-top:2px solid var(--kec-hairline);border-bottom:0}
-.exec-pipe{padding:8px 6px}
-.exec-pipe-h{font-size:13px;font-weight:600;color:var(--kec-green-deep);margin:2px 0 14px 4px}
-.exec-pipe-row{display:grid;grid-template-columns:92px 1fr 28px;align-items:center;gap:10px;margin-bottom:10px}
-.epr-l{font-size:12px;color:var(--kec-ink)}
-.epr-bar{height:16px;border-radius:8px;background:var(--kec-surface);overflow:hidden}
-.epr-bar span{display:block;height:100%;border-radius:8px;min-width:3px}
-.epr-v{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--kec-green-deep);text-align:end}
-.exec-pipe-empty{color:var(--kec-muted);padding:20px;text-align:center}
-/* footer: gold rule + green bar */
-.exec-foot{margin-top:auto;flex:none;padding-top:12px}
-.exec-foot-rule{height:2px;background:var(--kec-gold);border-radius:2px}
-.exec-foot-row{display:flex;align-items:center;gap:10px;padding-top:7px;font-size:9.5px;color:var(--kec-muted)}
-.exec-foot-bar{width:3px;height:20px;background:var(--kec-green);border-radius:2px;flex:none}
-@media (max-width:768px){
-  .exec-strip{grid-template-columns:repeat(2,1fr)}
-  .exec-charts{grid-template-columns:1fr}
-  .exec-hero{grid-template-columns:1fr;text-align:center}
-  .exec-sheet{padding:16px 14px 22px}
-  .exec-h1{font-size:18px}
-}
-.exec-gauge-cap{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:var(--kec-muted);padding:0 10px 8px}
+.ek-l{font-size:10px;font-weight:600;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ek-v{font-family:var(--kec-num,'IBM Plex Mono',monospace);font-size:25px;font-weight:700;color:var(--kec-green-deep);line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.exec-kpi.accent .ek-v{color:#8A7A16}
+/* secondary stat ribbon */
+.exec-sats{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;flex:none}
+.exec-sat{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:8px 8px;text-align:center;min-width:0}
+.es-dot{width:8px;height:8px;border-radius:50%;margin-bottom:1px}
+.es-v{font-family:var(--kec-num,'IBM Plex Mono',monospace);font-size:17px;font-weight:700;color:var(--kec-green-deep);line-height:1;font-variant-numeric:tabular-nums}
+.es-l{font-size:8.5px;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* charts grid fills the rest of the page — no empty space */
+.exec-charts{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:8px}
+.exec-chart{background:#fff;border:1px solid var(--kec-hairline);border-radius:12px;padding:6px 9px;min-height:0;overflow:hidden;box-shadow:0 1px 3px rgba(20,61,30,.05)}
+.exec-chart--gauge{display:flex;flex-direction:column}
+.ec-fill{flex:1;min-height:0}
+.exec-gauge-cap{display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--kec-muted);padding:0 6px 4px}
 .exec-gauge-cap span{display:flex;align-items:center;gap:6px}
-.exec-gauge-cap i{width:10px;height:10px;border-radius:3px;flex:none}
+.exec-gauge-cap i{width:9px;height:9px;border-radius:3px;flex:none}
+/* footer */
+.exec-foot{flex:none}
+.exec-foot-rule{height:2px;background:var(--kec-gold);border-radius:2px}
+.exec-foot-row{display:flex;align-items:center;gap:9px;padding-top:5px;font-size:9px;color:var(--kec-muted)}
+.exec-foot-bar{width:3px;height:16px;background:var(--kec-green);border-radius:2px;flex:none}
 @media print {
   #root{display:none!important}
-  .exec-overlay{position:static;overflow:visible;background:#fff;display:block}
-  /* named landscape page — scoped so it doesn't clash with the report's portrait @page */
-  .exec-sheet{max-width:none;box-shadow:none;padding:4mm 6mm 12mm;min-height:auto;page:kecland}
-  /* force backgrounds, chart colours and bars to actually print */
+  .exec-overlay{position:static;overflow:visible;background:#fff;display:block;padding:0}
+  .exec-acts{display:none!important}
+  .exec-fit{width:auto!important;height:auto!important;position:static!important}
+  .exec-page{position:static!important;transform:none!important;box-shadow:none;page:kecland}
   .exec-overlay, .exec-overlay *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .no-print{display:none!important}
-  .exec-chart,.exec-strip,.exec-sats{page-break-inside:avoid}
-  .exec-charts{grid-template-columns:repeat(3,1fr);gap:6px}
-  .exec-strip{grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
-  .exec-sats{grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px}
-  /* compact chrome so the whole summary lands on ONE A4-landscape page */
-  .exec-head{margin-bottom:8px;padding-bottom:5px}
-  .exec-h1{font-size:19px}.exec-sub{font-size:10.5px}.exec-logo{height:38px}
-  .exec-kpi{padding:14px 9px;gap:8px}.ek-v{font-size:23px}
-  .exec-sat{padding:9px 6px}.es-v{font-size:17px}
-  .exec-chart{padding:4px 8px}
-  /* footer pinned to the bottom of every printed page */
-  .exec-foot{position:fixed;bottom:0;left:0;right:0;margin:0;padding:3px 6mm 2mm;background:#fff}
-  @page kecland{size:A4 landscape;margin:7mm}
+  @page kecland{size:A4 landscape;margin:0}
 }
 
 /* ---- Investor interest pipeline (card) ---- */

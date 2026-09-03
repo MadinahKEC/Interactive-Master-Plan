@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SECTORS, type PlotCollection } from '@kec/types';
 import { resolveProject, STATUS_META, OWNERSHIP_META, t, type ProjectInfo } from '../lib/domain';
@@ -21,6 +21,16 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   useBackClose(true, onClose, 70);
   const rtl = lang === 'ar';
   const sar = lang === 'ar' ? 'ر.س' : 'SAR';
+
+  // The sheet is a real A4-landscape canvas (fixed mm), so it prints at exactly 100% on
+  // one page. On screen we scale it down to fit the viewport (like a print preview).
+  const PAGE_W = (297 * 96) / 25.4, PAGE_H = (210 * 96) / 25.4;
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setScale(Math.min((window.innerWidth - 36) / PAGE_W, (window.innerHeight - 36) / PAGE_H, 1));
+    fit(); window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [PAGE_W, PAGE_H]);
 
   const s = useMemo(() => {
     let gfa = 0, area = 0, farW = 0, developable = 0, developed = 0, underDev = 0, portfolio = 0, named = 0, permits = 0;
@@ -106,17 +116,18 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
 
   return createPortal(
     <div className="exec-overlay" dir={rtl ? 'rtl' : 'ltr'}>
-      <div className="exec-sheet">
+      <div className="exec-acts no-print">
+        <button className="exec-print" onClick={printExec}><IconExport size={15} /> {t('report.print', lang)}</button>
+        <button className="ic-btn" onClick={onClose}><IconClose size={18} /></button>
+      </div>
+      <div className="exec-fit" style={{ width: PAGE_W * scale, height: PAGE_H * scale }}>
+      <div className="exec-page" style={{ ['--exec-scale' as string]: String(scale) }}>
         <header className="exec-head">
           <div className="exec-title">
             <div className="exec-h1">{t('exec.title', lang)}</div>
             <div className="exec-sub">{t('brand.title', lang)} · <span className="mono">{ref}</span> · {new Date().toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB')}</div>
           </div>
           <img className="exec-logo" src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
-          <div className="exec-acts no-print">
-            <button className="exec-print" onClick={printExec}><IconExport size={15} /> {t('report.print', lang)}</button>
-            <button className="ic-btn" onClick={onClose}><IconClose size={18} /></button>
-          </div>
         </header>
 
         <div className="exec-strip">
@@ -139,24 +150,25 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
         </div>
 
         <div className="exec-charts">
-          <div className="exec-chart">
-            <Chart height={192} option={gauge(t('exec.developed', lang), devPct)} />
+          <div className="exec-chart exec-chart--gauge">
+            <div className="ec-fill"><Chart height="100%" option={gauge(t('exec.developed', lang), devPct)} /></div>
             <div className="exec-gauge-cap">
               <span><i style={{ background: '#2F6B3E' }} />{t('exec.developed', lang)} · {compact(s.developed)} m²</span>
               <span><i style={{ background: '#9A8A1E' }} />{t('exec.underdev', lang)} · {compact(s.underDev)} m²</span>
             </div>
           </div>
-          <div className="exec-chart"><Chart height={205} option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={205} option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
-          <div className="exec-chart"><Chart height={205} option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
-          <div className="exec-chart"><Chart height={205} option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
-          <div className="exec-chart"><Chart height={205} option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
+          <div className="exec-chart"><Chart height="100%" option={donut(t('exec.byStatus', lang), s.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height="100%" option={donut(t('exec.byOwnership', lang), s.own, (k) => OWNERSHIP_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? OWNERSHIP_META[k]?.ar ?? k : OWNERSHIP_META[k]?.en ?? k))} /></div>
+          <div className="exec-chart"><Chart height="100%" option={hbar(t('report.luMix', lang), luTop, 'm²')} /></div>
+          <div className="exec-chart"><Chart height="100%" option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => s.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => compact(v) + ' m²')} /></div>
+          <div className="exec-chart"><Chart height="100%" option={bar(t('exec.devBySector', lang), secKeys, secKeys.map((k) => (s.secArea[k] ? +(((s.secDev[k] || 0) / s.secArea[k]) * 100).toFixed(1) : 0)), '#5E8C3A', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v: any) => v + '%', (v: number) => v + '%')} /></div>
         </div>
 
         <footer className="exec-foot">
           <div className="exec-foot-rule" />
           <div className="exec-foot-row"><span className="exec-foot-bar" /><span>{t('powered', lang)} · {t('credit', lang)}</span></div>
         </footer>
+      </div>
       </div>
     </div>,
     document.body,

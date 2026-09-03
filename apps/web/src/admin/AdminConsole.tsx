@@ -7,18 +7,16 @@ import { createUserSecondary, watchAccessLog, restoreFromBackup, type AccessSess
 import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
-import { Chart } from './Chart';
 import { PlotEditor } from './PlotEditor';
-import { IconDashboard, IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
+import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
 
-type Tab = 'dashboard' | 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
+type Tab = 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: Record<Tab, (p: { size?: number }) => JSX.Element> = {
-  dashboard: IconDashboard, plots: IconPlots, devplan: IconCalendar, landuses: IconPalette,
+  plots: IconPlots, devplan: IconCalendar, landuses: IconPalette,
   users: IconUsers, access: IconClock, audit: IconAudit, settings: IconSettings,
 };
 // Grouped, labelled navigation for a cleaner, more professional console.
 const NAV_GROUPS: { label?: string; ids: Tab[]; adminOnly?: Tab[] }[] = [
-  { ids: ['dashboard'] },
   { label: 'a.grpData', ids: ['plots', 'devplan', 'landuses'] },
   { label: 'a.grpAdmin', ids: ['users', 'access', 'audit'], adminOnly: ['audit'] },
   { label: 'a.grpSystem', ids: ['settings'] },
@@ -43,7 +41,7 @@ export function AdminConsole({
   const { lang } = useApp();
   const role = useAuth((s) => s.user?.role);
   const isAdmin = role === 'administrator';
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] = useState<Tab>('plots');
   const [editing, setEditing] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,7 +73,6 @@ export function AdminConsole({
           })}
         </nav>
         <section className="admin-content">
-          {tab === 'dashboard' && <Dashboard data={data} projects={projects} landUses={landUses} />}
           {tab === 'plots' && <PlotsTab data={data} projects={projects} landUses={landUses} onEdit={setEditing} />}
           {tab === 'devplan' && <DevPlanTab data={data} projects={projects} onEdit={setEditing} />}
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
@@ -90,72 +87,6 @@ export function AdminConsole({
   );
 }
 
-/* ---------------- Dashboard ---------------- */
-function Dashboard({ data, projects, landUses }: { data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse> }) {
-  const { lang } = useApp();
-  const txt = '#16221B';
-  const fmt = (x: number) => (x >= 1e6 ? (x / 1e6).toFixed(2) + 'M' : x >= 1e3 ? Math.round(x / 1e3) + 'K' : String(Math.round(x)));
-  const stats = useMemo(() => {
-    const luArea: Record<string, number> = {}; const st: Record<string, number> = {};
-    const secGfa: Record<string, number> = {}; const lic: Record<string, number> = {};
-    let gfa = 0, area = 0, farW = 0, developable = 0, planCount = 0, licensed = 0;
-    for (const f of data.features) {
-      const p = f.properties;
-      luArea[p.land_use ?? '—'] = (luArea[p.land_use ?? '—'] || 0) + (p.area || 0);
-      secGfa[p.sector] = (secGfa[p.sector] || 0) + (p.gfa || 0);
-      const pr = resolveProject(p.code, p.land_use, projects);
-      st[pr.status.key] = (st[pr.status.key] || 0) + 1;
-      gfa += p.gfa || 0; area += p.area || 0;
-      if (p.far) farW += (p.far || 0) * (p.area || 0);
-      if ((p.far || 0) > 0) developable += p.area || 0;
-      if ((p as any).planStatus) planCount++;
-      const lk = pr.overlay.license; if (lk) { lic[lk] = (lic[lk] || 0) + 1; licensed++; }
-    }
-    return { luArea, st, secGfa, lic, gfa, area, avgFar: area ? farW / area : 0, developable, planCount, licensed, uses: Object.keys(luArea).length };
-  }, [data, projects]);
-  const named = Object.values(projects).filter((p) => p.name_ar || p.name_en).length;
-
-  const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
-    title: { text: title, left: 'center', textStyle: { color: txt, fontSize: 13, fontFamily: 'Readex Pro' } },
-    tooltip: { trigger: 'item', valueFormatter: (v: number) => (valFmt ? valFmt(v) : String(v)) },
-    series: [{ type: 'pie', radius: ['42%', '68%'], center: ['50%', '56%'], avoidLabelOverlap: true,
-      label: { show: false }, data: Object.keys(obj).filter((k) => obj[k] > 0).sort((a, b) => obj[b] - obj[a]).map((k) => ({ value: Math.round(obj[k]), name: labelOf(k), itemStyle: { color: colorOf(k) } })) }],
-  });
-  const bar = (title: string, keys: string[], vals: number[], color: string, labelOf: (k: string) => string, valFmt?: (v: number) => string) => ({
-    title: { text: title, left: 'center', textStyle: { color: txt, fontSize: 13, fontFamily: 'Readex Pro' } },
-    tooltip: { trigger: 'axis', valueFormatter: (v: number) => (valFmt ? valFmt(v) : String(v)) }, grid: { left: 48, right: 16, top: 44, bottom: 40 },
-    xAxis: { type: 'category', data: keys.map(labelOf), axisLabel: { color: txt, interval: 0, rotate: keys.length > 4 ? 24 : 0, fontSize: 10 } },
-    yAxis: { type: 'value', axisLabel: { color: txt, formatter: (v: number) => (v >= 1e6 ? v / 1e6 + 'M' : v >= 1e3 ? v / 1e3 + 'K' : v) } },
-    series: [{ type: 'bar', data: vals.map((v) => Math.round(v)), itemStyle: { color, borderRadius: [6, 6, 0, 0] } }],
-  });
-
-  const secKeys = Object.keys(stats.secGfa).filter((k) => stats.secGfa[k] > 0);
-  const licKeys = LICENSE_STAGES.map((x) => x.key).filter((k) => stats.lic[k]);
-
-  return (
-    <div className="dash">
-      <div className="dash-kpis">
-        <KpiCard v="958" l={t('a.plots', lang)} />
-        <KpiCard v={fmt(stats.area)} l={`${t('kpi.area', lang)} (m²)`} />
-        <KpiCard v={fmt(stats.gfa)} l={`${t('kpi.gfa', lang)} (m²)`} />
-        <KpiCard v={fmt(stats.developable)} l={t('report.developable', lang)} />
-        <KpiCard v={stats.avgFar.toFixed(2)} l={t('report.avgFar', lang)} />
-        <KpiCard v={String(stats.planCount)} l={t('cp.planTitle', lang)} />
-        <KpiCard v={String(named)} l={t('a.named', lang)} />
-        <KpiCard v={String(stats.licensed)} l={t('sec.license', lang)} />
-      </div>
-      <div className="dash-charts">
-        <div className="chart-card"><Chart option={donut(t('report.luMix', lang), stats.luArea, (k) => landUses[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? landUses[k]?.labelAr ?? k : landUses[k]?.labelEn ?? k), (v) => fmt(v) + ' m²')} /></div>
-        <div className="chart-card"><Chart option={donut(t('a.byStatus', lang), stats.st, (k) => STATUS_META[k]?.color ?? '#ccc', (k) => (lang === 'ar' ? STATUS_META[k]?.ar ?? k : STATUS_META[k]?.en ?? k))} /></div>
-        <div className="chart-card"><Chart option={bar(t('dash.gfaSector', lang), secKeys, secKeys.map((k) => stats.secGfa[k]), '#2F6B3E', (k) => (lang === 'ar' ? SECTORS[k as keyof typeof SECTORS]?.labelAr ?? k : k), (v) => fmt(v) + ' m²')} /></div>
-        {licKeys.length > 0
-          ? <div className="chart-card"><Chart option={bar(t('dash.permits', lang), licKeys, licKeys.map((k) => stats.lic[k]), '#2E7D6B', (k) => (lang === 'ar' ? LICENSE_STAGES.find((x) => x.key === k)?.ar ?? k : LICENSE_STAGES.find((x) => x.key === k)?.en ?? k))} /></div>
-          : <div className="chart-card dash-empty">{t('dash.noPermits', lang)}</div>}
-      </div>
-    </div>
-  );
-}
-function KpiCard({ v, l }: { v: string; l: string }) { return (<div className="dash-kpi"><div className="v">{v}</div><div className="l">{l}</div></div>); }
 
 /* ---------------- Plots table ---------------- */
 function PlotsTab({ data, projects, landUses, onEdit }: { data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onEdit: (c: string) => void }) {

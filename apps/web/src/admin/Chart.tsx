@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 
 /** Minimal ECharts wrapper: inits once, updates option, resizes, disposes. */
-export function Chart({ option, height = 230 }: { option: any; height?: number }) {
+export function Chart({ option, height = 230 }: { option: any; height?: number | string }) {
   const ref = useRef<HTMLDivElement>(null);
   const inst = useRef<echarts.ECharts | null>(null);
 
