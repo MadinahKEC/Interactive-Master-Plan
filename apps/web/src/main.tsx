@@ -21,6 +21,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 );
 
+// Hand off from the static boot splash to React's own branded splash, then remove it.
+requestAnimationFrame(() => {
+  const boot = document.getElementById('boot');
+  if (!boot) return;
+  boot.classList.add('boot--gone');
+  setTimeout(() => boot.remove(), 400);
+});
+
 // Progressive Web App: installable + offline (production only, so dev HMR is untouched).
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapView } from './map/MapView';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
@@ -148,6 +148,22 @@ export default function App() {
 
   const openAdmin = (code?: string) => { setEditCode(code ?? null); setAdminOpen(true); };
 
+  // Branded "entering" splash: a short, deliberate loading moment right after sign-in
+  // (and on first entry) so the app feels like it's opening, not snapping to the map.
+  const [entering, setEntering] = useState(false);
+  const prevStatus = useRef(status);
+  useEffect(() => {
+    if (prevStatus.current !== 'in' && status === 'in') {
+      setEntering(true);
+      const id = setTimeout(() => setEntering(false), 900);
+      prevStatus.current = status;
+      return () => clearTimeout(id);
+    }
+    prevStatus.current = status;
+  }, [status]);
+  // The branded splash covers auth resolution, first data load, and the entering beat.
+  const showSplash = status === 'loading' || entering || (status === 'in' && !baseData && !error);
+
   return (
     <>
       <MapView data={data} projects={projects} landUses={landUses} canAnnotate={canAnnotate} />
@@ -182,15 +198,15 @@ export default function App() {
       <div className="credit">© {t('credit', lang)}</div>
       <div className="powered">{t('powered', lang)}</div>
       <SaveToast />
-      {!baseData && !error && (
+      {showSplash && (
         <div className="loading">
           <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" className="load-logo" />
           <div className="ring" />
           <p>{t('loading', lang)}</p>
         </div>
       )}
-      {error && (<div className="loading"><p>{lang === 'ar' ? 'تعذّر تحميل البيانات' : 'Failed to load data'}: {error}</p></div>)}
-      {status !== 'in' && <Login />}
+      {error && status === 'in' && (<div className="loading"><p>{lang === 'ar' ? 'تعذّر تحميل البيانات' : 'Failed to load data'}: {error}</p></div>)}
+      {status === 'out' && <Login />}
       {helpOpen && <ShortcutsHelp onClose={() => setHelpOpen(false)} />}
       {tourOpen && <Tour onClose={() => setTourOpen(false)} />}
       <DialogHost />
