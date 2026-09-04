@@ -98,7 +98,7 @@ function PlotsTab({ data, projects, landUses, onEdit }: { data: PlotCollection; 
     let r = data.features.map((f) => {
       const p = f.properties; const pr = resolveProject(p.code, p.land_use, projects);
       const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : '—';
-      return { code: p.code, name, land_use: lang === 'ar' ? landUses[p.land_use as string]?.labelAr ?? p.land_use : landUses[p.land_use as string]?.labelEn ?? p.land_use, sector: p.sector, floors: p.floors ?? 0, area: p.area ?? 0, status: lang === 'ar' ? pr.status.ar : pr.status.en };
+      return { code: p.code, name, land_use: lang === 'ar' ? landUses[p.land_use as string]?.labelAr ?? p.land_use : landUses[p.land_use as string]?.labelEn ?? p.land_use, luColor: landUses[p.land_use as string]?.color ?? '#C9C9C9', sector: p.sector, floors: p.floors ?? 0, area: p.area ?? 0, status: lang === 'ar' ? pr.status.ar : pr.status.en, statusColor: pr.status.color };
     });
     if (s) r = r.filter((x) => x.code.toUpperCase().includes(s) || (x.name ?? '').toUpperCase().includes(s));
     r.sort((a: any, b: any) => (a[sort.k] > b[sort.k] ? 1 : a[sort.k] < b[sort.k] ? -1 : 0) * sort.dir);
@@ -111,17 +111,19 @@ function PlotsTab({ data, projects, landUses, onEdit }: { data: PlotCollection; 
     <div className="tab-plots">
       <div className="tab-toolbar">
         <input className="admin-search" placeholder={t('a.search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
-        <span className="hint">{t('a.rowsHint', lang)}</span>
+        <span className="tt-count"><b>{rows.length}</b> {t('cp.plotsWord', lang)}</span>
       </div>
       <div className="table-scroll">
-        <table className="admin-table">
+        <table className="admin-table admin-table--plots">
           <thead><tr>{th('code', t('cp.plotsWord', lang))}{th('name', t('a.name', lang))}{th('land_use', t('a.landuse', lang))}{th('sector', t('a.sector', lang))}{th('floors', t('d.floors', lang))}{th('area', t('d.area', lang))}{th('status', t('a.status', lang))}</tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.code} onClick={() => onEdit(r.code)}>
-                <td className="mono">{r.code}</td><td>{r.name}</td><td>{r.land_use}</td>
+                <td className="mono at-code">{r.code}</td><td>{r.name}</td>
+                <td><span className="at-lu"><span className="at-sw" style={{ background: r.luColor }} />{r.land_use}</span></td>
                 <td>{lang === 'ar' ? SECTORS[r.sector]?.labelAr ?? r.sector : r.sector}</td>
-                <td className="mono">{r.floors}</td><td className="mono">{Math.round(r.area).toLocaleString()}</td><td>{r.status}</td>
+                <td className="mono">{r.floors}</td><td className="mono">{Math.round(r.area).toLocaleString()}</td>
+                <td><span className="at-status" style={{ color: r.statusColor, background: r.statusColor + '1f', borderColor: r.statusColor + '55' }}>{r.status}</span></td>
               </tr>
             ))}
           </tbody>

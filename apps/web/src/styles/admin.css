@@ -34,8 +34,17 @@
 
 /* tables */
 .tab-toolbar{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-.admin-search{flex:none;width:280px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:11px;padding:10px 14px;font-family:var(--kec-mono);font-size:13px;color:var(--kec-ink);outline:0}
+.admin-search{flex:none;width:280px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:11px;padding:10px 14px;font-family:var(--kec-mono);font-size:13px;color:var(--kec-ink);outline:0;transition:border-color .15s}
+.admin-search:focus{border-color:var(--kec-green)}
 .hint{font-size:11px;color:var(--kec-muted)}
+.tt-count{font-size:12px;color:var(--kec-muted)}
+.tt-count b{color:var(--kec-title);font-family:var(--kec-num,monospace);font-size:14px;margin-inline-end:3px}
+/* premium plots table cells */
+.at-code{color:var(--kec-title);font-weight:600}
+.at-lu{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.at-sw{width:11px;height:11px;border-radius:3px;flex:none;border:1px solid rgba(0,0,0,.14)}
+.at-status{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;border:1px solid;white-space:nowrap}
+.admin-table--plots tbody tr:hover{background:var(--kec-surface-2)}
 .table-scroll{overflow:auto;border:1px solid var(--kec-hairline);border-radius:14px;background:var(--card)}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px}
 .admin-table thead th{position:sticky;top:0;background:var(--kec-surface);color:var(--kec-muted);font-size:11px;font-weight:600;text-align:start;padding:11px 14px;cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--kec-hairline);user-select:none}
