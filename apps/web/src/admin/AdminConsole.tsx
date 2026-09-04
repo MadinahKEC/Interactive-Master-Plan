@@ -8,7 +8,7 @@ import { LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } 
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { PlotEditor } from './PlotEditor';
-import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
+import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin } from '../components/icons';
 
 type Tab = 'plots' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: Record<Tab, (p: { size?: number }) => JSX.Element> = {
@@ -50,9 +50,16 @@ export function AdminConsole({
 
   if (!open || !data) return null;
   return (
-    <div className="admin-root">
+    <div className="admin-root" style={{ ['--mod' as string]: '#C9A227' }}>
       <div className="admin-head">
-        <div className="admin-brand"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /><b>{t('a.title', lang)}</b></div>
+        <div className="admin-brand">
+          <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
+          <span className="admin-bicon"><IconAdmin size={18} /></span>
+          <div className="admin-btitle">
+            <span className="admin-kicker">{t('brand.title', lang)}</span>
+            <b>{t('a.title', lang)}</b>
+          </div>
+        </div>
         <button className="ic-btn lg" onClick={onClose}><IconClose size={20} /></button>
       </div>
       <div className="admin-main">

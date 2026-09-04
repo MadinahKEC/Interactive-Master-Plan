@@ -115,12 +115,15 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
           </div>
         </div>
 
+        {summary && (
+          <div className="pf-brief">
+            <span className="pf-cap">{lang === 'ar' ? 'نبذة عن المشروع' : 'Project Brief'}</span>
+            <p>{summary}</p>
+          </div>
+        )}
+
         <div className="pf-body">
           <div className="pf-bcol">
-            <div className="pf-barbox">
-              <div className="pf-cap">{t('sec.stage', lang)}</div>
-              <StageBar lang={lang} stageKey={o.stage} />
-            </div>
             <div className="pf-colbox">
               <div className="pf-cap">{t('sec.ownership', lang)}</div>
               <Cell l={t('d.ownership', lang)} v={lang === 'ar' ? pr.ownership.ar : pr.ownership.en} />
@@ -135,19 +138,6 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
               <Cell l={t('sec.license', lang)} v={lic ? (lang === 'ar' ? lic.ar : lic.en) : '—'} />
               <Cell l={t('d.landuse', lang)} v={luLabel} />
             </div>
-            {summary && (
-              <div className="pf-summary-box">
-                <div className="pf-cap">{lang === 'ar' ? 'نبذة' : 'Summary'}</div>
-                <p>{summary}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="pf-bcol">
-            <div className="pf-barbox">
-              <div className="pf-cap">{t('sec.license', lang)}</div>
-              <StageBar lang={lang} stageKey={o.license} stages={LICENSE_STAGES} variant="license" />
-            </div>
             {o.investment && INVEST_FIELDS.some((f) => o.investment![f.key] != null) && (
               <div className="pf-invest-box">
                 <div className="pf-cap">{t('sec.invest', lang)}</div>
@@ -161,6 +151,17 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="pf-bcol">
+            <div className="pf-barbox">
+              <div className="pf-cap">{t('sec.stage', lang)}</div>
+              <StageBar lang={lang} stageKey={o.stage} />
+            </div>
+            <div className="pf-barbox">
+              <div className="pf-cap">{t('sec.license', lang)}</div>
+              <StageBar lang={lang} stageKey={o.license} stages={LICENSE_STAGES} variant="license" />
+            </div>
           </div>
         </div>
 

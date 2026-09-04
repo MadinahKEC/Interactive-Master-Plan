@@ -69,9 +69,15 @@ export function DevPlanView({
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? nf.format(Number(v.toFixed?.(d) ?? v)) : '—');
 
   return (
-    <div className="admin-root devplan-view">
+    <div className="admin-root devplan-view" style={{ ['--mod' as string]: '#3E8E7E' }}>
       <div className="admin-head">
-        <div className="admin-brand"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /><b>{t('dp.title', lang)}</b>
+        <div className="admin-brand">
+          <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
+          <span className="admin-bicon"><IconCalendar size={18} /></span>
+          <div className="admin-btitle">
+            <span className="admin-kicker">{t('brand.title', lang)}</span>
+            <b>{t('dp.title', lang)}</b>
+          </div>
           <span className="dp-badge">{planned.length} {t('dp.count', lang)}</span>
         </div>
         <button className="ic-btn lg" onClick={onClose}><IconClose size={20} /></button>
@@ -107,10 +113,18 @@ export function DevPlanView({
         </div>
       )}
 
-      <div className="admin-content dpg-wrap">
+      <div className="admin-content dpl-wrap">
         {planned.length === 0 && <div className="empty">{t('dp.noPlan', lang)}</div>}
         {shown.length > 0 && (
-          <div className="dpg">
+          <div className="dpl">
+            <div className="dpl-head">
+              <span className="dpl-ch-id">{t('dp.plot', lang)}</span>
+              <span className="dpl-ch-status">{t('d.status', lang)}</span>
+              <span className="dpl-ch-lu">{t('d.landuse', lang)}</span>
+              <span className="dpl-ch-metrics">{t('d.area', lang)} · GFA · {t('d.floors', lang)}</span>
+              <span className="dpl-ch-prog">{t('sec.devplan', lang)}</span>
+              <span className="dpl-ch-acts" />
+            </div>
             {shown.map((f) => {
               const p = f.properties;
               const pr = resolveProject(p.code, p.land_use, projects);
@@ -125,39 +139,38 @@ export function DevPlanView({
                 return ds.length && de.length ? `${ds[0]} → ${de[de.length - 1]}` : '—';
               })();
               return (
-                <div className="dpg-card" key={p.code} style={{ ['--st' as string]: pr.status.color }} onClick={() => canEdit && onEdit(p.code)}>
-                  <div className="dpg-top">
-                    <span className="dpg-ic"><TypeIcon typeKey={pr.type.key} size={17} /></span>
-                    <div className="dpg-h">
-                      <div className="dpg-name" title={name}>{name}</div>
-                      <div className="dpg-code"><span className="mono">{p.code}</span> · {lang === 'ar' ? pr.type.ar : pr.type.en}</div>
+                <div className="dpr" key={p.code} style={{ ['--st' as string]: pr.status.color }} onClick={() => canEdit && onEdit(p.code)}>
+                  <div className="dpr-id">
+                    <span className="dpr-ic"><TypeIcon typeKey={pr.type.key} size={16} /></span>
+                    <div className="dpr-idt">
+                      <div className="dpr-name" title={name}>{name}</div>
+                      <div className="dpr-code"><span className="mono">{p.code}</span> · {lang === 'ar' ? pr.type.ar : pr.type.en}</div>
                     </div>
-                    <span className="dpg-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
                   </div>
-                  <div className="dpg-meta">
-                    <span className="dpg-lu"><i style={{ background: lu?.color ?? '#ccc' }} />{lang === 'ar' ? lu?.labelAr ?? p.land_use : lu?.labelEn ?? p.land_use}</span>
-                    {pr.owner && <span className="dpg-owner" style={{ color: pr.ownership.color }}>{pr.owner}</span>}
+                  <span className="dpr-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
+                  <div className="dpr-lu">
+                    <span className="dpr-lu-nm"><i style={{ background: lu?.color ?? '#ccc' }} />{lang === 'ar' ? lu?.labelAr ?? p.land_use : lu?.labelEn ?? p.land_use}</span>
+                    {pr.owner && <span className="dpr-owner" style={{ color: pr.ownership.color }}>{pr.owner}</span>}
                   </div>
-                  <div className="dpg-metrics">
-                    <div><b>{num(p.area, 0)}</b><span>{t('d.area', lang)} m²</span></div>
-                    <div><b>{num(p.gfa, 0)}</b><span>GFA m²</span></div>
+                  <div className="dpr-metrics">
+                    <div><b>{num(p.area, 0)}</b><span>m²</span></div>
+                    <div><b>{num(p.gfa, 0)}</b><span>GFA</span></div>
                     <div><b>{num(p.floors)}</b><span>{t('d.floors', lang)}</span></div>
                   </div>
-                  <div className="dpg-prog">
-                    <div className="dpg-prog-h"><span>{t('sec.devplan', lang)}</span><span className="dpg-pct">{pct}%</span></div>
-                    <div className="dpg-bar">
-                      {phases.length === 0 ? <span className="dpg-seg" style={{ flex: 1, background: 'var(--kec-surface-2)' }} />
-                        : phases.map((ph, i) => <span key={i} className="dpg-seg" style={{ flex: 1, background: (STATUS_META[ph.status ?? 'Future'] ?? STATUS_META.Future).color }} title={(lang === 'ar' ? ph.name_ar || ph.name_en : ph.name_en || ph.name_ar) || ''} />)}
+                  <div className="dpr-prog">
+                    <div className="dpr-bar">
+                      {phases.length === 0 ? <span className="dpr-seg" style={{ flex: 1, background: 'var(--kec-surface-2)' }} />
+                        : phases.map((ph, i) => <span key={i} className="dpr-seg" style={{ flex: 1, background: (STATUS_META[ph.status ?? 'Future'] ?? STATUS_META.Future).color }} title={(lang === 'ar' ? ph.name_ar || ph.name_en : ph.name_en || ph.name_ar) || ''} />)}
                     </div>
-                    <div className="dpg-phases">
-                      {phases.slice(0, 4).map((ph, i) => <span className="dpg-ph" key={i}><i style={{ background: (STATUS_META[ph.status ?? 'Future'] ?? STATUS_META.Future).color }} />{(lang === 'ar' ? ph.name_ar || ph.name_en : ph.name_en || ph.name_ar) || `${lang === 'ar' ? 'مرحلة' : 'Phase'} ${i + 1}`}</span>)}
+                    <div className="dpr-prog-foot">
+                      <span className="dpr-range mono">{range}</span>
+                      <span className="dpr-pct">{pct}% · {phases.length} {t('dp.phasesShort', lang)}</span>
                     </div>
-                    <div className="dpg-range mono">{range}</div>
                   </div>
-                  <div className="dpg-acts" onClick={(e) => e.stopPropagation()}>
-                    <button className="mini-btn" onClick={() => viewOnMap(p.code)}><IconZoom size={12} /> {t('dp.viewOnMap', lang)}</button>
-                    {canEdit && <button className="mini-btn" title={t('d.editAttrs', lang)} onClick={() => onEdit(p.code)}><IconEdit size={12} /></button>}
-                    {canEdit && <button className="mini-btn danger" title={t('d.removeFromPlan', lang)} onClick={async () => { if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{p.code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconCalendar size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(p.code, { phases: [] }); }}><IconTrash size={12} /></button>}
+                  <div className="dpr-acts" onClick={(e) => e.stopPropagation()}>
+                    <button className="mini-btn" title={t('dp.viewOnMap', lang)} onClick={() => viewOnMap(p.code)}><IconZoom size={13} /></button>
+                    {canEdit && <button className="mini-btn" title={t('d.editAttrs', lang)} onClick={() => onEdit(p.code)}><IconEdit size={13} /></button>}
+                    {canEdit && <button className="mini-btn danger" title={t('d.removeFromPlan', lang)} onClick={async () => { if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{p.code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconCalendar size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(p.code, { phases: [] }); }}><IconTrash size={13} /></button>}
                   </div>
                 </div>
               );

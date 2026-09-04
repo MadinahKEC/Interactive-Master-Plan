@@ -729,12 +729,14 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-htitle h1{font-family:var(--kec-serif);font-size:23px;font-weight:700;line-height:1.2;margin-top:3px;color:#fff}
 .pf-ref{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:10.5px;color:rgba(255,255,255,.85);text-align:end;z-index:1}
 .pf-refno{background:rgba(255,255,255,.16);border-radius:6px;padding:3px 9px;font-weight:600}
-.pf-hero{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;padding:18px 22px 8px;align-items:stretch;flex:none}
-.pf-media{display:flex;flex-direction:column;gap:8px;min-height:0}
-.pf-photo-main{width:100%;flex:1;min-height:150px;object-fit:cover;border-radius:12px;border:1px solid var(--kec-hairline)}
+.pf-hero{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;padding:14px 22px 6px;align-items:stretch;flex:none}
+/* fixed media height → a tall gallery image can never grow the hero row
+   (auto grid rows size to an <img>'s intrinsic aspect ratio otherwise) */
+.pf-media{display:flex;flex-direction:column;gap:8px;min-height:0;height:300px}
+.pf-photo-main{width:100%;flex:1;min-height:0;height:0;object-fit:cover;border-radius:12px;border:1px solid var(--kec-hairline)}
 .pf-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pf-thumbs img{width:100%;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--kec-hairline)}
-.pf-noimg{flex:1;min-height:180px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-size:22px;font-weight:700;letter-spacing:.04em}
+.pf-noimg{flex:1;min-height:0;height:0;border-radius:12px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-size:22px;font-weight:700;letter-spacing:.04em}
 .pf-side{display:flex;flex-direction:column;gap:12px}
 .pf-chips{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .pf-code{font-size:13px;font-weight:700;color:var(--kec-title);background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:8px;padding:5px 11px}
@@ -753,8 +755,13 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-cap{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
 /* balanced two-column body — each column stacks its own boxes so a short box
    (stepper) never leaves a tall gap next to a long one (permit ledger). */
-.pf-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:14px 22px 8px;align-items:start;flex:1 1 auto;min-height:0;overflow:hidden}
-.pf-body .pf-summary-box p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
+/* project brief — a full-width band placed directly after the plot info (hero),
+   never buried at the end; clamped so every factsheet keeps one-page parity */
+.pf-brief{flex:none;margin:5px 22px 0;padding:9px 15px;background:linear-gradient(120deg,var(--kec-surface),var(--kec-paper));
+  border:1px solid var(--kec-hairline);border-inline-start:4px solid var(--kec-gold);border-radius:12px}
+.pf-brief .pf-cap{margin-bottom:4px}
+.pf-brief p{font-size:11.5px;line-height:1.55;color:var(--kec-ink);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.pf-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 22px 8px;align-items:start;align-content:start;flex:1 1 auto;min-height:0;overflow:hidden}
 .pf-bcol{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* compact the permit ledger inside the factsheet so the right column tracks the left */
 .pf-body .permledger{padding:2px 0 0;gap:5px}
@@ -811,8 +818,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   .rp-map{max-height:62mm;object-fit:cover;margin-bottom:8px}
   .rp-sub{margin:2px 0 5px}.rp-kpis{gap:6px;margin-bottom:8px}.rp-kpi{padding:7px}.rp-kpi .v{font-size:15px}
   .rp-bars{gap:4px}.rp-foot{padding-top:8px;border-top:1px solid var(--kec-hairline)}
-  /* factsheet media */
-  .pf-photo-main{height:110px}.pf-noimg{height:160px}
+  /* factsheet media heights come from flex (identical on screen & print) */
   /* orientation injected at print time by printWithPage() */
 }
 .rp-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:18px}
