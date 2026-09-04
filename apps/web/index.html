@@ -17,23 +17,27 @@
     />
   </head>
   <body>
-    <!-- Boot splash: branded loading shown from the very first frame until React mounts,
-         so entering the site feels like opening an app rather than a blank flash. -->
+    <!-- Boot splash: shown from the very first frame and kept visually identical to the
+         React splash (same logo, ring, caption) so the handoff is one continuous screen,
+         not two loaders back-to-back. Caption matches the app's default language (en). -->
     <style>
       #boot{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;gap:18px;background:#FBFCFA;
+        align-items:center;justify-content:center;gap:16px;background:#FBFCFA;
         transition:opacity .35s ease}
       #boot.boot--gone{opacity:0;pointer-events:none}
-      #boot img{height:66px;width:auto;animation:bootpulse 1.8s ease-in-out infinite}
-      #boot .boot-ring{width:34px;height:34px;border-radius:50%;
-        border:3px solid #EAF3E4;border-top-color:#2F6B3E;animation:bootspin .9s linear infinite}
+      #boot img{height:64px;width:auto;animation:bootpulse 1.8s ease-in-out infinite}
+      #boot .boot-ring{width:36px;height:36px;border-radius:50%;
+        border:3px solid #EAF3E4;border-top-color:#2F6B3E;animation:bootspin 1s linear infinite}
+      #boot .boot-cap{font-family:'Inter','Readex Pro',system-ui,sans-serif;font-size:12.5px;
+        font-weight:600;letter-spacing:.02em;color:#1E4D2B}
       @keyframes bootspin{to{transform:rotate(360deg)}}
-      @keyframes bootpulse{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
-      @media (prefers-color-scheme:dark){#boot{background:#0F1F15}#boot .boot-ring{border-color:#274031;border-top-color:#3E8E4F}}
+      @keyframes bootpulse{0%,100%{opacity:.65;transform:scale(.97)}50%{opacity:1;transform:scale(1.03)}}
+      @media (prefers-color-scheme:dark){#boot{background:#0F1F15}#boot .boot-ring{border-color:#274031;border-top-color:#3E8E4F}#boot .boot-cap{color:#CFE6D3}}
     </style>
     <div id="boot">
       <img src="./KEC.png" alt="Knowledge Economic City" onerror="this.style.display='none'" />
       <div class="boot-ring"></div>
+      <div class="boot-cap">Loading the interactive map…</div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

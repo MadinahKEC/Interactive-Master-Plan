@@ -175,62 +175,25 @@
 .img-add:hover{border-color:var(--kec-green);color:var(--kec-green)}
 .img-err{font-size:11px;color:var(--kec-neg)}
 
-/* development plan */
-
-/* Development Plan main view */
-.dp-badge{font-size:11px;background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:3px 11px;margin-inline-start:10px;font-weight:500}
-.dp-addbar{display:flex;align-items:center;gap:10px;padding:14px 26px;background:var(--kec-surface);border-bottom:1px solid var(--kec-hairline);flex:none}
-.dp-addbar input{width:280px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:10px;padding:10px 14px;font-family:var(--kec-mono);font-size:13px;color:var(--kec-ink);outline:0}
-.dp-addbar .btn{display:flex;align-items:center;gap:6px}
-.dp-nf{font-size:12px;color:var(--kec-neg)}
-.devplan-view .admin-content{display:flex;flex-direction:column;gap:14px}
-/* premium plan summary ribbon + status filters */
-.dpv-summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:14px 26px;border-bottom:1px solid var(--kec-hairline);background:linear-gradient(180deg,var(--kec-surface),transparent);flex:none}
-.dpv-kpis{display:flex;gap:10px;flex-wrap:wrap}
-.dpv-kpi{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--kec-hairline);border-radius:12px;padding:9px 16px;min-width:96px}
-.dpv-kpi.accent{background:linear-gradient(160deg,var(--card),#F6F1DC);border-color:#E4D9A8}
-.dk-v{font-family:var(--kec-num,'IBM Plex Mono',monospace);font-size:20px;font-weight:700;color:var(--kec-green-deep);line-height:1.1;font-variant-numeric:tabular-nums}
-.dpv-kpi.accent .dk-v{color:#8A7A16}
-.dk-l{font-size:10px;font-weight:600;color:var(--kec-muted);letter-spacing:.02em}
-.dpv-filters{display:flex;gap:7px;flex-wrap:wrap}
-.dpf{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--kec-ink);background:var(--card);border:1px solid var(--kec-hairline);border-radius:20px;padding:6px 13px;cursor:pointer;transition:.15s}
-.dpf:hover{border-color:var(--kec-green-mid)}
-.dpf.on{color:#fff}
-.dpf-dot{width:8px;height:8px;border-radius:50%;flex:none}
-.dpf b{font-family:var(--kec-num,monospace);font-weight:700;opacity:.85}
-.dpf.on .dpf-dot{background:#fff!important}
-/* Development-plan — one plot per row (never side-by-side); table-aligned list */
-.dpl-wrap{padding:16px 22px;overflow-x:auto}
-.dpl{display:flex;flex-direction:column;gap:8px;min-width:860px}
-.dpl-head,.dpr{display:grid;align-items:center;gap:14px}
-.dpl-head{grid-template-columns:minmax(200px,1.5fr) 112px minmax(150px,1.3fr) 186px minmax(220px,2fr) 104px;padding:2px 16px 6px;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--kec-muted)}
-.dpl-head span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dpl-ch-status,.dpl-ch-metrics{text-align:center}
-.dpr{grid-template-columns:minmax(200px,1.5fr) 112px minmax(150px,1.3fr) 186px minmax(220px,2fr) 104px;
-  background:var(--card);border:1px solid var(--kec-hairline);border-inline-start:4px solid var(--st,var(--kec-green));border-radius:12px;padding:11px 16px;cursor:pointer;transition:box-shadow .15s,transform .12s,border-color .15s;box-shadow:var(--shadow)}
-.dpr:hover{box-shadow:0 8px 22px rgba(20,61,30,.11);transform:translateY(-1px);border-color:var(--kec-green-mid)}
-.dpr-id{display:flex;align-items:center;gap:10px;min-width:0}
-.dpr-ic{width:34px;height:34px;border-radius:10px;background:var(--kec-surface-2);color:var(--kec-title);display:flex;align-items:center;justify-content:center;flex:none}
-.dpr-idt{min-width:0}
-.dpr-name{font-size:14px;font-weight:700;color:var(--kec-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dpr-code{font-size:10.5px;color:var(--kec-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dpr-status{justify-self:center;font-size:10px;font-weight:700;color:#fff;padding:4px 10px;border-radius:20px;white-space:nowrap}
-.dpr-lu{display:flex;flex-direction:column;gap:2px;min-width:0}
-.dpr-lu-nm{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--kec-ink);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dpr-lu-nm i{width:10px;height:10px;border-radius:3px;flex:none}
-.dpr-owner{font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dpr-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.dpr-metrics>div{background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:8px;padding:5px 4px;text-align:center}
-.dpr-metrics b{display:block;font-size:13px;font-weight:800;color:var(--kec-title);font-family:var(--kec-num,monospace);line-height:1.1}
-.dpr-metrics span{display:block;font-size:8px;color:var(--kec-muted);text-transform:uppercase;letter-spacing:.02em;margin-top:1px}
-.dpr-prog{display:flex;flex-direction:column;gap:6px;min-width:0}
-.dpr-bar{display:flex;gap:3px;height:8px}
-.dpr-seg{border-radius:3px}
-.dpr-prog-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px}
-.dpr-range{color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dpr-pct{font-weight:700;color:var(--kec-title);white-space:nowrap;flex:none}
-.dpr-acts{display:flex;gap:5px;justify-content:flex-end}
-.dpr-acts .mini-btn{display:inline-flex;align-items:center;justify-content:center;padding:6px}
+/* Plots & Plan (merged tab) — high-level filter bar + in-table plan column */
+.pf-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.admin-select{background:var(--card);border:1px solid var(--kec-hairline);border-radius:10px;padding:9px 12px;font-size:12.5px;color:var(--kec-ink);outline:0;cursor:pointer;max-width:180px;transition:border-color .15s}
+.admin-select:focus{border-color:var(--kec-green)}
+.plan-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
+.plan-chips button{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--kec-ink);background:var(--card);border:1px solid var(--kec-hairline);border-radius:20px;padding:7px 13px;cursor:pointer;transition:.15s}
+.plan-chips button:hover{border-color:var(--kec-green-mid)}
+.plan-chips button.on{background:var(--kec-green);border-color:var(--kec-green);color:#fff}
+.plan-chips button b{font-family:var(--kec-num,monospace);font-weight:700;opacity:.9}
+.pf-reset{flex:none}
+.pf-more{padding:12px;text-align:center;font-size:11.5px;color:var(--kec-muted)}
+/* plan column inside the plots table */
+.at-plan{display:flex;align-items:center;gap:8px;min-width:0}
+.at-plan-bar{flex:1;min-width:44px;max-width:110px;height:7px;border-radius:4px;background:var(--kec-surface-2);overflow:hidden}
+.at-plan-bar>span{display:block;height:100%;border-radius:4px}
+.at-plan-m{font-size:10.5px;color:var(--kec-muted);white-space:nowrap;flex:none}
+.at-plan .mini-btn{display:inline-flex;align-items:center;justify-content:center;padding:5px}
+.mini-btn.add-plan{display:inline-flex;align-items:center;gap:6px;color:var(--kec-green);border-color:color-mix(in srgb,var(--kec-green) 45%,transparent);font-weight:600}
+.mini-btn.add-plan:hover{background:color-mix(in srgb,var(--kec-green) 10%,transparent)}
 
 .admin-table-wrap{overflow-x:auto}
 /* development-plan plot styling editor (Land Uses tab) */

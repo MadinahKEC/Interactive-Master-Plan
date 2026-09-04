@@ -7,7 +7,6 @@ import { DetailPanel } from './components/DetailPanel';
 import { MultiSelectPanel } from './components/MultiSelectPanel';
 import { ShortlistBar } from './components/ShortlistBar';
 import { AdminConsole } from './admin/AdminConsole';
-import { DevPlanView } from './components/DevPlanView';
 import { ExecDashboard } from './components/ExecDashboard';
 import { AnnotateToolbar } from './components/AnnotateToolbar';
 import { ReportView } from './components/ReportView';
@@ -38,7 +37,6 @@ export default function App() {
   const luHidden = useOverrides((s) => s.hiddenLandUses);
 
   const [adminOpen, setAdminOpen] = useState(false);
-  const [devOpen, setDevOpen] = useState(false);
   const [editCode, setEditCode] = useState<string | null>(null);
   const [subdivideCode, setSubdivideCode] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -62,7 +60,6 @@ export default function App() {
   useBackClose(!!dialogSpec, () => useDialog.getState().close({ value: null, fields: {} }), 200);
   useBackClose(!!subdivideCode, () => setSubdivideCode(null), 90);
   useBackClose(adminOpen, () => { setAdminOpen(false); setEditCode(null); useApp.getState().reveal(); }, 80);
-  useBackClose(devOpen, () => { setDevOpen(false); useApp.getState().reveal(); }, 70);
   useBackClose(reportImage !== null, () => useApp.getState().setReportImage(null), 60);
   useBackClose(helpOpen, () => setHelpOpen(false), 55);
   useBackClose(!!editGeom, () => useApp.getState().setEditGeom(null), 45);
@@ -91,7 +88,6 @@ export default function App() {
       if (a.reportImage !== null) { a.setReportImage(null); return; }
       if (subdivideCode) { setSubdivideCode(null); return; }
       if (adminOpen) { setAdminOpen(false); setEditCode(null); a.reveal(); return; }
-      if (devOpen) { setDevOpen(false); a.reveal(); return; }
       if (a.editGeom) { a.setEditGeom(null); return; }
       if (a.creating) { a.setCreating(false); return; }
       if (a.measuring) { a.setMeasuring(false); return; }
@@ -100,7 +96,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [subdivideCode, adminOpen, devOpen, helpOpen, execOpen]);
+  }, [subdivideCode, adminOpen, helpOpen, execOpen]);
 
   // Global keyboard shortcuts (ignored while typing in a field).
   useEffect(() => {
@@ -164,7 +160,7 @@ export default function App() {
   return (
     <>
       <MapView data={data} projects={projects} landUses={landUses} canAnnotate={canAnnotate} />
-      <Sidebar onOpenAdmin={() => openAdmin()} onOpenDevPlan={() => setDevOpen(true)} onOpenExec={() => setExecOpen(true)} />
+      <Sidebar onOpenAdmin={() => openAdmin()} onOpenExec={() => setExecOpen(true)} />
       {!railOpen && (
         <button className="rail-reveal" onClick={() => useApp.getState().toggleRail()} title={t('tb.showMenu', lang)} aria-label={t('tb.showMenu', lang)}>
           <img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
@@ -186,10 +182,6 @@ export default function App() {
       <AdminConsole
         open={adminOpen} onClose={() => { setAdminOpen(false); setEditCode(null); useApp.getState().reveal(); }}
         editCode={editCode} data={data} projects={projects} landUses={landUses}
-      />
-      <DevPlanView
-        open={devOpen} onClose={() => { setDevOpen(false); useApp.getState().reveal(); }}
-        data={data} projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)}
       />
       {execOpen && data && <ExecDashboard data={data} projects={projects} landUses={landUses} onClose={() => { setExecOpen(false); useApp.getState().reveal(); }} />}
       <div className="credit">© {t('credit', lang)}</div>

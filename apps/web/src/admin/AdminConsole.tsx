@@ -4,11 +4,11 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary, watchAccessLog, restoreFromBackup, type AccessSession } from '../lib/firebase';
-import { LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { LICENSE_STAGES, PROGRESS_STAGES, STANDARD_PHASES, STATUS_META, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { PlotEditor } from './PlotEditor';
-import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin } from '../components/icons';
+import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin, IconPlus, IconZoom } from '../components/icons';
 
 type Tab = 'plots' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: Record<Tab, (p: { size?: number }) => JSX.Element> = {
@@ -38,7 +38,7 @@ export function AdminConsole({
   open: boolean; onClose: () => void; editCode: string | null;
   data: PlotCollection | null; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>;
 }) {
-  const { lang } = useApp();
+  const { lang, select, requestZoom } = useApp();
   const role = useAuth((s) => s.user?.role);
   const isAdmin = role === 'administrator';
   const [tab, setTab] = useState<Tab>('plots');
@@ -47,6 +47,11 @@ export function AdminConsole({
   useEffect(() => {
     if (open && editCode) { setTab('plots'); setEditing(editCode); }
   }, [open, editCode]);
+
+  const viewOnMap = (code: string) => {
+    const f = data?.features.find((x) => x.properties.code === code);
+    if (f) { select(f.properties); requestZoom(code); onClose(); }
+  };
 
   if (!open || !data) return null;
   return (
@@ -80,7 +85,7 @@ export function AdminConsole({
           })}
         </nav>
         <section className="admin-content">
-          {tab === 'plots' && <PlotsTab data={data} projects={projects} landUses={landUses} onEdit={setEditing} />}
+          {tab === 'plots' && <PlotsTab data={data} projects={projects} landUses={landUses} onEdit={setEditing} onViewMap={viewOnMap} />}
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
           {tab === 'users' && <UsersTab />}
           {tab === 'access' && <AccessLogTab />}
@@ -94,46 +99,121 @@ export function AdminConsole({
 }
 
 
-/* ---------------- Plots table ---------------- */
-function PlotsTab({ data, projects, landUses, onEdit }: { data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>; onEdit: (c: string) => void }) {
+/* ---------------- Plots + Development plan (merged) ---------------- */
+const PLAN_STATUS_KEYS = ['Completed', 'UnderConstruction', 'Future', 'Partner'];
+const ROW_CAP = 300;
+
+function PlotsTab({ data, projects, landUses, onEdit, onViewMap }: {
+  data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>;
+  onEdit: (c: string) => void; onViewMap: (c: string) => void;
+}) {
   const { lang } = useApp();
+  const setProject = useOverrides((s) => s.setProject);
   const [q, setQ] = useState('');
+  const [luF, setLuF] = useState('');
+  const [secF, setSecF] = useState('');
+  const [statusF, setStatusF] = useState('');
+  const [planF, setPlanF] = useState<'all' | 'in' | 'out'>('all');
   const [sort, setSort] = useState<{ k: string; dir: 1 | -1 }>({ k: 'code', dir: 1 });
+
+  const all = useMemo(() => data.features.map((f) => {
+    const p = f.properties; const pr = resolveProject(p.code, p.land_use, projects);
+    const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : '—';
+    const phs = pr.overlay.phases ?? [];
+    const done = phs.filter((ph) => ph.status === 'Completed').length;
+    return {
+      code: p.code, name, luKey: (p.land_use as string) ?? '',
+      land_use: lang === 'ar' ? landUses[p.land_use as string]?.labelAr ?? p.land_use : landUses[p.land_use as string]?.labelEn ?? p.land_use,
+      luColor: landUses[p.land_use as string]?.color ?? '#C9C9C9', sector: p.sector, floors: p.floors ?? 0, area: p.area ?? 0,
+      status: lang === 'ar' ? pr.status.ar : pr.status.en, statusKey: pr.status.key, statusColor: pr.status.color,
+      inPlan: phs.length > 0, phases: phs.length, pct: phs.length ? Math.round((done / phs.length) * 100) : 0,
+    };
+  }), [data, projects, landUses, lang]);
+
+  const planned = useMemo(() => all.filter((r) => r.inPlan).length, [all]);
+
   const rows = useMemo(() => {
     const s = q.trim().toUpperCase();
-    let r = data.features.map((f) => {
-      const p = f.properties; const pr = resolveProject(p.code, p.land_use, projects);
-      const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : '—';
-      return { code: p.code, name, land_use: lang === 'ar' ? landUses[p.land_use as string]?.labelAr ?? p.land_use : landUses[p.land_use as string]?.labelEn ?? p.land_use, luColor: landUses[p.land_use as string]?.color ?? '#C9C9C9', sector: p.sector, floors: p.floors ?? 0, area: p.area ?? 0, status: lang === 'ar' ? pr.status.ar : pr.status.en, statusColor: pr.status.color };
-    });
+    let r = all;
     if (s) r = r.filter((x) => x.code.toUpperCase().includes(s) || (x.name ?? '').toUpperCase().includes(s));
-    r.sort((a: any, b: any) => (a[sort.k] > b[sort.k] ? 1 : a[sort.k] < b[sort.k] ? -1 : 0) * sort.dir);
-    return r.slice(0, 200);
-  }, [data, projects, landUses, q, sort, lang]);
+    if (luF) r = r.filter((x) => x.luKey === luF);
+    if (secF) r = r.filter((x) => x.sector === secF);
+    if (statusF) r = r.filter((x) => x.statusKey === statusF);
+    if (planF === 'in') r = r.filter((x) => x.inPlan);
+    else if (planF === 'out') r = r.filter((x) => !x.inPlan);
+    return [...r].sort((a: any, b: any) => (a[sort.k] > b[sort.k] ? 1 : a[sort.k] < b[sort.k] ? -1 : 0) * sort.dir);
+  }, [all, q, luF, secF, statusF, planF, sort]);
+
+  const shown = rows.slice(0, ROW_CAP);
+
   const th = (k: string, label: string) => (
     <th onClick={() => setSort((s) => ({ k, dir: s.k === k ? (s.dir === 1 ? -1 : 1) : 1 }))}>{label}{sort.k === k ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}</th>
   );
+
+  const addToPlan = (code: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const end = new Date(Date.now() + 180 * 864e5).toISOString().slice(0, 10);
+    setProject(code, { phases: [{ name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' }] });
+    onEdit(code);
+  };
+  const removeFromPlan = async (code: string) => {
+    if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconTrash size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(code, { phases: [] });
+  };
+  const resetFilters = () => { setQ(''); setLuF(''); setSecF(''); setStatusF(''); setPlanF('all'); };
+  const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
+
   return (
     <div className="tab-plots">
-      <div className="tab-toolbar">
+      <div className="pf-filters">
         <input className="admin-search" placeholder={t('a.search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
+        <select className="admin-select" value={luF} onChange={(e) => setLuF(e.target.value)}>
+          <option value="">{t('a.landuse', lang)}: {t('cp.all', lang)}</option>
+          {Object.keys(landUses).map((k) => <option key={k} value={k}>{lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}</option>)}
+        </select>
+        <select className="admin-select" value={secF} onChange={(e) => setSecF(e.target.value)}>
+          <option value="">{t('a.sector', lang)}: {t('cp.all', lang)}</option>
+          {Object.keys(SECTORS).map((k) => <option key={k} value={k}>{lang === 'ar' ? (SECTORS as any)[k]?.labelAr ?? k : k}</option>)}
+        </select>
+        <select className="admin-select" value={statusF} onChange={(e) => setStatusF(e.target.value)}>
+          <option value="">{t('a.status', lang)}: {t('cp.all', lang)}</option>
+          {PLAN_STATUS_KEYS.map((k) => <option key={k} value={k}>{lang === 'ar' ? STATUS_META[k].ar : STATUS_META[k].en}</option>)}
+        </select>
+        <div className="plan-chips">
+          <button className={planF === 'all' ? 'on' : ''} onClick={() => setPlanF('all')}>{t('cp.all', lang)} <b>{all.length}</b></button>
+          <button className={planF === 'in' ? 'on' : ''} onClick={() => setPlanF('in')}>{t('dp.inPlan', lang)} <b>{planned}</b></button>
+          <button className={planF === 'out' ? 'on' : ''} onClick={() => setPlanF('out')}>{t('dp.notInPlan', lang)} <b>{all.length - planned}</b></button>
+        </div>
+        {(q || luF || secF || statusF || planF !== 'all') && <button className="btn sm pf-reset" onClick={resetFilters}>{t('a.reset', lang)}</button>}
         <span className="tt-count"><b>{rows.length}</b> {t('cp.plotsWord', lang)}</span>
       </div>
       <div className="table-scroll">
         <table className="admin-table admin-table--plots">
-          <thead><tr>{th('code', t('cp.plotsWord', lang))}{th('name', t('a.name', lang))}{th('land_use', t('a.landuse', lang))}{th('sector', t('a.sector', lang))}{th('floors', t('d.floors', lang))}{th('area', t('d.area', lang))}{th('status', t('a.status', lang))}</tr></thead>
+          <thead><tr>{th('code', t('cp.plotsWord', lang))}{th('name', t('a.name', lang))}{th('land_use', t('a.landuse', lang))}{th('sector', t('a.sector', lang))}{th('floors', t('d.floors', lang))}{th('area', t('d.area', lang))}{th('status', t('a.status', lang))}{th('inPlan', t('sec.devplan', lang))}</tr></thead>
           <tbody>
-            {rows.map((r) => (
+            {shown.map((r) => (
               <tr key={r.code} onClick={() => onEdit(r.code)}>
                 <td className="mono at-code">{r.code}</td><td>{r.name}</td>
                 <td><span className="at-lu"><span className="at-sw" style={{ background: r.luColor }} />{r.land_use}</span></td>
                 <td>{lang === 'ar' ? SECTORS[r.sector]?.labelAr ?? r.sector : r.sector}</td>
                 <td className="mono">{r.floors}</td><td className="mono">{Math.round(r.area).toLocaleString()}</td>
                 <td><span className="at-status" style={{ color: r.statusColor, background: r.statusColor + '1f', borderColor: r.statusColor + '55' }}>{r.status}</span></td>
+                <td onClick={stop}>
+                  {r.inPlan ? (
+                    <div className="at-plan">
+                      <span className="at-plan-bar"><span style={{ width: `${r.pct}%`, background: r.statusColor }} /></span>
+                      <span className="at-plan-m mono">{r.pct}% · {r.phases}</span>
+                      <button className="mini-btn" title={t('dp.viewOnMap', lang)} onClick={() => onViewMap(r.code)}><IconZoom size={12} /></button>
+                      <button className="mini-btn danger" title={t('d.removeFromPlan', lang)} onClick={() => removeFromPlan(r.code)}><IconTrash size={12} /></button>
+                    </div>
+                  ) : (
+                    <button className="mini-btn add-plan" title={t('dp.addPlot', lang)} onClick={() => addToPlan(r.code)}><IconPlus size={13} /> {t('dp.tab', lang)}</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {rows.length > ROW_CAP && <div className="pf-more">{t('dp.refine', lang)} — {rows.length}</div>}
       </div>
     </div>
   );

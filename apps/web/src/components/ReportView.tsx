@@ -45,7 +45,7 @@ export function ReportView({ data, landUses, projects }: {
   if (reportImage === null) return null;
   const projectsNamed = Object.values(projects).filter((p) => p.name_ar || p.name_en).length;
   const now = new Date();
-  const date = now.toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB');
+  const date = now.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB');
   const pad = (x: number) => String(x).padStart(2, '0');
   const ref = `KEC-MP-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   const dl = () => { const a = document.createElement('a'); a.href = reportImage; a.download = `${ref}.png`; a.click(); };
