@@ -144,7 +144,7 @@ interface OverridesState {
 
 // Prepend an audit entry (carrying its compact undo image) and cap the log.
 const pushAudit = (s: OverridesState, e: Omit<AuditEntry, 'at' | 'id'>): AuditEntry[] =>
-  [{ ...e, at: Date.now(), id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, ...s.audit].slice(0, 120);
+  [{ ...e, at: Date.now(), id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, ...s.audit].slice(0, 1000);
 
 export const SUPER_ADMIN_EMAIL = 'shamdan@madinahkec.com';
 export const seedUsers: AdminUser[] = [

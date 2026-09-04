@@ -165,7 +165,7 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
         </div>
 
         <footer className="pf-footer">
-          <span>© {lang === 'ar' ? 'مدينة المعرفة الاقتصادية — المخطط العام' : 'Knowledge Economic City — Master Plan'}</span>
+          <span>© {lang === 'ar' ? 'مدينة المعرفة الاقتصادية — المخطط العام التفاعلي' : 'Knowledge Economic City — Interactive Master Plan'}</span>
           <span className="mono">{ref}</span>
         </footer>
       </div>

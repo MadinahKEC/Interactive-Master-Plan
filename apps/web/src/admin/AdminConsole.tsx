@@ -4,20 +4,20 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary, watchAccessLog, restoreFromBackup, type AccessSession } from '../lib/firebase';
-import { STATUS_META, LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { LICENSE_STAGES, PROGRESS_STAGES, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { PlotEditor } from './PlotEditor';
-import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconCalendar, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
+import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload } from '../components/icons';
 
-type Tab = 'plots' | 'devplan' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
+type Tab = 'plots' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: Record<Tab, (p: { size?: number }) => JSX.Element> = {
-  plots: IconPlots, devplan: IconCalendar, landuses: IconPalette,
+  plots: IconPlots, landuses: IconPalette,
   users: IconUsers, access: IconClock, audit: IconAudit, settings: IconSettings,
 };
 // Grouped, labelled navigation for a cleaner, more professional console.
 const NAV_GROUPS: { label?: string; ids: Tab[]; adminOnly?: Tab[] }[] = [
-  { label: 'a.grpData', ids: ['plots', 'devplan', 'landuses'] },
+  { label: 'a.grpData', ids: ['plots', 'landuses'] },
   { label: 'a.grpAdmin', ids: ['users', 'access', 'audit'], adminOnly: ['audit'] },
   { label: 'a.grpSystem', ids: ['settings'] },
 ];
@@ -74,7 +74,6 @@ export function AdminConsole({
         </nav>
         <section className="admin-content">
           {tab === 'plots' && <PlotsTab data={data} projects={projects} landUses={landUses} onEdit={setEditing} />}
-          {tab === 'devplan' && <DevPlanTab data={data} projects={projects} onEdit={setEditing} />}
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
           {tab === 'users' && <UsersTab />}
           {tab === 'access' && <AccessLogTab />}
@@ -133,49 +132,6 @@ function PlotsTab({ data, projects, landUses, onEdit }: { data: PlotCollection; 
   );
 }
 
-/* ---------------- Development plan (only planned plots) ---------------- */
-function DevPlanTab({ data, projects, onEdit }: { data: PlotCollection; projects: Record<string, ProjectInfo>; onEdit: (c: string) => void }) {
-  const { lang } = useApp();
-  const planned = useMemo(() => data.features.filter((f) => (projects[f.properties.code]?.phases?.length ?? 0) > 0), [data, projects]);
-  const times = planned.flatMap((f) => (projects[f.properties.code].phases ?? []).filter((p) => p.start && p.end).flatMap((p) => [new Date(p.start!).getTime(), new Date(p.end!).getTime()]));
-  const min = times.length ? Math.min(...times) : 0;
-  const max = times.length ? Math.max(...times) : 1;
-  const span = Math.max(1, max - min);
-
-  if (!planned.length) return <div className="empty">{t('dp.onlyPlanned', lang)} — {t('dp.noPlan', lang)}</div>;
-  return (
-    <div className="devplan">
-      <div className="dp-hint">{t('dp.onlyPlanned', lang)}</div>
-      {planned.map((f) => {
-        const code = f.properties.code;
-        const pr = resolveProject(code, f.properties.land_use, projects);
-        const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : code;
-        return (
-          <div className="dp-plot" key={code} onClick={() => onEdit(code)}>
-            <div className="dp-plot-head"><b className="mono">{code}</b><span>{name}</span></div>
-            <div className="dp-gantt">
-              {(pr.overlay.phases ?? []).map((ph, i) => {
-                const s = ph.start ? new Date(ph.start).getTime() : min;
-                const e = ph.end ? new Date(ph.end).getTime() : s;
-                const left = ((s - min) / span) * 100;
-                const width = Math.max(3, ((e - s) / span) * 100);
-                const st = STATUS_META[ph.status ?? 'Future'] ?? STATUS_META.Future;
-                const nm = (lang === 'ar' ? ph.name_ar || ph.name_en : ph.name_en || ph.name_ar) || `${lang === 'ar' ? 'مرحلة' : 'Phase'} ${i + 1}`;
-                return (
-                  <div className="dp-track" key={i}>
-                    <span className="dp-plabel">{nm}</span>
-                    <div className="dp-line"><span className="dp-bar" style={{ insetInlineStart: `${left}%`, width: `${width}%`, background: st.color }} title={`${ph.start ?? ''} → ${ph.end ?? ''}`} /></div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 /* ---------------- Land uses ---------------- */
 function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>; data: PlotCollection }) {
   const { lang } = useApp();
@@ -217,12 +173,14 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
           {planStyle.glow && <label className="lu-plan-s"><span>{t('a.planGlowW', lang)}</span><input type="range" min={3} max={18} step={1} value={planStyle.glowWidth ?? 9} onChange={(e) => setPlanStyle({ glowWidth: +e.target.value })} /></label>}
         </div>
       </div>
+      <div className="lu-sec-h">{t('cp.uses', lang)} <span className="lu-sec-n">{Object.keys(landUses).length}</span></div>
       {Object.keys(landUses).sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).map((k) => (
-        <div className="lu-row" key={k}>
+        <div className="lu-row" key={k} style={{ ['--lu' as string]: landUses[k].color }}>
           <input type="color" value={landUses[k].color} onChange={(e) => setLandUse(k, { color: e.target.value })} />
           <input className="lu-name" value={lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}
             onChange={(e) => setLandUse(k, lang === 'ar' ? { labelAr: e.target.value } : { labelEn: e.target.value })} />
           <span className="lu-key mono">{k}</span>
+          <span className="lu-usage"><span className="lu-usage-bar" style={{ width: `${((counts[k] || 0) / Math.max(1, ...Object.keys(landUses).map((x) => counts[x] || 0))) * 100}%`, background: landUses[k].color }} /></span>
           <span className="lu-ct mono">{counts[k] || 0}</span>
           <button className="mini-btn danger" onClick={() => removeOne(k)}>{t('a.remove', lang)}</button>
         </div>
@@ -388,6 +346,19 @@ function AuditTab() {
   const today = new Date().toDateString();
   const todayN = audit.filter((e) => new Date(e.at).toDateString() === today).length;
   const latest = audit.find((e) => e.prev);
+  // Group newest-first entries under a day heading (records are ordered, so no re-sort).
+  const groupByDay = (list: typeof rows) => {
+    const ykey = new Date().toDateString(); const ykey2 = new Date(Date.now() - 864e5).toDateString();
+    const out: { key: string; label: string; items: typeof rows }[] = [];
+    for (const e of list) {
+      const d = new Date(e.at); const key = d.toDateString();
+      const label = key === ykey ? t('cl.today', lang) : key === ykey2 ? t('cl.yesterday', lang)
+        : d.toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const last = out[out.length - 1];
+      if (last && last.key === key) last.items.push(e); else out.push({ key, label, items: [e] });
+    }
+    return out;
+  };
 
   return (
     <div className="clog">
@@ -406,25 +377,32 @@ function AuditTab() {
       {rows.length === 0 ? (
         <div className="clog-empty">{audit.length ? t('cl.emptyFilter', lang) : t('cl.empty', lang)}</div>
       ) : (
-        <ul className="clog-ol">
-          {rows.map((e) => {
-            const cat = auditCat(e.action);
-            return (
-              <li className="clog-o" key={e.id}>
-                <span className={`clog-tag ${cat}`}>{t(`cl.${cat}`, lang)}</span>
-                <span className="clog-t">
-                  <b>{e.target ?? e.action}</b>
-                  {e.detail && <span className="clog-dim"> · {e.detail}</span>}
-                </span>
-                <span className="clog-u" title={t('a.actor', lang)}>{e.actor ?? '—'}</span>
-                <span className="clog-when mono">{new Date(e.at).toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-GB', { dateStyle: 'short', timeStyle: 'short' })}</span>
-                {e.prev
-                  ? <button className="clog-ib dg" onClick={() => doRevert(e.id)} title={t('audit.revert', lang)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>
-                  : <span className="clog-old">{t('cl.olderNote', lang)}</span>}
-              </li>
-            );
-          })}
-        </ul>
+        <div className="clog-days">
+          {groupByDay(rows).map((g) => (
+            <div className="clog-day" key={g.key}>
+              <div className="clog-day-h"><span className="clog-day-l">{g.label}</span><span className="clog-day-n">{g.items.length}</span></div>
+              <ul className="clog-ol">
+                {g.items.map((e) => {
+                  const cat = auditCat(e.action);
+                  return (
+                    <li className="clog-o" key={e.id}>
+                      <span className={`clog-tag ${cat}`}>{t(`cl.${cat}`, lang)}</span>
+                      <span className="clog-t">
+                        <b>{e.target ?? e.action}</b>
+                        {e.detail && <span className="clog-dim"> · {e.detail}</span>}
+                      </span>
+                      <span className="clog-u" title={t('a.actor', lang)}>{e.actor ?? '—'}</span>
+                      <span className="clog-when mono">{new Date(e.at).toLocaleTimeString(lang === 'ar' ? 'ar-SA' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}</span>
+                      {e.prev
+                        ? <button className="clog-ib dg" onClick={() => doRevert(e.id)} title={t('audit.revert', lang)}><IconUndo size={13} /> {t('audit.revert', lang)}</button>
+                        : <span className="clog-old">{t('cl.olderNote', lang)}</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
