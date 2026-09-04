@@ -50,7 +50,7 @@ export const DICT: Record<string, Entry> = {
   'stage.structure':  { ar: 'الهيكل', en: 'Structure' },
   'stage.facade':     { ar: 'الواجهات', en: 'Façade' },
   'stage.handover':   { ar: 'التسليم', en: 'Handover' },
-  'loading':          { ar: 'جارٍ تحميل المخطط العام…', en: 'Loading the master plan…' },
+  'loading':          { ar: 'جارٍ تحميل المخطط العام التفاعلي…', en: 'Loading Interactive Master Plan…' },
   'credit':           { ar: 'مدينة المعرفة الاقتصادية · بيانات المخطط: GIS KEC (958 بلوت)', en: 'Knowledge Economic City · Master-plan data: GIS KEC (958 plots)' },
   'tb.admin':        { ar: 'وحدة التحكم', en: 'Admin' },
   'tb.logout':       { ar: 'تسجيل الخروج', en: 'Sign out' },

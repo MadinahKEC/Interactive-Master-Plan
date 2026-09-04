@@ -87,7 +87,7 @@ export function DetailPanel({
   const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
   const luLabel = lang === 'ar' ? lu.labelAr : lu.labelEn;
   const pr = resolveProject(p.code, p.land_use, projects);
-  const title = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : p.code;
+  const title = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : 'N/A';
   const typeLabel = lang === 'ar' ? pr.type.ar : pr.type.en;
   const statusLabel = lang === 'ar' ? pr.status.ar : pr.status.en;
   const ownLabel = lang === 'ar' ? pr.ownership.ar : pr.ownership.en;
@@ -130,10 +130,9 @@ export function DetailPanel({
           <button className="dq-btn" onClick={() => setPdfOpen(true)} title={t('d.pdf', lang)}><IconDownload size={15} /></button>
           <button className="dq-btn" onClick={() => setShareOpen(true)} title={t('d.share', lang)}><IconShare size={15} /></button>
         </div>
-        <div className="d-type"><TypeIcon typeKey={pr.type.key} size={14} />{typeLabel}</div>
+        <div className="d-kicker"><span className="d-code mono">{p.code}</span><span className="d-type"><TypeIcon typeKey={pr.type.key} size={13} />{typeLabel}</span></div>
         <div className="d-title">{title}</div>
         <div className="d-sub">
-          <span className="d-code mono">{p.code}</span>
           {!pr.named && <span className="d-unnamed">{t('d.unnamed', lang)}</span>}
           <span className="d-status" style={{ background: pr.status.color }}>{statusLabel}</span>
         </div>

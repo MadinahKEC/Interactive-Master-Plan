@@ -126,11 +126,13 @@ body.dp-resizing .d-resize-grip{border-color:var(--kec-green)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .d-head{background:linear-gradient(135deg,var(--kec-green-mid),var(--kec-green-deep));color:#fff;padding:18px 18px 16px;position:relative;overflow:hidden}
 .d-head::after{content:"";position:absolute;inset-inline-end:-30px;top:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(201,181,73,.35),transparent 70%);pointer-events:none}
+/* header kicker: plot code (leading) + type, above the big name */
+.d-kicker{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .d-type{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:20px}
 .d-type .ic{font-size:13px}
-.d-title{font-size:21px;font-weight:700;margin-top:9px;line-height:1.25}
+.d-title{font-size:21px;font-weight:700;margin-top:8px;line-height:1.25}
 .d-sub{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
-.d-code{font-size:13px;background:rgba(0,0,0,.22);padding:3px 9px;border-radius:7px;letter-spacing:.03em}
+.d-code{font-size:12.5px;font-weight:700;background:rgba(0,0,0,.24);padding:3px 10px;border-radius:7px;letter-spacing:.04em}
 .d-unnamed{font-size:10px;background:rgba(255,255,255,.16);padding:3px 9px;border-radius:20px;opacity:.9}
 .d-status{font-size:11px;font-weight:600;color:#fff;padding:3px 11px;border-radius:20px;box-shadow:0 1px 4px rgba(0,0,0,.25)}
 .d-close{position:absolute;top:12px;inset-inline-end:12px;width:28px;height:28px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;z-index:2}
@@ -727,7 +729,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-htitle h1{font-family:var(--kec-serif);font-size:23px;font-weight:700;line-height:1.2;margin-top:3px;color:#fff}
 .pf-ref{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:10.5px;color:rgba(255,255,255,.85);text-align:end;z-index:1}
 .pf-refno{background:rgba(255,255,255,.16);border-radius:6px;padding:3px 9px;font-weight:600}
-.pf-hero{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;padding:20px 22px 8px;align-items:stretch}
+.pf-hero{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;padding:18px 22px 8px;align-items:stretch;flex:none}
 .pf-media{display:flex;flex-direction:column;gap:8px;min-height:0}
 .pf-photo-main{width:100%;flex:1;min-height:150px;object-fit:cover;border-radius:12px;border:1px solid var(--kec-hairline)}
 .pf-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -751,7 +753,8 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-cap{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
 /* balanced two-column body — each column stacks its own boxes so a short box
    (stepper) never leaves a tall gap next to a long one (permit ledger). */
-.pf-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:14px 22px 4px;align-items:start}
+.pf-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:14px 22px 8px;align-items:start;flex:1 1 auto;min-height:0;overflow:hidden}
+.pf-body .pf-summary-box p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;overflow:hidden}
 .pf-bcol{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* compact the permit ledger inside the factsheet so the right column tracks the left */
 .pf-body .permledger{padding:2px 0 0;gap:5px}
@@ -783,7 +786,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-inv-v{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--kec-title);overflow-wrap:anywhere;line-height:1.2}
 .pf-inv-l{font-size:8.5px;color:var(--kec-muted);margin-top:3px}
 .pf-summary-box p{font-size:12px;color:var(--kec-ink);line-height:1.7;background:var(--kec-surface);border-inline-start:3px solid var(--kec-gold);border-radius:8px;padding:10px 14px}
-.pf-footer{margin-top:auto;display:flex;justify-content:space-between;font-size:10px;color:var(--kec-muted);padding:12px 22px;border-top:1px solid var(--kec-hairline);background:var(--kec-surface)}
+.pf-footer{flex:none;margin-top:auto;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--kec-muted);padding:11px 22px 14px;border-top:1px solid var(--kec-hairline);background:var(--kec-surface)}
 .pf-overlay{align-items:flex-start}
 /* ===== unified single-page print (project report + plot factsheet) =====
    Both overlays are portaled to <body>, so hiding #root leaves ONLY the sheet

@@ -174,17 +174,20 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
         </div>
       </div>
       <div className="lu-sec-h">{t('cp.uses', lang)} <span className="lu-sec-n">{Object.keys(landUses).length}</span></div>
-      {Object.keys(landUses).sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).map((k) => (
-        <div className="lu-row" key={k} style={{ ['--lu' as string]: landUses[k].color }}>
-          <input type="color" value={landUses[k].color} onChange={(e) => setLandUse(k, { color: e.target.value })} />
-          <input className="lu-name" value={lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}
-            onChange={(e) => setLandUse(k, lang === 'ar' ? { labelAr: e.target.value } : { labelEn: e.target.value })} />
-          <span className="lu-key mono">{k}</span>
-          <span className="lu-usage"><span className="lu-usage-bar" style={{ width: `${((counts[k] || 0) / Math.max(1, ...Object.keys(landUses).map((x) => counts[x] || 0))) * 100}%`, background: landUses[k].color }} /></span>
-          <span className="lu-ct mono">{counts[k] || 0}</span>
-          <button className="mini-btn danger" onClick={() => removeOne(k)}>{t('a.remove', lang)}</button>
-        </div>
-      ))}
+      <div className="lu-grid">
+        {Object.keys(landUses).sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).map((k) => (
+          <div className="lu-row" key={k} style={{ ['--lu' as string]: landUses[k].color }}>
+            <input type="color" value={landUses[k].color} onChange={(e) => setLandUse(k, { color: e.target.value })} />
+            <div className="lu-body">
+              <input className="lu-name" value={lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}
+                onChange={(e) => setLandUse(k, lang === 'ar' ? { labelAr: e.target.value } : { labelEn: e.target.value })} />
+              <span className="lu-usage"><span className="lu-usage-bar" style={{ width: `${((counts[k] || 0) / Math.max(1, ...Object.keys(landUses).map((x) => counts[x] || 0))) * 100}%`, background: landUses[k].color }} /></span>
+            </div>
+            <span className="lu-ct mono">{counts[k] || 0}</span>
+            <button className="mini-btn danger" onClick={() => removeOne(k)} title={t('a.remove', lang)}>✕</button>
+          </div>
+        ))}
+      </div>
       {hiddenLandUses.length > 0 && (
         <div className="lu-removed">
           <span className="lu-removed-t">{t('a.removedLanduses', lang)}</span>
