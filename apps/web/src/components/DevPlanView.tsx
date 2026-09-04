@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { SECTORS, can, type PlotCollection } from '@kec/types';
+import { can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
@@ -71,6 +71,12 @@ export function DevPlanView({
   };
 
   const num = (v: number | null | undefined, d = 0) => (v || v === 0 ? nf.format(Number(v.toFixed?.(d) ?? v)) : '—');
+  // Shared time axis ticks for the schedule (evenly spaced across the whole plan span).
+  const TICKS = 6;
+  const loc = lang === 'ar' ? 'ar-SA' : 'en-GB';
+  const ticks = times.length
+    ? Array.from({ length: TICKS + 1 }, (_, i) => ({ pct: (i / TICKS) * 100, label: new Date(min + (span * i) / TICKS).toLocaleDateString(loc, { month: 'short', year: '2-digit' }) }))
+    : [];
 
   return (
     <div className="admin-root devplan-view">
@@ -111,65 +117,62 @@ export function DevPlanView({
         </div>
       )}
 
-      <div className="admin-content">
+      <div className="admin-content dps-wrap">
         {planned.length === 0 && <div className="empty">{t('dp.noPlan', lang)}</div>}
-        {shown.map((f) => {
-          const p = f.properties;
-          const pr = resolveProject(p.code, p.land_use, projects);
-          const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : p.code;
-          const lu = landUses[p.land_use as string];
-          return (
-            <div className="dpv-card" key={p.code} style={{ ['--st' as string]: pr.status.color }}>
-              <div className="dpv-head">
-                <div className="dpv-title">
-                  <span className="dpv-ic"><TypeIcon typeKey={pr.type.key} size={18} /></span>
-                  <div>
-                    <div className="dpv-name">{name} <span className="mono dpv-code">{p.code}</span></div>
-                    <div className="dpv-sub">{lang === 'ar' ? pr.type.ar : pr.type.en} · <span style={{ color: pr.ownership.color }}>{lang === 'ar' ? pr.ownership.ar : pr.ownership.en}</span>{pr.owner ? ` · ${pr.owner}` : ''}</div>
+        {shown.length > 0 && (
+          <div className="dps">
+            {ticks.length > 0 && (
+              <div className="dps-axis">
+                <div className="dps-axis-info">{t('dp.timeline', lang)}</div>
+                <div className="dps-axis-track">
+                  {ticks.map((tk, i) => <span className="dps-tick" key={i} style={{ insetInlineStart: `${tk.pct}%` }}>{tk.label}</span>)}
+                </div>
+              </div>
+            )}
+            {shown.map((f) => {
+              const p = f.properties;
+              const pr = resolveProject(p.code, p.land_use, projects);
+              const name = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : p.code;
+              const lu = landUses[p.land_use as string];
+              const phases = pr.overlay.phases ?? [];
+              return (
+                <div className="dps-row" key={p.code} style={{ ['--st' as string]: pr.status.color }} onClick={() => canEdit && onEdit(p.code)}>
+                  <div className="dps-info">
+                    <div className="dps-r1"><span className="dps-ic"><TypeIcon typeKey={pr.type.key} size={15} /></span><span className="dps-name">{name}</span><span className="mono dps-code">{p.code}</span></div>
+                    <div className="dps-r2">
+                      <span className="dps-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
+                      <span className="dps-lu"><i style={{ background: lu?.color ?? '#ccc' }} />{lang === 'ar' ? lu?.labelAr ?? p.land_use : lu?.labelEn ?? p.land_use}</span>
+                    </div>
+                    <div className="dps-r3 mono">{num(p.area, 0)} m² · GFA {num(p.gfa, 0)}</div>
+                    <div className="dps-acts" onClick={(e) => e.stopPropagation()}>
+                      <button className="mini-btn" title={t('dp.viewOnMap', lang)} onClick={() => viewOnMap(p.code)}><IconZoom size={12} /></button>
+                      {canEdit && <button className="mini-btn" title={t('d.editAttrs', lang)} onClick={() => onEdit(p.code)}><IconEdit size={12} /></button>}
+                      {canEdit && <button className="mini-btn danger" title={t('d.removeFromPlan', lang)} onClick={async () => { if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{p.code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconCalendar size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(p.code, { phases: [] }); }}><IconTrash size={12} /></button>}
+                    </div>
+                  </div>
+                  <div className="dps-track">
+                    {ticks.map((tk, i) => <span className="dps-grid" key={i} style={{ insetInlineStart: `${tk.pct}%` }} />)}
+                    {phases.length === 0 && <span className="dps-none">{t('dp.noPhases', lang)}</span>}
+                    {phases.map((ph, i) => {
+                      const s = ph.start ? new Date(ph.start).getTime() : min;
+                      const e = ph.end ? new Date(ph.end).getTime() : s;
+                      const left = ((s - min) / span) * 100;
+                      const width = Math.max(4, ((e - s) / span) * 100);
+                      const st = STATUS_META[ph.status ?? 'Future'] ?? STATUS_META.Future;
+                      const nm = (lang === 'ar' ? ph.name_ar || ph.name_en : ph.name_en || ph.name_ar) || `${lang === 'ar' ? 'مرحلة' : 'Phase'} ${i + 1}`;
+                      return (
+                        <span className="dps-bar" key={i} style={{ insetInlineStart: `${left}%`, width: `${width}%`, background: st.color }} title={`${nm}: ${ph.start ?? '—'} → ${ph.end ?? '—'}`}>
+                          <span className="dps-bar-l">{nm}</span>
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="dpv-actions">
-                  <span className="dpv-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
-                  <button className="mini-btn" onClick={() => viewOnMap(p.code)}><IconZoom size={13} /> {t('dp.viewOnMap', lang)}</button>
-                  {canEdit && <button className="mini-btn" onClick={() => onEdit(p.code)} title={t('d.editAttrs', lang)}><IconEdit size={13} /></button>}
-                  {canEdit && <button className="mini-btn danger" onClick={async () => { if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{p.code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconCalendar size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(p.code, { phases: [] }); }} title={t('d.removeFromPlan', lang)}><IconTrash size={13} /></button>}
-                </div>
-              </div>
-
-              <div className="dpv-facts">
-                <Fact l={t('d.landuse', lang)} v={lang === 'ar' ? lu?.labelAr ?? p.land_use : lu?.labelEn ?? p.land_use} />
-                <Fact l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} />
-                <Fact l={t('d.area', lang)} v={num(p.area, 0)} />
-                <Fact l={t('d.gfa', lang)} v={num(p.gfa, 0)} />
-                <Fact l={t('d.floors', lang)} v={num(p.floors)} />
-                <Fact l={t('d.height', lang)} v={num(p.height)} />
-              </div>
-
-              <div className="dpv-gantt">
-                {(pr.overlay.phases ?? []).map((ph, i) => {
-                  const s = ph.start ? new Date(ph.start).getTime() : min;
-                  const e = ph.end ? new Date(ph.end).getTime() : s;
-                  const left = ((s - min) / span) * 100;
-                  const width = Math.max(3, ((e - s) / span) * 100);
-                  const st = STATUS_META[ph.status ?? 'Future'] ?? STATUS_META.Future;
-                  const nm = (lang === 'ar' ? ph.name_ar || ph.name_en : ph.name_en || ph.name_ar) || `${lang === 'ar' ? 'مرحلة' : 'Phase'} ${i + 1}`;
-                  return (
-                    <div className="dp-track" key={i}>
-                      <span className="dp-plabel">{nm}</span>
-                      <div className="dp-line"><span className="dp-bar" style={{ insetInlineStart: `${left}%`, width: `${width}%`, background: st.color }} title={`${ph.start ?? ''} → ${ph.end ?? ''}`} /></div>
-                      <span className="dp-pdate mono">{ph.start ?? '—'} → {ph.end ?? '—'}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
-}
-
-function Fact({ l, v }: { l: string; v: string }) {
-  return (<div className="dpv-fact"><span className="fl">{l}</span><span className="fv mono">{v}</span></div>);
 }
