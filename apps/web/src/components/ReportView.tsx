@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { printWithPage } from '../lib/print';
 import { type PlotCollection } from '@kec/types';
 import { useApp, matchPlot } from '../store';
 import { resolveProject, STATUS_META, t, type ProjectInfo } from '../lib/domain';
@@ -49,12 +50,7 @@ export function ReportView({ data, landUses, projects }: {
   const ref = `KEC-MP-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   const dl = () => { const a = document.createElement('a'); a.href = reportImage; a.download = `${ref}.png`; a.click(); };
   const company = lang === 'ar' ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City';
-  const printPdf = () => {
-    const prev = document.title;
-    document.title = `${company} — ${t('report.title', lang)} — ${ref}`;
-    window.print();
-    setTimeout(() => { document.title = prev; }, 800);
-  };
+  const printPdf = () => printWithPage('size:A4 portrait;margin:9mm', `${company} — ${t('report.title', lang)} — ${ref}`);
   // report scope line (which filters produced this view)
   const scopeBits: string[] = [];
   if (state.sector !== 'all') scopeBits.push(lang === 'ar' ? `قطاع ${state.sector}` : `${state.sector} sector`);

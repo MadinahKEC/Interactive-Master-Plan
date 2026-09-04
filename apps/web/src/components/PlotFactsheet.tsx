@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SECTORS, type PlotProps } from '@kec/types';
-import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInvest, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { computeInvestmentScore, scoreColor, gradeLabel } from '../lib/investment';
 import { StageBar } from './StageBar';
 import type { EffLandUse } from '../lib/effective';
 import { IconClose, IconOwner } from './icons';
 import { useBackClose } from '../lib/backstack';
+import { printWithPage } from '../lib/print';
 
 const nf = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
 
@@ -35,13 +36,19 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
   const analysis = computeInvestmentScore(p, o, haramKm);
   const gallery = o.gallery ?? [];
   const company = lang === 'ar' ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City';
-  // The browser uses document.title as the default "Save as PDF" filename.
-  const dl = () => {
-    const prev = document.title;
-    document.title = `${title} — ${company}`;
-    window.print();
-    setTimeout(() => { document.title = prev; }, 800);
-  };
+  const elecManual = p.elecLoad != null && !Number.isNaN(p.elecLoad as number);
+  const elecLoad = elecManual ? (p.elecLoad as number) : estimatedElecLoadKva(p.gfa, p.land_use);
+  const dl = () => printWithPage('size:A4 portrait;margin:0', `${title} — ${company}`);
+
+  // The sheet is a real A4-portrait canvas (fixed mm) → prints at exactly 100% on one
+  // page; on screen it scales down to fit the viewport like a print preview.
+  const PAGE_W = (210 * 96) / 25.4, PAGE_H = (297 * 96) / 25.4;
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const fit = () => setScale(Math.min((window.innerWidth - 36) / PAGE_W, (window.innerHeight - 96) / PAGE_H, 1));
+    fit(); window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [PAGE_W, PAGE_H]);
 
   const Cell = ({ l, v }: { l: string; v: string }) => (<div className="pf-cell"><span className="pf-l">{l}</span><span className="pf-v">{v}</span></div>);
 
@@ -52,7 +59,8 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
         <button className="btn primary" onClick={dl}>🖨 {t('report.print', lang)}</button>
       </div>
 
-      <div className="pf-sheet">
+      <div className="pf-fit" style={{ width: PAGE_W * scale, height: PAGE_H * scale }}>
+      <div className="pf-sheet" style={{ ['--pf-scale' as string]: String(scale) }}>
         <header className="pf-header">
           <img className="pf-logo" src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" />
           <div className="pf-htitle">
@@ -102,6 +110,7 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
               <Stat v={nf(p.height)} l={`${t('d.height', lang)} · m`} />
               <Stat v={nf(p.coverage, 2)} l={t('d.coverage', lang)} />
               <Stat v={nf(p.far, 2)} l={t('d.far', lang)} />
+              <Stat v={elecLoad != null ? nf(elecLoad, 1) : '—'} l={`${t('d.elecLoad', lang)}${elecManual ? ' ·' + t('d.manual', lang) : ''}`} />
             </div>
           </div>
         </div>
@@ -159,6 +168,7 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
           <span>© {lang === 'ar' ? 'مدينة المعرفة الاقتصادية — المخطط العام' : 'Knowledge Economic City — Master Plan'}</span>
           <span className="mono">{ref}</span>
         </footer>
+      </div>
       </div>
     </div>,
     document.body,

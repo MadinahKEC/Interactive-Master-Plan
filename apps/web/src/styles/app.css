@@ -561,10 +561,10 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   .exec-overlay{position:static;overflow:visible;background:#fff;display:block;padding:0}
   .exec-acts{display:none!important}
   .exec-fit{width:auto!important;height:auto!important;position:static!important}
-  .exec-page{position:static!important;transform:none!important;box-shadow:none;page:kecland}
+  .exec-page{position:static!important;transform:none!important;box-shadow:none}
   .exec-overlay, .exec-overlay *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   .no-print{display:none!important}
-  @page kecland{size:A4 landscape;margin:0}
+  /* orientation is injected at print time by printWithPage() — reliable in Chrome */
 }
 
 /* ---- Investor interest pipeline (card) ---- */
@@ -714,7 +714,9 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .rp-cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
 .rp-cols .rp-kpis{margin-bottom:10px}
 /* ===== single-plot premium factsheet (A4) ===== */
-.pf-sheet{width:210mm;max-width:96vw;min-height:auto;background:#fff;margin:0 auto;box-shadow:var(--shadow-lg);border-radius:4px;overflow:hidden;color:var(--kec-ink);
+.pf-fit{position:relative;flex:none}
+.pf-sheet{position:absolute;top:0;left:0;transform:scale(var(--pf-scale,1));transform-origin:top left;
+  width:210mm;height:297mm;background:#fff;box-shadow:var(--shadow-lg);border-radius:2px;overflow:hidden;color:var(--kec-ink);
   display:flex;flex-direction:column}
 .pf-header{display:flex;align-items:center;gap:16px;padding:16px 22px;color:#fff;
   background:linear-gradient(120deg,#0C2E1B 0%,#1E6437 60%,#2F6B3E 100%);position:relative}
@@ -793,10 +795,12 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   .report-toolbar{display:none !important}
   /* fill the printable A4 height and flex so the footer always pins to the bottom
      → every exported report/factsheet looks identical regardless of content */
-  .report-sheet,.pf-sheet{position:static !important;margin:0 auto !important;box-shadow:none !important;border-radius:0 !important;
-    box-sizing:border-box !important;display:flex !important;flex-direction:column !important;min-height:277mm !important}
-  .report-sheet{width:192mm !important;max-width:192mm !important;padding:6mm !important}
-  .pf-sheet{width:192mm !important;max-width:192mm !important;padding:0 !important}
+  .report-sheet{position:static !important;margin:0 auto !important;box-shadow:none !important;border-radius:0 !important;
+    box-sizing:border-box !important;display:flex !important;flex-direction:column !important;min-height:277mm !important;width:192mm !important;max-width:192mm !important;padding:6mm !important}
+  /* factsheet: full-bleed fixed A4 canvas → prints at exactly 100%, one page */
+  .pf-fit{position:static !important;width:auto !important;height:auto !important}
+  .pf-sheet{position:static !important;transform:none !important;width:210mm !important;height:297mm !important;max-width:none !important;
+    margin:0 !important;box-shadow:none !important;border-radius:0 !important;overflow:hidden !important}
   .rp-foot,.pf-footer{margin-top:auto !important}
   /* compact the project report so it fits one page */
   .rp-head{padding-bottom:8px;margin-bottom:8px}.rp-head img{height:42px}.rp-title h1{font-size:18px}
@@ -806,7 +810,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   .rp-bars{gap:4px}.rp-foot{padding-top:8px;border-top:1px solid var(--kec-hairline)}
   /* factsheet media */
   .pf-photo-main{height:110px}.pf-noimg{height:160px}
-  @page{size:A4 portrait;margin:9mm}
+  /* orientation injected at print time by printWithPage() */
 }
 .rp-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:18px}
 .rp-table th{text-align:start;background:var(--kec-surface);color:var(--kec-muted);font-weight:600;padding:7px 10px;border-bottom:2px solid var(--kec-hairline);font-size:10px;text-transform:uppercase;letter-spacing:.04em}

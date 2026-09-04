@@ -5,6 +5,7 @@ import { resolveProject, STATUS_META, OWNERSHIP_META, t, type ProjectInfo } from
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { useBackClose } from '../lib/backstack';
+import { printWithPage } from '../lib/print';
 import { Chart } from '../admin/Chart';
 import { IconClose, IconPlots, IconInvest, IconBuilding, IconExport } from './icons';
 import type { EffLandUse } from '../lib/effective';
@@ -60,12 +61,7 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
 
   const devPct = s.area ? (s.developed / s.area) * 100 : 0;
   const ref = `KEC-EXE-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-  const printExec = () => {
-    const prev = document.title;
-    document.title = `${t('brand.title', lang)} — ${t('exec.title', lang)} — ${ref}`;
-    window.print();
-    setTimeout(() => { document.title = prev; }, 800);
-  };
+  const printExec = () => printWithPage('size:A4 landscape;margin:0', `${t('brand.title', lang)} — ${t('exec.title', lang)} — ${ref}`);
 
   // Report fonts (Latin → Inter / Source Serif; Arabic glyphs fall back to Readex Pro).
   const SANS = 'Inter, "Readex Pro", system-ui, sans-serif';
