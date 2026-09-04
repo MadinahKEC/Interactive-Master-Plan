@@ -11,10 +11,12 @@ import type { EffLandUse } from '../lib/effective';
 
 /** Slide-over editor: project info + plot attributes. Persists to the overrides store. */
 export function PlotEditor({
-  code, data, projects, landUses, onClose,
+  code, data, projects, landUses, onClose, seedPhase = false,
 }: {
   code: string; data: PlotCollection; projects: Record<string, ProjectInfo>;
   landUses: Record<string, EffLandUse>; onClose: () => void;
+  /** Pre-fill one draft phase (added to the dev plan) that only persists on Save. */
+  seedPhase?: boolean;
 }) {
   const { lang } = useApp();
   const { setProject, setPlotAttr } = useOverrides();
@@ -54,7 +56,14 @@ export function PlotEditor({
   const autoLoad = estimatedElecLoadKva(numOrNull(f.gfa), f.land_use);
   const [inv, setInv] = useState<InvestmentInfo>(overlay.investment ?? {});
   const setInvField = (k: keyof InvestmentInfo, v: string) => setInv((s) => ({ ...s, [k]: v === '' ? undefined : Number(v) }));
-  const [phases, setPhases] = useState<Phase[]>(overlay.phases ?? []);
+  const [phases, setPhases] = useState<Phase[]>(() => {
+    if (overlay.phases?.length) return overlay.phases;
+    if (!seedPhase) return [];
+    // a draft starter phase — nothing is persisted until the user presses Save
+    const today = new Date().toISOString().slice(0, 10);
+    const end = new Date(Date.now() + 180 * 864e5).toISOString().slice(0, 10);
+    return [{ name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' }];
+  });
   const setPhase = (i: number, patch: Partial<Phase>) => setPhases((ps) => ps.map((p, j) => (j === i ? { ...p, ...patch } : p)));
   const addPhase = () => setPhases((ps) => [...ps, { name_ar: '', start: '', end: '', status: 'Future' }]);
   const removePhase = (i: number) => setPhases((ps) => ps.filter((_, j) => j !== i));

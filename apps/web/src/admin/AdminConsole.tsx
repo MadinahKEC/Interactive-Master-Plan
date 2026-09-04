@@ -4,11 +4,12 @@ import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides, SUPER_ADMIN_EMAIL, DEFAULT_PLAN_STYLE } from '../lib/overrides';
 import { createUserSecondary, watchAccessLog, restoreFromBackup, type AccessSession } from '../lib/firebase';
-import { LICENSE_STAGES, PROGRESS_STAGES, STANDARD_PHASES, STATUS_META, resolveProject, t, type ProjectInfo } from '../lib/domain';
+import { LICENSE_STAGES, PROGRESS_STAGES, STATUS_META, resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { PlotEditor } from './PlotEditor';
-import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin, IconPlus, IconZoom } from '../components/icons';
+import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin, IconPlus, IconZoom, IconGlobe } from '../components/icons';
+import type { ReactNode } from 'react';
 
 type Tab = 'plots' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
 const TABS: Record<Tab, (p: { size?: number }) => JSX.Element> = {
@@ -43,9 +44,13 @@ export function AdminConsole({
   const isAdmin = role === 'administrator';
   const [tab, setTab] = useState<Tab>('plots');
   const [editing, setEditing] = useState<string | null>(null);
+  const [editSeed, setEditSeed] = useState(false);
+  const openEditor = (code: string) => { setEditSeed(false); setEditing(code); };
+  const openAddToPlan = (code: string) => { setEditSeed(true); setEditing(code); };
+  const closeEditor = () => { setEditing(null); setEditSeed(false); };
 
   useEffect(() => {
-    if (open && editCode) { setTab('plots'); setEditing(editCode); }
+    if (open && editCode) { setTab('plots'); setEditSeed(false); setEditing(editCode); }
   }, [open, editCode]);
 
   const viewOnMap = (code: string) => {
@@ -85,7 +90,7 @@ export function AdminConsole({
           })}
         </nav>
         <section className="admin-content">
-          {tab === 'plots' && <PlotsTab data={data} projects={projects} landUses={landUses} onEdit={setEditing} onViewMap={viewOnMap} />}
+          {tab === 'plots' && <PlotsTab data={data} projects={projects} landUses={landUses} onEdit={openEditor} onAddToPlan={openAddToPlan} onViewMap={viewOnMap} />}
           {tab === 'landuses' && <LandUsesTab landUses={landUses} data={data} />}
           {tab === 'users' && <UsersTab />}
           {tab === 'access' && <AccessLogTab />}
@@ -93,7 +98,7 @@ export function AdminConsole({
           {tab === 'settings' && <SettingsTab data={data} projects={projects} isAdmin={isAdmin} />}
         </section>
       </div>
-      {editing && <PlotEditor code={editing} data={data} projects={projects} landUses={landUses} onClose={() => setEditing(null)} />}
+      {editing && <PlotEditor code={editing} data={data} projects={projects} landUses={landUses} seedPhase={editSeed} onClose={closeEditor} />}
     </div>
   );
 }
@@ -103,9 +108,9 @@ export function AdminConsole({
 const PLAN_STATUS_KEYS = ['Completed', 'UnderConstruction', 'Future', 'Partner'];
 const ROW_CAP = 300;
 
-function PlotsTab({ data, projects, landUses, onEdit, onViewMap }: {
+function PlotsTab({ data, projects, landUses, onEdit, onAddToPlan, onViewMap }: {
   data: PlotCollection; projects: Record<string, ProjectInfo>; landUses: Record<string, EffLandUse>;
-  onEdit: (c: string) => void; onViewMap: (c: string) => void;
+  onEdit: (c: string) => void; onAddToPlan: (c: string) => void; onViewMap: (c: string) => void;
 }) {
   const { lang } = useApp();
   const setProject = useOverrides((s) => s.setProject);
@@ -150,12 +155,9 @@ function PlotsTab({ data, projects, landUses, onEdit, onViewMap }: {
     <th onClick={() => setSort((s) => ({ k, dir: s.k === k ? (s.dir === 1 ? -1 : 1) : 1 }))}>{label}{sort.k === k ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''}</th>
   );
 
-  const addToPlan = (code: string) => {
-    const today = new Date().toISOString().slice(0, 10);
-    const end = new Date(Date.now() + 180 * 864e5).toISOString().slice(0, 10);
-    setProject(code, { phases: [{ name_ar: STANDARD_PHASES[2].ar, name_en: STANDARD_PHASES[2].en, start: today, end, status: 'Future' }] });
-    onEdit(code);
-  };
+  // Open the editor with a DRAFT starter phase — nothing is saved until the user
+  // presses Save inside the editor (previously this persisted on the first click).
+  const addToPlan = (code: string) => onAddToPlan(code);
   const removeFromPlan = async (code: string) => {
     if (await confirmDialog({ title: t('d.removeFromPlan', lang), body: <><b>{code}</b> — {t('d.removeFromPlanConfirm', lang)}</>, icon: <IconTrash size={24} />, confirmLabel: t('d.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) setProject(code, { phases: [] });
   };
@@ -544,13 +546,10 @@ function DriveRestore() {
 
   if (!BACKUP_WEBAPP.url) return null;
   return (
-    <div className="set-row set-row--col">
-      <div className="set-row__head">
-        <span>{t('bk.restoreTitle', lang)}</span>
-        <button className="btn" onClick={toggle}><IconDownload size={14} /> {open ? t('bk.hideList', lang) : t('bk.browse', lang)}</button>
-      </div>
+    <SetCard icon={<IconUndo size={19} />} title={t('bk.restoreTitle', lang)} desc={t('bk.restoreDesc', lang)}
+      action={<button className="btn" onClick={toggle}><IconDownload size={14} /> {open ? t('bk.hideList', lang) : t('bk.browse', lang)}</button>}>
       {open && (
-        <div className="bk-list">
+        <div className="set-card-expand bk-list">
           <div className="bk-note">{t('bk.hint', lang)}</div>
           {err && <div className="clog-empty" style={{ color: 'var(--kec-neg)' }}>{err}</div>}
           {busy && !files && <div className="clog-empty">{t('bk.loading', lang)}</div>}
@@ -570,7 +569,7 @@ function DriveRestore() {
           )}
         </div>
       )}
-    </div>
+    </SetCard>
   );
 }
 
@@ -606,20 +605,48 @@ function SettingsTab({ data, projects, isAdmin }: { data: PlotCollection | null;
   };
   return (
     <div className="tab-settings">
-      <div className="set-sec">{t('a.grpGeneral', lang)}</div>
-      <div className="set-row"><span>اللغة / Language</span>
-        <button className="btn" onClick={toggleLang}>{lang === 'ar' ? 'English' : 'العربية'}</button></div>
+      <div className="set-group">
+        <div className="set-sec">{t('a.grpGeneral', lang)}</div>
+        <div className="set-grid">
+          <SetCard icon={<IconGlobe size={19} />} title={lang === 'ar' ? 'اللغة' : 'Language'} desc={t('a.langDesc', lang)}
+            action={<button className="btn" onClick={toggleLang}>{lang === 'ar' ? 'English' : 'العربية'}</button>} />
+        </div>
+      </div>
 
-      <div className="set-sec">{t('a.grpBackup', lang)}</div>
-      <div className="set-row"><span>{t('a.excel', lang)}</span><button className="btn primary" onClick={doExcel}><IconExcel size={15} /> {t('a.excel', lang)} ({data?.features.length ?? 0})</button></div>
-      <div className="set-row"><span>{t('a.export', lang)}</span><button className="btn" onClick={doExport}>⬇ {t('a.export', lang)}</button></div>
-      <div className="set-row"><span>{t('a.import', lang)}</span><label className="btn">⬆ {t('a.import', lang)}<input type="file" accept="application/json" hidden onChange={doImport} /></label></div>
-      {isAdmin && <DriveRestore />}
+      <div className="set-group">
+        <div className="set-sec">{t('a.grpBackup', lang)}</div>
+        <div className="set-grid">
+          <SetCard icon={<IconExcel size={19} />} title={t('a.excel', lang)} desc={t('a.excelDesc', lang)}
+            action={<button className="btn primary" onClick={doExcel}><IconExcel size={15} /> {data?.features.length ?? 0}</button>} />
+          <SetCard icon={<IconDownload size={19} />} title={t('a.export', lang)} desc={t('a.exportDesc', lang)}
+            action={<button className="btn" onClick={doExport}><IconDownload size={15} /> {t('a.export', lang)}</button>} />
+          <SetCard icon={<IconUndo size={19} />} title={t('a.import', lang)} desc={t('a.importDesc', lang)}
+            action={<label className="btn"><IconUndo size={15} /> {t('a.import', lang)}<input type="file" accept="application/json" hidden onChange={doImport} /></label>} />
+        </div>
+        {isAdmin && <DriveRestore />}
+      </div>
 
-      {isAdmin && <>
-        <div className="set-sec set-sec--danger">{t('a.grpDanger', lang)}</div>
-        <div className="set-row"><span>{t('a.reset', lang)}</span><button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button></div>
-      </>}
+      {isAdmin && (
+        <div className="set-group">
+          <div className="set-sec set-sec--danger">{t('a.grpDanger', lang)}</div>
+          <div className="set-grid">
+            <SetCard danger icon={<IconTrash size={19} />} title={t('a.reset', lang)} desc={t('a.resetDesc', lang)}
+              action={<button className="btn danger" onClick={async () => { if (await confirmDialog({ title: t('a.reset', lang), body: t('a.resetConfirm', lang), icon: <IconTrash size={24} />, confirmLabel: t('a.reset', lang), cancelLabel: t('a.cancel', lang), danger: true, dir: lang === 'ar' ? 'rtl' : 'ltr' })) reset(); }}>{t('a.reset', lang)}</button>} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A settings row rendered as a premium card: accent icon + title + description + action. */
+function SetCard({ icon, title, desc, action, danger, children }: { icon: ReactNode; title: string; desc: string; action?: ReactNode; danger?: boolean; children?: ReactNode }) {
+  return (
+    <div className={`set-card ${danger ? 'set-card--danger' : ''} ${children ? 'set-card--full' : ''}`}>
+      <span className="set-card-ic">{icon}</span>
+      <div className="set-card-txt"><b>{title}</b><span>{desc}</span></div>
+      {action && <div className="set-card-act">{action}</div>}
+      {children}
     </div>
   );
 }

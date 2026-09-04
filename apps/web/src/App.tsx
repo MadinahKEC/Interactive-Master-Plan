@@ -5,7 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { ControlPanel } from './components/ControlPanel';
 import { DetailPanel } from './components/DetailPanel';
 import { MultiSelectPanel } from './components/MultiSelectPanel';
-import { ShortlistBar } from './components/ShortlistBar';
+import { CompareModal } from './components/CompareModal';
 import { AdminConsole } from './admin/AdminConsole';
 import { ExecDashboard } from './components/ExecDashboard';
 import { AnnotateToolbar } from './components/AnnotateToolbar';
@@ -22,6 +22,7 @@ import { useProjects, t } from './lib/domain';
 import { can } from '@kec/types';
 import { useApp } from './store';
 import { useAuth } from './lib/auth';
+import { useShortlist } from './lib/shortlist';
 import { SaveToast } from './components/SaveToast';
 import { useOverrides } from './lib/overrides';
 import { effectiveCollection, effectiveLandUses, effectiveProjects } from './lib/effective';
@@ -56,7 +57,9 @@ export default function App() {
   const creating = useApp((s) => s.creating);
   const editGeom = useApp((s) => s.editGeom);
   const reportImage = useApp((s) => s.reportImage);
+  const compareOpen = useShortlist((s) => s.compareOpen);
   const dialogSpec = useDialog((s) => s.spec);
+  useBackClose(compareOpen, () => useShortlist.getState().setCompareOpen(false), 65);
   useBackClose(!!dialogSpec, () => useDialog.getState().close({ value: null, fields: {} }), 200);
   useBackClose(!!subdivideCode, () => setSubdivideCode(null), 90);
   useBackClose(adminOpen, () => { setAdminOpen(false); setEditCode(null); useApp.getState().reveal(); }, 80);
@@ -175,7 +178,7 @@ export default function App() {
       )}
       <DetailPanel data={data} projects={projects} landUses={landUses} onEdit={(code) => openAdmin(code)} onSubdivide={(code) => setSubdivideCode(code)} />
       {data && <MultiSelectPanel data={data} projects={projects} landUses={landUses} />}
-      {data && <ShortlistBar data={data} projects={projects} landUses={landUses} />}
+      {data && compareOpen && <CompareModal data={data} projects={projects} landUses={landUses} onClose={() => useShortlist.getState().setCompareOpen(false)} />}
       <AnnotateToolbar />
       <ReportView data={data} landUses={landUses} projects={projects} />
       {subdivideCode && <SubdivideModal parentCode={subdivideCode} data={data} onClose={() => setSubdivideCode(null)} />}
