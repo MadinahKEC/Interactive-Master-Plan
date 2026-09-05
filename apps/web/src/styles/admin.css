@@ -87,12 +87,14 @@
 .add-msg.err{color:var(--kec-neg);background:#F7E9E5;border:1px solid #E7CCC4}
 
 /* settings */
-/* Settings — premium cards (accent icon + title + description + action) */
-.tab-settings{display:flex;flex-direction:column;gap:22px;max-width:840px}
+/* Settings — premium cards (accent icon + title + description + action).
+   Full width with auto-fit so each row stretches to fill the pane — never
+   clumped on one side with the other empty, and never crammed tight. */
+.tab-settings{display:flex;flex-direction:column;gap:24px;width:100%}
 .set-group{display:flex;flex-direction:column;gap:11px}
 .set-sec{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--kec-title);margin:0 2px}
 .set-sec--danger{color:var(--kec-neg)}
-.set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
 .set-card{display:flex;align-items:center;gap:13px;flex-wrap:wrap;background:var(--card);border:1px solid var(--kec-hairline);border-radius:14px;padding:15px 16px;transition:box-shadow .15s,border-color .15s}
 .set-card:hover{box-shadow:var(--shadow);border-color:var(--kec-green-mid)}
 .set-card--full{width:100%}

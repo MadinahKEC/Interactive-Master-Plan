@@ -13,7 +13,7 @@ import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
 import { useInterestedInvestors, INVESTOR_LOG_ENABLED } from '../lib/investorLog';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconStar, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconCompare, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
 
@@ -126,7 +126,7 @@ export function DetailPanel({
       <div className="d-head">
         <button className="d-close" onClick={fitAll} title={t('d.fullPlan', lang)}><IconClose size={17} /></button>
         <div className="d-quick">
-          <button className={`dq-btn ${shortlist.codes.includes(p.code) ? 'on' : ''}`} onClick={() => shortlist.toggle(p.code)} title={t(shortlist.codes.includes(p.code) ? 'd.unfavorite' : 'd.favorite', lang)}><IconStar size={15} /></button>
+          <button className={`dq-btn ${shortlist.codes.includes(p.code) ? 'on' : ''}`} onClick={() => shortlist.toggle(p.code)} title={t(shortlist.codes.includes(p.code) ? 'd.unfavorite' : 'd.favorite', lang)}><IconCompare size={15} /></button>
           <button className="dq-btn" onClick={() => setPdfOpen(true)} title={t('d.pdf', lang)}><IconDownload size={15} /></button>
           <button className="dq-btn" onClick={() => setShareOpen(true)} title={t('d.share', lang)}><IconShare size={15} /></button>
         </div>

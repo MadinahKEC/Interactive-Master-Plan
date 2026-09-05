@@ -385,7 +385,6 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .dq-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:0;background:rgba(255,255,255,.16);border-radius:8px;cursor:pointer;color:#fff;transition:background .15s}
 .dq-btn:hover{background:rgba(255,255,255,.3)}
 .dq-btn.on{background:var(--kec-gold);color:#2a2508}
-.dq-btn.on svg{fill:#2a2508}
 
 /* ---- Plot comparison (rail-launched premium modal) ---- */
 .cmp-wrap{position:fixed;inset:0;z-index:75;background:rgba(9,26,16,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px;animation:fadeIn .18s ease}
