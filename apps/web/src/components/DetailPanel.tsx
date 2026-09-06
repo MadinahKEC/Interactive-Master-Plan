@@ -84,8 +84,6 @@ export function DetailPanel({
   // immediately; fall back to the click-time snapshot before data is ready.
   const feat = data?.features.find((ft) => ft.properties.code === selected.code);
   const p = feat?.properties ?? selected;
-  const lu = landUses[p.land_use as string] ?? { labelAr: p.land_use ?? '—', labelEn: p.land_use ?? '—', color: '#C9C9C9', key: p.land_use ?? '' };
-  const luLabel = lang === 'ar' ? lu.labelAr : lu.labelEn;
   const pr = resolveProject(p.code, p.land_use, projects);
   const title = pr.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : 'N/A';
   const typeLabel = lang === 'ar' ? pr.type.ar : pr.type.en;
@@ -173,7 +171,7 @@ export function DetailPanel({
 
         <Section k="s:land" title={t('sec.land', lang)}>
           <div className="d-tiles">
-            <Tile k="f:landuse" icon={<IconPalette size={13} />} l={t('d.landuse', lang)} v={luLabel} text />
+            <LandUseTile code={p.code} landUseKey={p.land_use as string} landUses={landUses} lang={lang} canAttr={canAttr} />
             <Tile k="f:sector" icon={<IconGlobe size={13} />} l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} text />
             <Tile k="f:area" icon={<IconRuler size={13} />} l={t('d.area', lang)} v={num(p.area, 2)} />
             <Tile k="f:gfa" icon={<IconBuilding size={13} />} l={t('d.gfa', lang)} v={num(p.gfa, 1)} />
@@ -489,6 +487,39 @@ function Tile({ icon, l, v, chip, k, text, badge, wide }: { icon: RN; l: string;
           {chip && <span className="cell-chip" style={{ background: chip }} />}
           <span className={`d-tile-v ${text ? 'text' : ''}`}>{v}</span>
           {badge && <span className="d-tile-badge">{badge}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Land-use tile with a live colour swatch. Editors can change the use inline —
+ * the plot recolours on the card and the map immediately (setPlotAttr override). */
+function LandUseTile({ code, landUseKey, landUses, lang, canAttr }: {
+  code: string; landUseKey: string; landUses: Record<string, EffLandUse>; lang: 'ar' | 'en'; canAttr: boolean;
+}) {
+  const hidden = useContext(CardCtx);
+  const setPlotAttr = useOverrides((s) => s.setPlotAttr);
+  if (hidden.includes('f:landuse')) return null;
+  const lu = landUses[landUseKey];
+  const color = lu?.color ?? '#C9C9C9';
+  const label = lu ? (lang === 'ar' ? lu.labelAr : lu.labelEn) : (landUseKey || '—');
+  return (
+    <div className="d-tile wide d-lu-tile">
+      <span className="d-tile-ic"><IconPalette size={13} /></span>
+      <div className="d-tile-body">
+        <div className="d-tile-l">{t('d.landuse', lang)}</div>
+        <div className="d-tile-vrow">
+          <span className="cell-chip" style={{ background: color }} />
+          {canAttr ? (
+            <select className="d-lu-select" value={landUseKey ?? ''} onChange={(e) => setPlotAttr(code, { land_use: e.target.value })}>
+              {Object.keys(landUses).map((key) => (
+                <option key={key} value={key}>{lang === 'ar' ? landUses[key].labelAr : landUses[key].labelEn}</option>
+              ))}
+            </select>
+          ) : (
+            <span className="d-tile-v text">{label}</span>
+          )}
         </div>
       </div>
     </div>
