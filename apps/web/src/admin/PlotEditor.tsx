@@ -175,8 +175,11 @@ export function PlotEditor({
           <div className="ed-sec">{t('a.plotAttrs', lang)}</div>
           <div className="ed-grid">
             <Field label={t('a.landuse', lang)}>
-              <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)} allowAdd={false}
-                options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))} />
+              <div className="lu-pick">
+                <span className="lu-pick-sw" style={{ background: landUses[f.land_use]?.color ?? '#C9C9C9' }} />
+                <EditableSelect listKey="land_use" value={f.land_use} onChange={(v) => up('land_use', v)} allowAdd={false}
+                  options={Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }))} />
+              </div>
             </Field>
             <Field label={t('a.sector', lang)}>
               <select value={f.sector} onChange={(e) => up('sector', e.target.value)}>

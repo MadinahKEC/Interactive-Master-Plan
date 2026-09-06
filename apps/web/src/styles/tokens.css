@@ -38,7 +38,9 @@
 html, body, #root { height:100%; }
 body { font-family:var(--kec-font); color:var(--kec-ink); background:var(--kec-paper);
   overflow:hidden; transition:background .3s, color .3s; }
-button { font-family:inherit; }
+/* form controls don't inherit font-family by default — force the project face so
+   no input/select/textarea ever falls back to the browser's default font */
+button, input, select, textarea, optgroup { font-family:inherit; }
 .mono { font-family:var(--kec-mono); }
 .maplibregl-ctrl-attrib { font-family:var(--kec-font); font-size:9px; opacity:.7; }
 .maplibregl-popup-content { font-family:var(--kec-font); border-radius:12px; padding:9px 13px;
