@@ -162,7 +162,7 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
 
         <footer className="exec-foot">
           <div className="exec-foot-rule" />
-          <div className="exec-foot-row"><span className="exec-foot-bar" /><span>{t('powered', lang)} · {t('credit', lang)}</span></div>
+          <div className="exec-foot-row"><span className="exec-foot-bar" /><span>{t('credit', lang)}</span></div>
         </footer>
       </div>
       </div>

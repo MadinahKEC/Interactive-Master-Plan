@@ -132,7 +132,7 @@ export function ReportView({ data, landUses, projects }: {
 
         <footer className="rp-foot">
           <span>© {lang === 'ar' ? 'مدينة المعرفة الاقتصادية — المخطط العام التفاعلي' : 'Knowledge Economic City — Interactive Master Plan'}</span>
-          <span>powered by : Sa^^3R</span>
+          <span className="mono">{ref}</span>
         </footer>
       </div>
     </div>,
