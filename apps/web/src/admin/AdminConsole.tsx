@@ -268,8 +268,10 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
           <div className="lu-row" key={k} style={{ ['--lu' as string]: landUses[k].color }}>
             <input type="color" value={landUses[k].color} onChange={(e) => setLandUse(k, { color: e.target.value })} />
             <div className="lu-body">
-              <input className="lu-name" value={lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}
-                onChange={(e) => setLandUse(k, lang === 'ar' ? { labelAr: e.target.value } : { labelEn: e.target.value })} />
+              <div className="lu-names">
+                <input className="lu-name" value={landUses[k].labelAr} placeholder={t('opt.ar', lang)} title={t('opt.ar', lang)} onChange={(e) => setLandUse(k, { labelAr: e.target.value })} />
+                <input className="lu-name" value={landUses[k].labelEn} placeholder={t('opt.en', lang)} title={t('opt.en', lang)} onChange={(e) => setLandUse(k, { labelEn: e.target.value })} />
+              </div>
               <span className="lu-usage"><span className="lu-usage-bar" style={{ width: `${((counts[k] || 0) / Math.max(1, ...Object.keys(landUses).map((x) => counts[x] || 0))) * 100}%`, background: landUses[k].color }} /></span>
             </div>
             <span className="lu-ct mono">{counts[k] || 0}</span>

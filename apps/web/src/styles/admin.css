@@ -65,6 +65,11 @@
 .lu-row .mini-btn.danger{flex:none;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;padding:0;font-size:13px;border-radius:8px}
 .lu-row input[type=color]{width:32px;height:32px;border:1px solid var(--kec-hairline);border-radius:8px;background:none;cursor:pointer;padding:2px;flex:none}
 .lu-name{width:100%;background:transparent;border:0;outline:0;font-size:13.5px;font-weight:600;color:var(--kec-ink)}
+/* editable AR + EN names for every land use (existing defaults and new ones) */
+.lu-names{display:flex;flex-direction:column;gap:5px;min-width:0}
+.lu-row .lu-names .lu-name{width:100%;font-size:12.5px;border:1px solid var(--kec-hairline);border-radius:8px;padding:5px 9px;background:var(--card);transition:border-color .15s}
+.lu-row .lu-names .lu-name:hover{border-color:var(--kec-green-mid)}
+.lu-row .lu-names .lu-name:focus{border-color:var(--kec-green)}
 .lu-add{display:flex;align-items:center;gap:10px;background:linear-gradient(160deg,var(--kec-surface),var(--kec-surface-2));border:1px solid var(--kec-hairline);border-radius:12px;padding:10px 12px;margin-bottom:4px}
 .lu-add input[type=color]{width:34px;height:34px;border:1px solid var(--kec-hairline);border-radius:8px;background:none;cursor:pointer;padding:2px;flex:none}
 .lu-add .lu-name{flex:1;min-width:0;border:1px solid var(--kec-hairline);border-radius:8px;padding:7px 10px;background:var(--card)}
