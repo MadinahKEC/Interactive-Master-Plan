@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, resolveProject, inferType, estimatedElecLoadKva, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, investLabel, resolveProject, inferType, estimatedElecLoadKva, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { uploadPlotImage } from '../lib/firebase';
@@ -226,7 +226,7 @@ export function PlotEditor({
           <div className="ed-sec">{t('a.invest', lang)}</div>
           <div className="ed-grid">
             {INVEST_FIELDS.map((fld) => (
-              <Field key={fld.key} label={lang === 'ar' ? fld.ar : fld.en}>
+              <Field key={fld.key} label={investLabel(fld, lang)}>
                 <NumberField value={inv[fld.key] ?? ''} onChange={(v) => setInvField(fld.key, v)} />
               </Field>
             ))}

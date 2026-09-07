@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { SECTORS, type PlotProps } from '@kec/types';
-import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInvest, investLabel, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { computeInvestmentScore, scoreColor, gradeLabel } from '../lib/investment';
 import { StageBar } from './StageBar';
 import type { EffLandUse } from '../lib/effective';
@@ -144,8 +144,8 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
                 <div className="pf-invest-grid">
                   {INVEST_FIELDS.filter((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])).map((f) => (
                     <div className="pf-inv" key={f.key}>
-                      <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit, lang)}</div>
-                      <div className="pf-inv-l">{lang === 'ar' ? f.ar : f.en}</div>
+                      <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit)}</div>
+                      <div className="pf-inv-l">{investLabel(f, lang)}</div>
                     </div>
                   ))}
                 </div>

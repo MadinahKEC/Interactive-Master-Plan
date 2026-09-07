@@ -639,10 +639,12 @@ export interface InvestmentInfo {
   totalValue?: number;   // Total value of the project (SAR)
   devCost?: number;      // Total development cost (SAR)
   npv?: number;          // Net present value (SAR)
-  tenure?: number;       // Project tenure (years)
+  tenure?: number;       // Project tenure (months)
   gsa?: number;          // Gross saleable area (sqm)
+  gla?: number;          // Gross leasing area (sqm)
   units?: number;        // Number of units
   hotelRooms?: number;   // No. of hotel rooms
+  parking?: number;      // Number of parking spaces
   projectIRR?: number;   // Project IRR (%)
   equityIRR?: number;    // Equity IRR (%)
   roi?: number;          // Return on investment (%)
@@ -651,7 +653,7 @@ export interface InvestmentInfo {
   payback?: number;      // Payback period (years)
 }
 
-type InvUnit = 'sar' | 'sqm' | 'num' | 'pct' | 'yr' | 'x';
+type InvUnit = 'sar' | 'sqm' | 'num' | 'pct' | 'yr' | 'month' | 'x';
 export interface InvestField { key: keyof InvestmentInfo; ar: string; en: string; unit: InvUnit }
 /** Ordered list of investment KPIs (scale → returns → physical). */
 export const INVEST_FIELDS: InvestField[] = [
@@ -664,25 +666,41 @@ export const INVEST_FIELDS: InvestField[] = [
   { key: 'moic',       ar: 'مضاعف رأس المال MOIC', en: 'MOIC', unit: 'x' },
   { key: 'capRate',    ar: 'معدل الرسملة Cap Rate', en: 'Cap rate / yield', unit: 'pct' },
   { key: 'payback',    ar: 'فترة الاسترداد', en: 'Payback period', unit: 'yr' },
-  { key: 'tenure',     ar: 'مدة المشروع', en: 'Project tenure', unit: 'yr' },
+  { key: 'tenure',     ar: 'مدة المشروع', en: 'Project tenure', unit: 'month' },
   { key: 'gsa',        ar: 'المساحة القابلة للبيع', en: 'Gross saleable area', unit: 'sqm' },
+  { key: 'gla',        ar: 'المساحة الإجمالية القابلة للتأجير', en: 'Gross Leasing Area', unit: 'sqm' },
   { key: 'units',      ar: 'عدد الوحدات', en: 'Number of units', unit: 'num' },
   { key: 'hotelRooms', ar: 'عدد الغرف الفندقية', en: 'Hotel rooms', unit: 'num' },
+  { key: 'parking',    ar: 'عدد المواقف', en: 'Parking spaces', unit: 'num' },
 ];
 
 const nfInv = new Intl.NumberFormat('en-US');
-/** Format an investment value with full thousands separators + a unit suffix. */
-export function fmtInvest(v: number, unit: InvUnit, lang: Lang): string {
-  const sar = lang === 'ar' ? 'ر.س' : 'SAR';
+/** Number-only format for an investment value; the unit is shown next to the label. */
+export function fmtInvest(v: number, unit: InvUnit): string {
   switch (unit) {
-    case 'sar': return `${nfInv.format(Math.round(v))} ${sar}`;
-    case 'sqm': return `${nfInv.format(Math.round(v))} ${lang === 'ar' ? 'م²' : 'm²'}`;
-    case 'num': return nfInv.format(Math.round(v));
-    case 'pct': return `${nfInv.format(+v.toFixed(2))}%`;
-    case 'yr': return `${nfInv.format(+v.toFixed(1))} ${lang === 'ar' ? 'سنة' : 'yrs'}`;
-    case 'x': return `${nfInv.format(+v.toFixed(2))}×`;
-    default: return nfInv.format(v);
+    case 'pct':
+    case 'x': return nfInv.format(+v.toFixed(2));
+    case 'yr':
+    case 'month': return nfInv.format(+v.toFixed(1));
+    default: return nfInv.format(Math.round(v));
   }
+}
+/** Short unit label written next to the field name (empty for plain counts). */
+export function investUnit(unit: InvUnit, lang: Lang): string {
+  switch (unit) {
+    case 'sar': return lang === 'ar' ? 'ر.س' : 'SAR';
+    case 'sqm': return lang === 'ar' ? 'م²' : 'm²';
+    case 'pct': return '%';
+    case 'yr': return lang === 'ar' ? 'سنة' : 'yrs';
+    case 'month': return lang === 'ar' ? 'شهر' : 'months';
+    case 'x': return '×';
+    case 'num': return '';
+  }
+}
+/** Field label with its unit appended ("Project tenure · months"). */
+export function investLabel(fld: InvestField, lang: Lang): string {
+  const u = investUnit(fld.unit, lang);
+  return u ? `${lang === 'ar' ? fld.ar : fld.en} · ${u}` : (lang === 'ar' ? fld.ar : fld.en);
 }
 
 // ---------- Project overlay (per-plot, editable via admin; Firebase-ready) ----------

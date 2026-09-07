@@ -3,7 +3,7 @@ import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, investLabel, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
@@ -234,11 +234,11 @@ export function DetailPanel({
             </Section>
 
             <Section k="s:invest" title={t('sec.invest', lang)}>
-              <div className="d-tiles">
+              <div className="d-tiles d-tiles-inv">
                 {INVEST_FIELDS.map((fld) => {
                   const v = inv?.[fld.key];
                   const has = v != null && !Number.isNaN(v);
-                  return <Tile k={`f:inv:${fld.key}`} key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit, lang) : '—'} />;
+                  return <Tile k={`f:inv:${fld.key}`} key={fld.key} icon={investIcon(fld.unit)} l={investLabel(fld, lang)} v={has ? fmtInvest(v!, fld.unit) : '—'} />;
                 })}
               </div>
             </Section>
@@ -474,7 +474,7 @@ function ScoreRing({ score }: { score: number }) {
 function investIcon(unit: string): RN {
   if (unit === 'sqm') return <IconRuler size={13} />;
   if (unit === 'num') return <IconBuilding size={13} />;
-  if (unit === 'yr') return <IconClock size={13} />;
+  if (unit === 'yr' || unit === 'month') return <IconClock size={13} />;
   return <IconInvest size={13} />;
 }
 /** Premium stat tile — icon badge, label, value — two per row. */
