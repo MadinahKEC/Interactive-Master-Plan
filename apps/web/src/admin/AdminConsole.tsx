@@ -8,7 +8,7 @@ import { LICENSE_STAGES, PROGRESS_STAGES, STATUS_META, resolveProject, t, type P
 import { confirmDialog } from '../lib/dialog';
 import type { EffLandUse } from '../lib/effective';
 import { PlotEditor } from './PlotEditor';
-import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin, IconPlus, IconZoom, IconGlobe } from '../components/icons';
+import { IconPlots, IconPalette, IconUsers, IconAudit, IconSettings, IconClose, IconUndo, IconExcel, IconClock, IconTrash, IconDownload, IconAdmin, IconPlus, IconZoom, IconGlobe, IconEdit } from '../components/icons';
 import type { ReactNode } from 'react';
 
 type Tab = 'plots' | 'landuses' | 'users' | 'access' | 'audit' | 'settings';
@@ -228,6 +228,16 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
   const hiddenLandUses = useOverrides((s) => s.hiddenLandUses);
   const counts = useMemo(() => { const c: Record<string, number> = {}; for (const f of data.features) c[f.properties.land_use ?? ''] = (c[f.properties.land_use ?? ''] || 0) + 1; return c; }, [data]);
   const [nu, setNu] = useState({ ar: '', en: '', color: '#2F6B3E' });
+  // edit mode: names/colours are read-only until "Edit" is pressed, and changes
+  // are held as a draft that only persists when the user presses "Save".
+  type LuPatch = { labelAr?: string; labelEn?: string; color?: string };
+  const [editMode, setEditMode] = useState(false);
+  const [draft, setDraft] = useState<Record<string, LuPatch>>({});
+  const dv = (k: string, f: keyof LuPatch) => draft[k]?.[f] ?? landUses[k][f];
+  const dset = (k: string, patch: LuPatch) => setDraft((d) => ({ ...d, [k]: { ...d[k], ...patch } }));
+  const startEdit = () => { setDraft({}); setEditMode(true); };
+  const cancelEdit = () => { setDraft({}); setEditMode(false); };
+  const saveEdit = () => { for (const [k, patch] of Object.entries(draft)) if (patch && Object.keys(patch).length) setLandUse(k, patch); setDraft({}); setEditMode(false); };
   const addLandUse = () => {
     const en = nu.en.trim(), ar = nu.ar.trim();
     const key = (en || ar).trim();
@@ -262,20 +272,44 @@ function LandUsesTab({ landUses, data }: { landUses: Record<string, EffLandUse>;
           {planStyle.glow && <label className="lu-plan-s"><span>{t('a.planGlowW', lang)}</span><input type="range" min={3} max={18} step={1} value={planStyle.glowWidth ?? 9} onChange={(e) => setPlanStyle({ glowWidth: +e.target.value })} /></label>}
         </div>
       </div>
-      <div className="lu-sec-h">{t('cp.uses', lang)} <span className="lu-sec-n">{Object.keys(landUses).length}</span></div>
+      <div className="lu-sec-h">
+        <span>{t('cp.uses', lang)} <span className="lu-sec-n">{Object.keys(landUses).length}</span></span>
+        <div className="lu-sec-acts">
+          {editMode && <span className="lu-edit-hint">{t('a.editHint', lang)}</span>}
+          {editMode ? (
+            <>
+              <button className="btn sm" onClick={cancelEdit}>{t('a.cancel', lang)}</button>
+              <button className="btn sm primary" onClick={saveEdit}>{t('a.save', lang)}</button>
+            </>
+          ) : (
+            <button className="btn sm" onClick={startEdit}><IconEdit size={13} /> {t('a.edit', lang)}</button>
+          )}
+        </div>
+      </div>
       <div className="lu-grid">
         {Object.keys(landUses).sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).map((k) => (
-          <div className="lu-row" key={k} style={{ ['--lu' as string]: landUses[k].color }}>
-            <input type="color" value={landUses[k].color} onChange={(e) => setLandUse(k, { color: e.target.value })} />
+          <div className={`lu-row ${editMode ? 'editing' : ''}`} key={k} style={{ ['--lu' as string]: dv(k, 'color') as string }}>
+            {editMode
+              ? <input type="color" value={dv(k, 'color') as string} onChange={(e) => dset(k, { color: e.target.value })} />
+              : <span className="lu-sw" style={{ background: landUses[k].color }} />}
             <div className="lu-body">
               <div className="lu-names">
-                <input className="lu-name" value={landUses[k].labelAr} placeholder={t('opt.ar', lang)} title={t('opt.ar', lang)} onChange={(e) => setLandUse(k, { labelAr: e.target.value })} />
-                <input className="lu-name" value={landUses[k].labelEn} placeholder={t('opt.en', lang)} title={t('opt.en', lang)} onChange={(e) => setLandUse(k, { labelEn: e.target.value })} />
+                {editMode ? (
+                  <>
+                    <input className="lu-name" value={dv(k, 'labelAr') as string} placeholder={t('opt.ar', lang)} title={t('opt.ar', lang)} onChange={(e) => dset(k, { labelAr: e.target.value })} />
+                    <input className="lu-name" value={dv(k, 'labelEn') as string} placeholder={t('opt.en', lang)} title={t('opt.en', lang)} onChange={(e) => dset(k, { labelEn: e.target.value })} />
+                  </>
+                ) : (
+                  <>
+                    <span className="lu-name-ro">{landUses[k].labelAr}</span>
+                    <span className="lu-name-ro dim">{landUses[k].labelEn}</span>
+                  </>
+                )}
               </div>
               <span className="lu-usage"><span className="lu-usage-bar" style={{ width: `${((counts[k] || 0) / Math.max(1, ...Object.keys(landUses).map((x) => counts[x] || 0))) * 100}%`, background: landUses[k].color }} /></span>
             </div>
             <span className="lu-ct mono">{counts[k] || 0}</span>
-            <button className="mini-btn danger" onClick={() => removeOne(k)} title={t('a.remove', lang)}>✕</button>
+            {editMode && <button className="mini-btn danger" onClick={() => removeOne(k)} title={t('a.remove', lang)}>✕</button>}
           </div>
         ))}
       </div>

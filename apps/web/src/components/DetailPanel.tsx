@@ -3,7 +3,7 @@ import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, investLabel, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
@@ -234,11 +234,11 @@ export function DetailPanel({
             </Section>
 
             <Section k="s:invest" title={t('sec.invest', lang)}>
-              <div className="d-tiles d-tiles-inv">
+              <div className="d-tiles">
                 {INVEST_FIELDS.map((fld) => {
                   const v = inv?.[fld.key];
                   const has = v != null && !Number.isNaN(v);
-                  return <Tile k={`f:inv:${fld.key}`} key={fld.key} icon={investIcon(fld.unit)} l={investLabel(fld, lang)} v={has ? fmtInvest(v!, fld.unit) : '—'} />;
+                  return <Tile k={`f:inv:${fld.key}`} key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit) : '—'} />;
                 })}
               </div>
             </Section>

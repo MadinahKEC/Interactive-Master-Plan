@@ -159,8 +159,6 @@ body.dp-resizing .d-resize-grip{border-color:var(--kec-green)}
 .d-tile-ic svg{width:14px;height:14px}
 .d-tile-body{min-width:0;display:flex;flex-direction:column;gap:1px}
 .d-tile-l{font-size:9px;font-weight:600;color:var(--kec-muted);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-/* investment tiles: let the label wrap so its unit (· SAR / · months …) stays visible */
-.d-tiles-inv .d-tile-l{white-space:normal;overflow:visible;text-overflow:clip}
 /* chip (land-use colour) sits beside the value, never inside it, so it can't stretch into a line */
 .d-tile-vrow{display:flex;align-items:center;gap:5px;min-width:0}
 .d-tile-v{font-size:14px;font-weight:600;color:var(--kec-title);overflow-wrap:anywhere;line-height:1.25;min-width:0}

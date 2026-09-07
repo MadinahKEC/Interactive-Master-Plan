@@ -117,6 +117,8 @@ export const DICT: Record<string, Entry> = {
   'a.search':        { ar: 'بحث…', en: 'Search…' },
   'a.save':          { ar: 'حفظ', en: 'Save' },
   'a.cancel':        { ar: 'إلغاء', en: 'Cancel' },
+  'a.edit':          { ar: 'تعديل', en: 'Edit' },
+  'a.editHint':      { ar: 'فعّل التعديل ثم اضغط حفظ لتطبيق التغييرات', en: 'Enable editing, then press Save to apply changes' },
   'a.projectInfo':   { ar: 'بيانات المشروع', en: 'Project info' },
   'a.plotAttrs':     { ar: 'سمات البلوت', en: 'Plot attributes' },
   'a.elecLoad':      { ar: 'الحمولة الكهربائية (ك.ف.أ)', en: 'Electrical load (kVA)' },

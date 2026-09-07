@@ -53,8 +53,15 @@
 
 /* land uses — full-width responsive grid of premium cards */
 .tab-lu{display:flex;flex-direction:column;gap:8px}
-.lu-sec-h{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--kec-muted);letter-spacing:.06em;text-transform:uppercase;margin:10px 2px 4px}
+.lu-sec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;font-weight:700;color:var(--kec-muted);letter-spacing:.06em;text-transform:uppercase;margin:10px 2px 4px}
 .lu-sec-n{font-family:var(--kec-num,monospace);font-size:13px;font-weight:700;color:var(--kec-title)}
+.lu-sec-acts{margin-inline-start:auto;display:flex;align-items:center;gap:8px}
+.lu-sec-acts .btn{display:inline-flex;align-items:center;gap:5px}
+.lu-edit-hint{font-size:10.5px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--kec-muted)}
+/* read-only land-use row (edit mode off): swatch + plain name text */
+.lu-sw{width:32px;height:32px;border-radius:8px;border:1px solid var(--kec-hairline);flex:none}
+.lu-name-ro{font-size:13px;font-weight:600;color:var(--kec-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.lu-name-ro.dim{font-size:11.5px;font-weight:500;color:var(--kec-muted)}
 .lu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
 .lu-row{display:flex;align-items:center;gap:11px;background:linear-gradient(158deg,var(--card),var(--kec-surface));border:1px solid var(--kec-hairline);border-inline-start:4px solid var(--lu,var(--kec-hairline));border-radius:13px;padding:11px 13px;transition:box-shadow .15s,transform .15s;min-width:0}
 .lu-row:hover{box-shadow:0 6px 20px rgba(20,61,30,.10);transform:translateY(-1px)}
