@@ -20,7 +20,6 @@ export function PlotEditor({
 }) {
   const { lang } = useApp();
   const { setProject, setPlotAttr } = useOverrides();
-  const isMerged = useOverrides((s) => s.merges).some((m) => m.id === code);
   const hiddenCards = useOverrides((s) => s.hiddenCards);
   const toggleHiddenCard = useOverrides((s) => s.toggleHiddenCard);
   const feature = useMemo(() => data.features.find((f) => f.properties.code === code), [data, code]);
@@ -134,7 +133,7 @@ export function PlotEditor({
     <div className="editor-wrap" onClick={onClose}>
       <div className="editor" onClick={(e) => e.stopPropagation()}>
         <div className="editor-head">
-          <div><span className="mono ecode">{code}</span></div>
+          <div><span className="mono ecode">{f.plotNo.trim() || code}</span></div>
           <button className="ic-btn" onClick={onClose}>×</button>
         </div>
         <div className="editor-body">
@@ -153,12 +152,10 @@ export function PlotEditor({
           {/* Overview — matches the card's Summary + Gallery */}
           <div className="ed-sec">{t('a.projectInfo', lang)}</div>
           <div className="ed-grid">
-            {isMerged && (
-              <Field label={t('a.plotNo', lang)} full>
-                <input value={f.plotNo} onChange={(e) => up('plotNo', e.target.value)} placeholder={code} />
-                <span className="field-hint">{t('a.plotNoHint', lang)}</span>
-              </Field>
-            )}
+            <Field label={t('a.plotNo', lang)} full>
+              <input value={f.plotNo} onChange={(e) => up('plotNo', e.target.value)} placeholder={code} />
+              <span className="field-hint">{t('a.plotNoHint', lang)}</span>
+            </Field>
             <Field label={t('a.nameAr', lang)}><input value={f.name_ar} onChange={(e) => up('name_ar', e.target.value)} /></Field>
             <Field label={t('a.nameEn', lang)}><input value={f.name_en} onChange={(e) => up('name_en', e.target.value)} /></Field>
             <Field label={t('a.type', lang)} full>

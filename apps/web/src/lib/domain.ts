@@ -119,7 +119,7 @@ export const DICT: Record<string, Entry> = {
   'a.cancel':        { ar: 'إلغاء', en: 'Cancel' },
   'a.edit':          { ar: 'تعديل', en: 'Edit' },
   'a.plotNo':        { ar: 'رقم البلوت', en: 'Plot number' },
-  'a.plotNoHint':    { ar: 'رقم مخصّص يظهر بدل الرمز التلقائي', en: 'A custom number shown instead of the auto code' },
+  'a.plotNoHint':    { ar: 'رقم مخصّص يظهر بدل الرمز الافتراضي (لأي بلوت)', en: 'A custom number shown instead of the default code (any plot)' },
   'a.editHint':      { ar: 'فعّل التعديل ثم اضغط حفظ لتطبيق التغييرات', en: 'Enable editing, then press Save to apply changes' },
   'a.projectInfo':   { ar: 'بيانات المشروع', en: 'Project info' },
   'a.plotAttrs':     { ar: 'سمات البلوت', en: 'Plot attributes' },
