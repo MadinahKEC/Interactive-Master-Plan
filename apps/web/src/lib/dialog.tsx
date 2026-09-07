@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { IconClose } from '../components/icons';
 
-export interface DialogField { key: string; label: string; value: string | number; type?: 'number' | 'text' | 'color'; suffix?: string; placeholder?: string }
+export interface DialogField { key: string; label: string; value: string | number; type?: 'number' | 'text' | 'color' | 'select'; suffix?: string; placeholder?: string; options?: { value: string; label: string; color?: string }[] }
 export interface DialogButton { label: string; value: string; variant?: 'primary' | 'danger' | 'default' }
 export interface DialogSpec {
   title: string;
@@ -98,14 +98,20 @@ export function DialogHost() {
                 <label className="dlg-field" key={f.key}>
                   <span>{f.label}</span>
                   <div className={`dlg-input ${f.type === 'color' ? 'dlg-input-color' : ''}`}>
-                    <input
-                      type={f.type ?? 'text'}
-                      autoFocus={spec.fields![0].key === f.key}
-                      placeholder={f.placeholder}
-                      value={vals[f.key] ?? ''}
-                      onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && confirmValue) done(confirmValue); }}
-                    />
+                    {f.type === 'select' ? (
+                      <select value={vals[f.key] ?? ''} onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}>
+                        {(f.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type={f.type ?? 'text'}
+                        autoFocus={spec.fields![0].key === f.key}
+                        placeholder={f.placeholder}
+                        value={vals[f.key] ?? ''}
+                        onChange={(e) => setVals((v) => ({ ...v, [f.key]: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && confirmValue) done(confirmValue); }}
+                      />
+                    )}
                     {f.type === 'color' && <em className="mono">{vals[f.key] ?? ''}</em>}
                     {f.suffix && <em>{f.suffix}</em>}
                   </div>

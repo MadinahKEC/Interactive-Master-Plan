@@ -327,6 +327,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .dlg-input{display:flex;align-items:center;gap:8px;border:1px solid var(--kec-hairline);border-radius:10px;background:var(--card);padding:0 12px;transition:border-color .15s,box-shadow .15s}
 .dlg-input:focus-within{border-color:var(--kec-green);box-shadow:0 0 0 3px rgba(47,107,62,.14)}
 .dlg-input input{flex:1;border:none;outline:none;background:transparent;padding:11px 0;font-size:14px;color:var(--kec-ink)}
+.dlg-input select{flex:1;border:none;outline:none;background:transparent;padding:11px 0;font-size:14px;color:var(--kec-ink);cursor:pointer}
 .dlg-input input::placeholder{color:var(--kec-muted);opacity:.7}
 .dlg-input em{font-style:normal;color:var(--kec-muted);font-size:12px}
 .dlg-input-color input[type=color]{flex:0 0 auto;width:52px;height:34px;padding:2px;margin:5px 0;border-radius:8px;cursor:pointer}

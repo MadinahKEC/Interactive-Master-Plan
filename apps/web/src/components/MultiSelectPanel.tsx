@@ -61,14 +61,18 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
   const doMerge = async () => {
     const codes = [...multi];
+    const firstLu = (data.features.find((f) => f.properties.code === codes[0])?.properties.land_use as string) ?? Object.keys(landUses)[0] ?? '';
+    const luOptions = Object.keys(landUses).map((k) => ({ value: k, label: lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn }));
     const r = await useDialog.getState().open({
       title: t('m.mergeTitle', lang),
       icon: <IconMerge size={24} />,
       body: t('m.mergeBody', lang).replace('{n}', String(codes.length)),
       dir,
       fields: [
-        { key: 'name', label: t('m.mergeName', lang), value: '', placeholder: t('m.mergeNamePh', lang) },
+        { key: 'name_en', label: t('m.mergeName', lang), value: '', placeholder: t('m.mergeNamePh', lang) },
+        { key: 'name_ar', label: t('m.mergeNameAr', lang), value: '' },
         { key: 'owner', label: t('a.owner', lang), value: '' },
+        { key: 'land_use', label: t('a.landuse', lang), value: firstLu, type: 'select', options: luOptions },
       ],
       buttons: [
         { label: t('a.cancel', lang), value: 'cancel' },
@@ -76,15 +80,22 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
       ],
     });
     if (r.value !== 'ok') return;
-    const name = (r.fields.name ?? '').trim();
+    const nameEn = (r.fields.name_en ?? '').trim();
+    const nameAr = (r.fields.name_ar ?? '').trim();
     const own = (r.fields.owner ?? '').trim();
-    // snapshot each source plot's land use + area so the merged card can always
-    // show a stable breakdown (keeps the whole unit one colour, detail on demand).
+    const landUse = (r.fields.land_use ?? '').trim() || firstLu;
+    // snapshot each source plot's land use + area for the card breakdown.
     const parts = codes.map((c) => {
       const pp = data.features.find((f) => f.properties.code === c)?.properties;
       return { code: c, land_use: (pp?.land_use as string) ?? null, area: pp?.area ?? 0 };
     });
-    const id = mergePlots(codes, { ...(own ? { owner: own } : {}), ...(name ? { name_ar: name, name_en: name } : {}), parts });
+    const id = mergePlots(codes, {
+      ...(own ? { owner: own } : {}),
+      ...(nameEn ? { name_en: nameEn } : {}),
+      ...(nameAr ? { name_ar: nameAr } : {}),
+      land_use: landUse,
+      parts,
+    });
     clearMulti();
     setTimeout(() => requestZoom(id), 60);
   };
