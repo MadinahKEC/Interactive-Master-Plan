@@ -253,13 +253,20 @@ export function DetailPanel({
             </Section>
 
             <Section k="s:invest" title={t('sec.invest', lang)}>
-              <div className="d-tiles">
-                {INVEST_FIELDS.map((fld) => {
+              {(() => {
+                const shown = INVEST_FIELDS.filter((fld) => {
                   const v = inv?.[fld.key];
-                  const has = v != null && !Number.isNaN(v);
-                  return <Tile k={`f:inv:${fld.key}`} key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={has ? fmtInvest(v!, fld.unit) : '—'} />;
-                })}
-              </div>
+                  return v != null && !Number.isNaN(v) && !hiddenCards.includes(`f:inv:${fld.key}`);
+                });
+                if (shown.length === 0) return <p className="d-summary muted">{lang === 'ar' ? 'لا توجد مؤشرات استثمارية بعد.' : 'No investment highlights yet.'}</p>;
+                return (
+                  <div className="d-tiles">
+                    {shown.map((fld) => (
+                      <Tile k={`f:inv:${fld.key}`} key={fld.key} icon={investIcon(fld.unit)} l={lang === 'ar' ? fld.ar : fld.en} v={fmtInvest(inv![fld.key]!, fld.unit)} />
+                    ))}
+                  </div>
+                );
+              })()}
             </Section>
 
             <Section k="s:project" title={t('sec.project', lang)}>

@@ -760,7 +760,7 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-hero{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;padding:14px 22px 6px;align-items:stretch;flex:none}
 /* fixed media height → a tall gallery image can never grow the hero row
    (auto grid rows size to an <img>'s intrinsic aspect ratio otherwise) */
-.pf-media{display:flex;flex-direction:column;gap:8px;min-height:0;height:300px}
+.pf-media{display:flex;flex-direction:column;gap:8px;min-height:0;height:238px}
 .pf-photo-main{width:100%;flex:1;min-height:0;height:0;object-fit:cover;border-radius:12px;border:1px solid var(--kec-hairline)}
 .pf-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .pf-thumbs img{width:100%;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--kec-hairline)}
@@ -774,12 +774,12 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-owner{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--kec-ink);font-weight:500}
 .pf-owner svg{color:var(--kec-green)}
 .pf-own-badge{font-size:10.5px;font-weight:600;color:#fff;padding:2px 9px;border-radius:20px;margin-inline-start:auto}
-.pf-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.pf-stat{background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:9px 12px}
+.pf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.pf-stat{background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:10px;padding:6px 11px}
 .pf-stat.big{background:linear-gradient(160deg,var(--kec-surface-2,var(--kec-surface)),var(--kec-surface));border-color:rgba(47,107,62,.25)}
-.pf-stat-v{font-size:17px;font-weight:800;color:var(--kec-title);font-family:'IBM Plex Mono',monospace;line-height:1}
-.pf-stat.big .pf-stat-v{font-size:20px;color:var(--kec-green)}
-.pf-stat-l{font-size:9.5px;color:var(--kec-muted);margin-top:4px;text-transform:uppercase;letter-spacing:.03em}
+.pf-stat-v{font-size:15.5px;font-weight:800;color:var(--kec-title);font-family:'IBM Plex Mono',monospace;line-height:1}
+.pf-stat.big .pf-stat-v{font-size:18px;color:var(--kec-green)}
+.pf-stat-l{font-size:9px;color:var(--kec-muted);margin-top:3px;text-transform:uppercase;letter-spacing:.03em}
 .pf-cap{font-size:10px;font-weight:700;color:var(--kec-title);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
 /* balanced two-column body — each column stacks its own boxes so a short box
    (stepper) never leaves a tall gap next to a long one (permit ledger). */
@@ -789,17 +789,33 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   border:1px solid var(--kec-hairline);border-inline-start:4px solid var(--kec-gold);border-radius:12px}
 .pf-brief .pf-cap{margin-bottom:4px}
 .pf-brief p{font-size:11.5px;line-height:1.55;color:var(--kec-ink);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.pf-body{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 22px 8px;align-items:start;align-content:start;flex:1 1 auto;min-height:0;overflow:hidden}
+/* merged-plot constituents band (only on the factsheet of a merged unit) */
+.pf-merge{flex:none;margin:6px 22px 0;padding:9px 15px;background:linear-gradient(120deg,var(--kec-surface),var(--kec-paper));border:1px solid var(--kec-hairline);border-inline-start:4px solid var(--kec-green);border-radius:12px}
+.pf-merge .pf-cap{display:flex;align-items:center;gap:5px;margin-bottom:7px}
+.pf-merge-row{display:flex;flex-wrap:wrap;gap:7px}
+.pf-mchip{display:flex;align-items:center;gap:7px;background:var(--kec-paper);border:1px solid var(--kec-hairline);border-radius:9px;padding:5px 9px;min-width:0}
+.pf-mchip-sw{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.16);flex:none}
+.pf-mchip-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.pf-mchip-nm{font-size:10.5px;font-weight:700;color:var(--kec-title);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.pf-mchip-lu{font-size:9px;color:var(--kec-muted);line-height:1.2}
+.pf-mchip-nums{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.pf-mchip-area{font-size:10px;font-weight:700;color:var(--kec-ink);line-height:1.2}
+.pf-mchip-code{font-size:8.5px;color:var(--kec-muted);line-height:1.2}
+.pf-mtotal{background:var(--kec-green);border-color:var(--kec-green);gap:8px}
+.pf-mtotal span{font-size:10px;color:#fff;opacity:.92}
+.pf-mtotal b{font-size:11.5px;color:#fff}
+.pf-body{display:flex;flex-direction:column;gap:10px;padding:10px 22px 8px;flex:1 1 auto;min-height:0;overflow:hidden}
+.pf-brow{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .pf-bcol{display:flex;flex-direction:column;gap:14px;min-width:0}
 /* compact the permit ledger inside the factsheet so the right column tracks the left */
-.pf-body .permledger{padding:2px 0 0;gap:5px}
-.pf-body .pl-row{padding:5px 9px}
-.pf-body .pl-seal{width:21px;height:21px}
+.pf-body .permledger{padding:2px 0 0;gap:4px}
+.pf-body .pl-row{padding:3px 9px}
+.pf-body .pl-seal{width:18px;height:18px}
 /* boxes inside a column drop the full-page inset and become self-contained cards */
-.pf-body .pf-invest-box,.pf-body .pf-summary-box{padding:12px 14px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:12px}
-.pf-body .pf-invest-grid{grid-template-columns:repeat(2,1fr);margin-top:8px}
-.pf-body .pf-inv{background:var(--kec-paper)}
-.pf-body .pf-inv-v{overflow-wrap:normal;white-space:nowrap;font-size:11.5px;letter-spacing:-.2px}
+.pf-body .pf-invest-box,.pf-body .pf-summary-box{padding:9px 12px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:12px}
+.pf-body .pf-invest-grid{grid-template-columns:repeat(5,1fr);gap:7px;margin-top:7px}
+.pf-body .pf-inv{background:var(--kec-paper);padding:5px 8px}
+.pf-body .pf-inv-v{overflow-wrap:normal;white-space:nowrap;font-size:11px;letter-spacing:-.2px}
 .pf-body .pf-summary-box p{font-size:12px;line-height:1.55;color:var(--kec-ink)}
 .pf-barsrow{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:14px 22px 4px}
 .pf-barbox{background:var(--kec-paper);border:1px solid var(--kec-hairline);border-radius:12px;padding:12px 14px}
@@ -810,8 +826,8 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .pf-l{color:var(--kec-muted)}
 .pf-v{color:var(--kec-title);font-weight:600;text-align:end}
 .pf-summary-box{padding:4px 22px 12px}
-.pf-score{display:flex;align-items:center;gap:10px;border:1.5px solid;border-radius:10px;padding:7px 12px;margin-top:9px}
-.pf-score-n{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;line-height:1}
+.pf-score{display:flex;align-items:center;gap:10px;border:1.5px solid;border-radius:10px;padding:5px 11px;margin-top:6px}
+.pf-score-n{font-family:'IBM Plex Mono',monospace;font-size:23px;font-weight:700;line-height:1}
 .pf-score-t{display:flex;flex-direction:column;font-size:9px;color:var(--kec-muted);gap:1px}
 .pf-score-t b{font-size:12px;color:var(--kec-title)}
 .pf-score-h{margin-inline-start:auto;font-size:9px;color:var(--kec-muted);font-family:'IBM Plex Mono',monospace;text-align:end}

@@ -5,8 +5,9 @@ import { resolveProject, LICENSE_STAGES, PROGRESS_STAGES, INVEST_FIELDS, fmtInve
 import { computeInvestmentScore, scoreColor, gradeLabel } from '../lib/investment';
 import { StageBar } from './StageBar';
 import type { EffLandUse } from '../lib/effective';
-import { IconClose, IconOwner } from './icons';
+import { IconClose, IconOwner, IconMerge } from './icons';
 import { useBackClose } from '../lib/backstack';
+import { useOverrides } from '../lib/overrides';
 import { printWithPage } from '../lib/print';
 
 const nf = (v: number | null | undefined, d = 0) => (v || v === 0 ? new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(v) : '—');
@@ -25,6 +26,9 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
   const p = plot;
   const pr = resolveProject(p.code, p.land_use, projects);
   const o = pr.overlay;
+  const merges = useOverrides((s) => s.merges);
+  const splits = useOverrides((s) => s.splits);
+  const mergeRec = merges.find((m) => m.id === p.code);
   const lu = landUses[p.land_use as string];
   const luLabel = lu ? (lang === 'ar' ? lu.labelAr : lu.labelEn) : (p.land_use ?? '—');
   const displayCode = o.plotNo || p.code;
@@ -77,14 +81,8 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
         <div className="pf-hero">
           <div className="pf-media">
             {gallery.length > 0 ? (
-              <>
-                <img className="pf-photo-main" src={gallery[0]} alt="" />
-                {gallery.length > 1 && (
-                  <div className="pf-thumbs">
-                    {gallery.slice(1, 4).map((src, i) => <img key={i} src={src} alt="" />)}
-                  </div>
-                )}
-              </>
+              /* Reports use a single image — the first one uploaded on the card. */
+              <img className="pf-photo-main" src={gallery[0]} alt="" />
             ) : (
               <div className="pf-noimg" style={{ background: `linear-gradient(135deg, ${lu?.color ?? '#2F6B3E'}, #143D1E)` }}>
                 <span className="mono">{p.code}</span>
@@ -123,47 +121,80 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
           </div>
         )}
 
-        <div className="pf-body">
-          <div className="pf-bcol">
-            <div className="pf-colbox">
-              <div className="pf-cap">{t('sec.ownership', lang)}</div>
-              <Cell l={t('d.ownership', lang)} v={lang === 'ar' ? pr.ownership.ar : pr.ownership.en} />
-              <Cell l={t('a.owner', lang)} v={pr.owner || '—'} />
-              <Cell l={t('d.purchase', lang)} v={o.purchase_date || '—'} />
-              <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} />
-            </div>
-            <div className="pf-colbox">
-              <div className="pf-cap">{t('sec.project', lang)}</div>
-              <Cell l={t('a.type', lang)} v={lang === 'ar' ? pr.type.ar : pr.type.en} />
-              <Cell l={t('sec.stage', lang)} v={stg ? (lang === 'ar' ? stg.ar : stg.en) : '—'} />
-              <Cell l={t('sec.license', lang)} v={lic ? (lang === 'ar' ? lic.ar : lic.en) : '—'} />
-              <Cell l={t('d.landuse', lang)} v={luLabel} />
-            </div>
-            {o.investment && INVEST_FIELDS.some((f) => o.investment![f.key] != null) && (
-              <div className="pf-invest-box">
-                <div className="pf-cap">{t('sec.invest', lang)}</div>
-                <div className="pf-invest-grid">
-                  {INVEST_FIELDS.filter((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])).map((f) => (
-                    <div className="pf-inv" key={f.key}>
-                      <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit)}</div>
-                      <div className="pf-inv-l">{investLabel(f, lang)}</div>
+        {mergeRec && (() => {
+          const parts = mergeRec.parts?.length ? mergeRec.parts : mergeRec.codes.map((c) => ({ code: c, land_use: null as string | null, area: 0 }));
+          const total = parts.reduce((sum, pt) => sum + (pt.area || 0), 0);
+          return (
+            <div className="pf-merge">
+              <span className="pf-cap"><IconMerge size={12} /> {t('merged.breakdown', lang)} · {mergeRec.codes.length}</span>
+              <div className="pf-merge-row">
+                {parts.map((pt) => {
+                  const plu = pt.land_use ? landUses[pt.land_use] : undefined;
+                  const plabel = plu ? (lang === 'ar' ? plu.labelAr : plu.labelEn) : (pt.land_use ?? '—');
+                  return (
+                    <div className="pf-mchip" key={pt.code}>
+                      <span className="pf-mchip-sw" style={{ background: plu?.color ?? '#C9C9C9' }} />
+                      <div className="pf-mchip-txt">
+                        <span className="pf-mchip-nm">{nameOfPart(pt.code, projects, splits, lang)}</span>
+                        <span className="pf-mchip-lu">{plabel}</span>
+                      </div>
+                      <div className="pf-mchip-nums">
+                        {pt.area > 0 && <span className="pf-mchip-area mono">{nf(pt.area, 0)} m²</span>}
+                        <span className="pf-mchip-code mono">{pt.code}</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+                {total > 0 && <div className="pf-mchip pf-mtotal"><span>{t('merged.total', lang)}</span><b className="mono">{nf(total, 0)} m²</b></div>}
               </div>
-            )}
+            </div>
+          );
+        })()}
+
+        <div className="pf-body">
+          <div className="pf-brow">
+            <div className="pf-bcol">
+              <div className="pf-colbox">
+                <div className="pf-cap">{t('sec.ownership', lang)}</div>
+                <Cell l={t('d.ownership', lang)} v={lang === 'ar' ? pr.ownership.ar : pr.ownership.en} />
+                <Cell l={t('a.owner', lang)} v={pr.owner || '—'} />
+                <Cell l={t('d.purchase', lang)} v={o.purchase_date || '—'} />
+                <Cell l={t('d.sector', lang)} v={lang === 'ar' ? SECTORS[p.sector]?.labelAr ?? p.sector : p.sector} />
+              </div>
+              <div className="pf-colbox">
+                <div className="pf-cap">{t('sec.project', lang)}</div>
+                <Cell l={t('a.type', lang)} v={lang === 'ar' ? pr.type.ar : pr.type.en} />
+                <Cell l={t('sec.stage', lang)} v={stg ? (lang === 'ar' ? stg.ar : stg.en) : '—'} />
+                <Cell l={t('sec.license', lang)} v={lic ? (lang === 'ar' ? lic.ar : lic.en) : '—'} />
+                <Cell l={t('d.landuse', lang)} v={luLabel} />
+              </div>
+            </div>
+
+            <div className="pf-bcol">
+              <div className="pf-barbox">
+                <div className="pf-cap">{t('sec.stage', lang)}</div>
+                <StageBar lang={lang} stageKey={o.stage} />
+              </div>
+              <div className="pf-barbox">
+                <div className="pf-cap">{t('sec.license', lang)}</div>
+                <StageBar lang={lang} stageKey={o.license} stages={LICENSE_STAGES} variant="license" />
+              </div>
+            </div>
           </div>
 
-          <div className="pf-bcol">
-            <div className="pf-barbox">
-              <div className="pf-cap">{t('sec.stage', lang)}</div>
-              <StageBar lang={lang} stageKey={o.stage} />
+          {o.investment && INVEST_FIELDS.some((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])) && (
+            <div className="pf-invest-box">
+              <div className="pf-cap">{t('sec.invest', lang)}</div>
+              <div className="pf-invest-grid">
+                {INVEST_FIELDS.filter((f) => o.investment![f.key] != null && !Number.isNaN(o.investment![f.key])).map((f) => (
+                  <div className="pf-inv" key={f.key}>
+                    <div className="pf-inv-v">{fmtInvest(o.investment![f.key]!, f.unit)}</div>
+                    <div className="pf-inv-l">{investLabel(f, lang)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="pf-barbox">
-              <div className="pf-cap">{t('sec.license', lang)}</div>
-              <StageBar lang={lang} stageKey={o.license} stages={LICENSE_STAGES} variant="license" />
-            </div>
-          </div>
+          )}
         </div>
 
         <footer className="pf-footer">
@@ -179,4 +210,15 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
 
 function Stat({ v, l, big }: { v: string; l: string; big?: boolean }) {
   return (<div className={`pf-stat ${big ? 'big' : ''}`}><div className="pf-stat-v">{v}</div><div className="pf-stat-l">{l}</div></div>);
+}
+
+/** Friendly name of a merged constituent (named project or sub-plot), else its code. */
+function nameOfPart(code: string, projects: Record<string, ProjectInfo>, splits: Record<string, { code: string; name_ar?: string; name_en?: string }[]>, lang: 'ar' | 'en'): string {
+  const pj = projects[code];
+  if (pj?.name_ar || pj?.name_en) return (lang === 'ar' ? pj.name_ar || pj.name_en : pj.name_en || pj.name_ar) as string;
+  for (const parent of Object.keys(splits)) {
+    const rec = splits[parent].find((r) => r.code === code);
+    if (rec && (rec.name_ar || rec.name_en)) return (lang === 'ar' ? rec.name_ar || rec.name_en : rec.name_en || rec.name_ar) as string;
+  }
+  return code;
 }

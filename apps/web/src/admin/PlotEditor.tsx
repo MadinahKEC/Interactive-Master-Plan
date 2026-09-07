@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { SECTORS, type PlotCollection } from '@kec/types';
-import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, investLabel, resolveProject, inferType, estimatedElecLoadKva, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
+import { PROJECT_TYPES, STATUS_META, OWNERSHIP_META, STANDARD_PHASES, PHASE_STATUSES, PROGRESS_STAGES, LICENSE_STAGES, INVEST_FIELDS, INVEST_GROUPS, investLabel, resolveProject, inferType, estimatedElecLoadKva, t, type ProjectInfo, type Phase, type InvestmentInfo } from '../lib/domain';
 import { useApp } from '../store';
 import { useOverrides } from '../lib/overrides';
 import { uploadPlotImage } from '../lib/firebase';
@@ -228,15 +228,20 @@ export function PlotEditor({
             ))}
           </div>
 
-          {/* Investment highlights */}
+          {/* Investment highlights — grouped by theme */}
           <div className="ed-sec">{t('a.invest', lang)}</div>
-          <div className="ed-grid">
-            {INVEST_FIELDS.map((fld) => (
-              <Field key={fld.key} label={investLabel(fld, lang)}>
-                <NumberField value={inv[fld.key] ?? ''} onChange={(v) => setInvField(fld.key, v)} />
-              </Field>
-            ))}
-          </div>
+          {INVEST_GROUPS.map((g) => (
+            <div key={g.key}>
+              <div className="ed-subsec">{lang === 'ar' ? g.ar : g.en}</div>
+              <div className="ed-grid">
+                {INVEST_FIELDS.filter((fld) => fld.group === g.key).map((fld) => (
+                  <Field key={fld.key} label={investLabel(fld, lang)}>
+                    <NumberField value={inv[fld.key] ?? ''} onChange={(v) => setInvField(fld.key, v)} />
+                  </Field>
+                ))}
+              </div>
+            </div>
+          ))}
 
           {/* Status & permits */}
           <div className="ed-sec">{t('sec.project', lang)}</div>

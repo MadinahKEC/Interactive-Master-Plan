@@ -641,42 +641,104 @@ export interface Phase {
 // ---------- Investment highlights ----------
 /** Financial / investment KPIs shown on the plot card and edited in the editor. */
 export interface InvestmentInfo {
-  totalValue?: number;   // Total value of the project (SAR)
-  devCost?: number;      // Total development cost (SAR)
-  npv?: number;          // Net present value (SAR)
-  tenure?: number;       // Project tenure (months)
+  // — Scale & areas —
   gsa?: number;          // Gross saleable area (sqm)
   gla?: number;          // Gross leasing area (sqm)
+  bua?: number;          // Built-up area (sqm)
+  efficiency?: number;   // Area efficiency — net/gross (%)
   units?: number;        // Number of units
-  hotelRooms?: number;   // No. of hotel rooms
+  hotelRooms?: number;   // No. of hotel rooms / keys
   parking?: number;      // Number of parking spaces
+  parkingArea?: number;  // Parking area (sqm)
+  // — Financials (SAR) —
+  totalValue?: number;   // Total project value / GDV (SAR)
+  devCost?: number;      // Total development cost (SAR)
+  landValue?: number;    // Land value (SAR)
+  constructionCost?: number; // Construction cost (SAR)
+  revenue?: number;      // Stabilised annual revenue (SAR)
+  noi?: number;          // Net operating income (SAR)
+  opex?: number;         // Operating expenses / year (SAR)
+  npv?: number;          // Net present value (SAR)
+  // — Returns & ratios —
   projectIRR?: number;   // Project IRR (%)
   equityIRR?: number;    // Equity IRR (%)
   roi?: number;          // Return on investment (%)
   moic?: number;         // Multiple on invested capital (x)
   capRate?: number;      // Capitalisation rate / yield (%)
+  profitMargin?: number; // Development profit margin (%)
+  cashYield?: number;    // Cash-on-cash yield (%)
   payback?: number;      // Payback period (years)
+  // — Funding —
+  equity?: number;       // Equity (SAR)
+  debt?: number;         // Debt (SAR)
+  ltc?: number;          // Loan-to-cost (%)
+  dscr?: number;         // Debt-service coverage ratio (x)
+  // — Operations & leasing —
+  occupancy?: number;    // Stabilised occupancy (%)
+  rentRate?: number;     // Average rent (SAR / sqm / yr)
+  adr?: number;          // Average daily rate — hospitality (SAR)
+  revpar?: number;       // RevPAR — hospitality (SAR)
+  wault?: number;        // Weighted avg unexpired lease term (yrs)
+  // — Timeline —
+  tenure?: number;       // Project tenure (months)
+  constructionPeriod?: number; // Construction period (months)
 }
 
-type InvUnit = 'sar' | 'sqm' | 'num' | 'pct' | 'yr' | 'month' | 'x';
-export interface InvestField { key: keyof InvestmentInfo; ar: string; en: string; unit: InvUnit }
-/** Ordered list of investment KPIs (scale → returns → physical). */
+type InvUnit = 'sar' | 'sarsqm' | 'sqm' | 'num' | 'pct' | 'yr' | 'month' | 'x';
+type InvGroup = 'scale' | 'financial' | 'returns' | 'funding' | 'ops' | 'time';
+export interface InvestField { key: keyof InvestmentInfo; ar: string; en: string; unit: InvUnit; group: InvGroup }
+/** Grouping used to lay the KPIs out in logical sections (editor + reports). */
+export const INVEST_GROUPS: { key: InvGroup; ar: string; en: string }[] = [
+  { key: 'scale',     ar: 'المقاييس والمساحات', en: 'Scale & areas' },
+  { key: 'financial', ar: 'المؤشرات المالية', en: 'Financials' },
+  { key: 'returns',   ar: 'العوائد والنِّسب', en: 'Returns & ratios' },
+  { key: 'funding',   ar: 'التمويل', en: 'Funding' },
+  { key: 'ops',       ar: 'التشغيل والإيجار', en: 'Operations & leasing' },
+  { key: 'time',      ar: 'الجدول الزمني', en: 'Timeline' },
+];
+/** Ordered list of investment KPIs (grouped: scale → financial → returns → funding → ops → time). */
 export const INVEST_FIELDS: InvestField[] = [
-  { key: 'totalValue', ar: 'إجمالي قيمة المشروع', en: 'Total project value', unit: 'sar' },
-  { key: 'devCost',    ar: 'إجمالي تكلفة التطوير', en: 'Total development cost', unit: 'sar' },
-  { key: 'npv',        ar: 'صافي القيمة الحالية NPV', en: 'NPV', unit: 'sar' },
-  { key: 'projectIRR', ar: 'العائد الداخلي للمشروع IRR', en: 'Project IRR', unit: 'pct' },
-  { key: 'equityIRR',  ar: 'العائد الداخلي للملكية', en: 'Equity IRR', unit: 'pct' },
-  { key: 'roi',        ar: 'العائد على الاستثمار ROI', en: 'ROI', unit: 'pct' },
-  { key: 'moic',       ar: 'مضاعف رأس المال MOIC', en: 'MOIC', unit: 'x' },
-  { key: 'capRate',    ar: 'معدل الرسملة Cap Rate', en: 'Cap rate / yield', unit: 'pct' },
-  { key: 'payback',    ar: 'فترة الاسترداد', en: 'Payback period', unit: 'yr' },
-  { key: 'tenure',     ar: 'مدة المشروع', en: 'Project tenure', unit: 'month' },
-  { key: 'gsa',        ar: 'المساحة القابلة للبيع', en: 'Gross saleable area', unit: 'sqm' },
-  { key: 'gla',        ar: 'المساحة الإجمالية القابلة للتأجير', en: 'Gross Leasing Area', unit: 'sqm' },
-  { key: 'units',      ar: 'عدد الوحدات', en: 'Number of units', unit: 'num' },
-  { key: 'hotelRooms', ar: 'عدد الغرف الفندقية', en: 'Hotel rooms', unit: 'num' },
-  { key: 'parking',    ar: 'عدد المواقف', en: 'Parking spaces', unit: 'num' },
+  // Scale & areas
+  { key: 'gsa',              ar: 'المساحة القابلة للبيع', en: 'Gross saleable area', unit: 'sqm', group: 'scale' },
+  { key: 'gla',              ar: 'المساحة القابلة للتأجير', en: 'Gross leasing area', unit: 'sqm', group: 'scale' },
+  { key: 'bua',              ar: 'المساحة المبنية', en: 'Built-up area', unit: 'sqm', group: 'scale' },
+  { key: 'efficiency',       ar: 'كفاءة المساحة', en: 'Area efficiency', unit: 'pct', group: 'scale' },
+  { key: 'units',            ar: 'عدد الوحدات', en: 'Number of units', unit: 'num', group: 'scale' },
+  { key: 'hotelRooms',       ar: 'عدد الغرف الفندقية', en: 'Hotel keys', unit: 'num', group: 'scale' },
+  { key: 'parking',          ar: 'عدد المواقف', en: 'Parking spaces', unit: 'num', group: 'scale' },
+  { key: 'parkingArea',      ar: 'مساحة المواقف', en: 'Parking area', unit: 'sqm', group: 'scale' },
+  // Financials
+  { key: 'totalValue',       ar: 'إجمالي قيمة المشروع', en: 'Total project value (GDV)', unit: 'sar', group: 'financial' },
+  { key: 'devCost',          ar: 'إجمالي تكلفة التطوير', en: 'Total development cost', unit: 'sar', group: 'financial' },
+  { key: 'landValue',        ar: 'قيمة الأرض', en: 'Land value', unit: 'sar', group: 'financial' },
+  { key: 'constructionCost', ar: 'تكلفة الإنشاء', en: 'Construction cost', unit: 'sar', group: 'financial' },
+  { key: 'revenue',          ar: 'الإيراد السنوي المستقر', en: 'Stabilised annual revenue', unit: 'sar', group: 'financial' },
+  { key: 'noi',              ar: 'صافي دخل التشغيل NOI', en: 'Net operating income', unit: 'sar', group: 'financial' },
+  { key: 'opex',             ar: 'مصاريف التشغيل السنوية', en: 'Operating expenses / yr', unit: 'sar', group: 'financial' },
+  { key: 'npv',              ar: 'صافي القيمة الحالية NPV', en: 'NPV', unit: 'sar', group: 'financial' },
+  // Returns & ratios
+  { key: 'projectIRR',       ar: 'العائد الداخلي للمشروع IRR', en: 'Project IRR', unit: 'pct', group: 'returns' },
+  { key: 'equityIRR',        ar: 'العائد الداخلي للملكية', en: 'Equity IRR', unit: 'pct', group: 'returns' },
+  { key: 'roi',              ar: 'العائد على الاستثمار ROI', en: 'ROI', unit: 'pct', group: 'returns' },
+  { key: 'moic',             ar: 'مضاعف رأس المال MOIC', en: 'MOIC', unit: 'x', group: 'returns' },
+  { key: 'capRate',          ar: 'معدل الرسملة Cap Rate', en: 'Cap rate / yield', unit: 'pct', group: 'returns' },
+  { key: 'profitMargin',     ar: 'هامش ربح التطوير', en: 'Development profit margin', unit: 'pct', group: 'returns' },
+  { key: 'cashYield',        ar: 'العائد النقدي', en: 'Cash-on-cash yield', unit: 'pct', group: 'returns' },
+  { key: 'payback',          ar: 'فترة الاسترداد', en: 'Payback period', unit: 'yr', group: 'returns' },
+  // Funding
+  { key: 'equity',           ar: 'حقوق الملكية', en: 'Equity', unit: 'sar', group: 'funding' },
+  { key: 'debt',             ar: 'الدين / التمويل', en: 'Debt', unit: 'sar', group: 'funding' },
+  { key: 'ltc',              ar: 'نسبة القرض للتكلفة', en: 'Loan-to-cost', unit: 'pct', group: 'funding' },
+  { key: 'dscr',             ar: 'تغطية خدمة الدين DSCR', en: 'Debt-service coverage', unit: 'x', group: 'funding' },
+  // Operations & leasing
+  { key: 'occupancy',        ar: 'نسبة الإشغال المستقرة', en: 'Stabilised occupancy', unit: 'pct', group: 'ops' },
+  { key: 'rentRate',         ar: 'متوسط الإيجار', en: 'Average rent', unit: 'sarsqm', group: 'ops' },
+  { key: 'adr',              ar: 'متوسط سعر الغرفة ADR', en: 'Average daily rate', unit: 'sar', group: 'ops' },
+  { key: 'revpar',           ar: 'الإيراد لكل غرفة متاحة RevPAR', en: 'RevPAR', unit: 'sar', group: 'ops' },
+  { key: 'wault',            ar: 'متوسط مدة الإيجار المتبقية', en: 'WAULT', unit: 'yr', group: 'ops' },
+  // Timeline
+  { key: 'tenure',           ar: 'مدة المشروع', en: 'Project tenure', unit: 'month', group: 'time' },
+  { key: 'constructionPeriod', ar: 'مدة الإنشاء', en: 'Construction period', unit: 'month', group: 'time' },
 ];
 
 const nfInv = new Intl.NumberFormat('en-US');
@@ -694,6 +756,7 @@ export function fmtInvest(v: number, unit: InvUnit): string {
 export function investUnit(unit: InvUnit, lang: Lang): string {
   switch (unit) {
     case 'sar': return lang === 'ar' ? 'ر.س' : 'SAR';
+    case 'sarsqm': return lang === 'ar' ? 'ر.س/م²' : 'SAR/m²';
     case 'sqm': return lang === 'ar' ? 'م²' : 'm²';
     case 'pct': return '%';
     case 'yr': return lang === 'ar' ? 'سنة' : 'yrs';

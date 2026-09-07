@@ -69,11 +69,13 @@ export function ExecDashboard({ data, projects, landUses, onClose }: {
   const titleOf = (text: string) => ({ text, left: 10, top: 7, textStyle: { fontSize: 13, color: '#1C6034', fontWeight: 700 as any, fontFamily: SERIF } });
   // donut: value printed inside each slice AND appended to every legend row, so no
   // figure is ever hidden (a tiny slice still shows its number in the legend).
+  // Legend is laid out vertically (one row per item) and NON-scrolling, so every entry
+  // is printed in full — the pie sits on the leading side, the legend column on the other.
   const donut = (title: string, obj: Record<string, number>, colorOf: (k: string) => string, labelOf: (k: string) => string, unit?: string) => ({
     title: titleOf(title), textStyle: { fontFamily: SANS },
     tooltip: { trigger: 'item', valueFormatter: (v: any) => nf.format(v) + (unit ? ' ' + unit : '') },
-    legend: { type: 'scroll', bottom: 0, textStyle: { fontSize: 10 }, itemWidth: 11, itemHeight: 11 },
-    series: [{ type: 'pie', radius: ['38%', '64%'], center: ['50%', '46%'], avoidLabelOverlap: true,
+    legend: { type: 'plain', orient: 'vertical', [rtl ? 'left' : 'right']: 6, top: 'middle', textStyle: { fontSize: 9 }, itemWidth: 10, itemHeight: 10, itemGap: 7 },
+    series: [{ type: 'pie', radius: ['36%', '60%'], center: [rtl ? '68%' : '32%', '54%'], avoidLabelOverlap: true,
       label: { show: true, position: 'inside', formatter: (p: any) => (p.percent >= 7 ? compact(p.value) : ''), fontSize: 10, color: '#fff', fontWeight: 700 },
       labelLayout: { hideOverlap: true },
       data: Object.keys(obj).filter((k) => obj[k] > 0).map((k) => ({ name: `${labelOf(k)} · ${compact(obj[k])}`, value: Math.round(obj[k]), itemStyle: { color: colorOf(k) } })) }],
