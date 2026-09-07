@@ -20,6 +20,7 @@ export function PlotEditor({
 }) {
   const { lang } = useApp();
   const { setProject, setPlotAttr } = useOverrides();
+  const isMerged = useOverrides((s) => s.merges).some((m) => m.id === code);
   const hiddenCards = useOverrides((s) => s.hiddenCards);
   const toggleHiddenCard = useOverrides((s) => s.toggleHiddenCard);
   const feature = useMemo(() => data.features.find((f) => f.properties.code === code), [data, code]);
@@ -30,6 +31,7 @@ export function PlotEditor({
   const [f, setF] = useState({
     name_ar: overlay.name_ar ?? '',
     name_en: overlay.name_en ?? '',
+    plotNo: overlay.plotNo ?? '',
     type: overlay.type ?? inferType(p?.land_use).key,
     status: overlay.status ?? pr.status.key,
     progress: overlay.progress ?? pr.progress,
@@ -90,6 +92,7 @@ export function PlotEditor({
   const save = () => {
     setProject(code, {
       name_ar: f.name_ar || undefined, name_en: f.name_en || undefined,
+      plotNo: f.plotNo.trim() || undefined,
       type: f.type, status: f.status, progress: Number(f.progress),
       summary_ar: f.summary_ar || undefined, summary_en: f.summary_en || undefined,
       stage: f.stage || undefined,
@@ -150,6 +153,12 @@ export function PlotEditor({
           {/* Overview — matches the card's Summary + Gallery */}
           <div className="ed-sec">{t('a.projectInfo', lang)}</div>
           <div className="ed-grid">
+            {isMerged && (
+              <Field label={t('a.plotNo', lang)} full>
+                <input value={f.plotNo} onChange={(e) => up('plotNo', e.target.value)} placeholder={code} />
+                <span className="field-hint">{t('a.plotNoHint', lang)}</span>
+              </Field>
+            )}
             <Field label={t('a.nameAr', lang)}><input value={f.name_ar} onChange={(e) => up('name_ar', e.target.value)} /></Field>
             <Field label={t('a.nameEn', lang)}><input value={f.name_en} onChange={(e) => up('name_en', e.target.value)} /></Field>
             <Field label={t('a.type', lang)} full>

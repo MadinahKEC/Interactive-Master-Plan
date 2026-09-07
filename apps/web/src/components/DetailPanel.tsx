@@ -131,7 +131,7 @@ export function DetailPanel({
           <button className="dq-btn" onClick={() => setPdfOpen(true)} title={t('d.pdf', lang)}><IconDownload size={15} /></button>
           <button className="dq-btn" onClick={() => setShareOpen(true)} title={t('d.share', lang)}><IconShare size={15} /></button>
         </div>
-        <div className="d-kicker"><span className="d-code mono">{p.code}</span><span className="d-type"><TypeIcon typeKey={pr.type.key} size={13} />{typeLabel}</span></div>
+        <div className="d-kicker"><span className="d-code mono">{pr.overlay.plotNo || p.code}</span><span className="d-type"><TypeIcon typeKey={pr.type.key} size={13} />{typeLabel}</span></div>
         <div className="d-title">{title}</div>
         <div className="d-sub">
           {!pr.named && <span className="d-unnamed">{t('d.unnamed', lang)}</span>}

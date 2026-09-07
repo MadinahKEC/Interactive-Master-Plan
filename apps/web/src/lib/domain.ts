@@ -118,6 +118,8 @@ export const DICT: Record<string, Entry> = {
   'a.save':          { ar: 'حفظ', en: 'Save' },
   'a.cancel':        { ar: 'إلغاء', en: 'Cancel' },
   'a.edit':          { ar: 'تعديل', en: 'Edit' },
+  'a.plotNo':        { ar: 'رقم البلوت', en: 'Plot number' },
+  'a.plotNoHint':    { ar: 'رقم مخصّص يظهر بدل الرمز التلقائي', en: 'A custom number shown instead of the auto code' },
   'a.editHint':      { ar: 'فعّل التعديل ثم اضغط حفظ لتطبيق التغييرات', en: 'Enable editing, then press Save to apply changes' },
   'a.projectInfo':   { ar: 'بيانات المشروع', en: 'Project info' },
   'a.plotAttrs':     { ar: 'سمات البلوت', en: 'Plot attributes' },
@@ -709,6 +711,7 @@ export function investLabel(fld: InvestField, lang: Lang): string {
 // ---------- Project overlay (per-plot, editable via admin; Firebase-ready) ----------
 export interface ProjectInfo {
   name_ar?: string; name_en?: string;
+  plotNo?: string;     // custom display code (e.g. a real number for a merged unit)
   type?: string;       // PROJECT_TYPES key (overrides inference)
   status?: string;     // STATUS_META key
   progress?: number;   // 0..100

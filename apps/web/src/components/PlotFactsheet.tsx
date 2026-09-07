@@ -27,9 +27,10 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
   const o = pr.overlay;
   const lu = landUses[p.land_use as string];
   const luLabel = lu ? (lang === 'ar' ? lu.labelAr : lu.labelEn) : (p.land_use ?? '—');
-  const title = pr.named ? (lang === 'ar' ? o.name_ar || o.name_en : o.name_en || o.name_ar) : p.code;
+  const displayCode = o.plotNo || p.code;
+  const title = pr.named ? (lang === 'ar' ? o.name_ar || o.name_en : o.name_en || o.name_ar) : displayCode;
   const now = new Date();
-  const ref = `KEC-PLOT-${p.code}`;
+  const ref = `KEC-PLOT-${displayCode}`;
   const stg = PROGRESS_STAGES.find((x) => x.key === o.stage);
   const lic = LICENSE_STAGES.find((x) => x.key === o.license);
   const summary = lang === 'ar' ? o.summary_ar : o.summary_en;
@@ -93,7 +94,7 @@ export function PlotFactsheet({ plot, projects, landUses, haramKm = 0, onClose }
 
           <div className="pf-side">
             <div className="pf-chips">
-              <span className="pf-code mono">{p.code}</span>
+              <span className="pf-code mono">{displayCode}</span>
               <span className="pf-lu"><span className="pf-sw" style={{ background: lu?.color ?? '#ccc' }} />{luLabel}</span>
               <span className="pf-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
             </div>
