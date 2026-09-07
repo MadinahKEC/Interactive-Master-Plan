@@ -78,7 +78,13 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
     if (r.value !== 'ok') return;
     const name = (r.fields.name ?? '').trim();
     const own = (r.fields.owner ?? '').trim();
-    const id = mergePlots(codes, { ...(own ? { owner: own } : {}), ...(name ? { name_ar: name, name_en: name } : {}) });
+    // snapshot each source plot's land use + area so the merged card can always
+    // show a stable breakdown (keeps the whole unit one colour, detail on demand).
+    const parts = codes.map((c) => {
+      const pp = data.features.find((f) => f.properties.code === c)?.properties;
+      return { code: c, land_use: (pp?.land_use as string) ?? null, area: pp?.area ?? 0 };
+    });
+    const id = mergePlots(codes, { ...(own ? { owner: own } : {}), ...(name ? { name_ar: name, name_en: name } : {}), parts });
     clearMulti();
     setTimeout(() => requestZoom(id), 60);
   };

@@ -46,6 +46,9 @@ export interface MergeRecord {
   codes: string[];       // source plot codes
   name_ar?: string; name_en?: string;
   owner?: string;
+  /** Snapshot of each source plot at merge time (land use + area), so the merged
+   *  card can always show a stable breakdown even if base data later changes. */
+  parts?: { code: string; land_use: string | null; area: number }[];
 }
 /** One piece produced by subdividing a plot. */
 export interface SubPlotRecord {

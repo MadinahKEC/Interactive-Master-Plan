@@ -670,9 +670,16 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .mc-title svg{color:var(--kec-green)}
 .mc-count{background:var(--kec-green);color:#fff;border-radius:20px;font-size:10px;padding:1px 7px}
 .mc-list{list-style:none;display:flex;flex-direction:column;gap:5px}
-.mc-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:8px;padding:7px 10px}
-.mc-name{font-size:12.5px;color:var(--kec-ink);font-weight:500}
-.mc-code{font-size:11px;color:var(--kec-muted)}
+.mc-list li{display:flex;align-items:center;gap:9px;background:var(--kec-surface);border:1px solid var(--kec-hairline);border-radius:9px;padding:7px 10px}
+.mc-sw{width:13px;height:13px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.14)}
+.mc-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.mc-name{font-size:12.5px;color:var(--kec-ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-lu{font-size:10.5px;color:var(--kec-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-nums{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex:none}
+.mc-area{font-size:12px;font-weight:700;color:var(--kec-title)}
+.mc-code{font-size:10px;color:var(--kec-muted)}
+.mc-total{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding:7px 11px;background:var(--kec-surface-2);border:1px solid var(--kec-hairline);border-radius:9px;font-size:11.5px;font-weight:600;color:var(--kec-muted)}
+.mc-total b{color:var(--kec-title);font-size:13.5px}
 
 /* stage/license bar captions + license accent (teal instead of gold/green) */
 .sb-caption{font-size:10px;font-weight:600;color:var(--kec-muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 2px;padding:0 14px}
@@ -955,7 +962,8 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 .dc-thumb:hover{opacity:1}
 
 /* ---- Unmerge + timeline (card) ---- */
-.own-merge{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px 10px;flex-wrap:wrap}
+.own-merge{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:0 14px 10px}
+.own-merge .btn{align-self:flex-start}
 .btn.sm{flex:0 0 auto;font-size:11px;padding:6px 10px;display:inline-flex;align-items:center;gap:5px;border-radius:9px;border:1px solid var(--kec-hairline);background:var(--card);color:var(--kec-title);cursor:pointer}
 .btn.sm.danger{color:var(--kec-neg);border-color:var(--kec-neg)}
 /* .btn.sm resets the background AFTER .btn.primary, so small primary buttons need

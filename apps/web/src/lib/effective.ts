@@ -117,12 +117,15 @@ export function effectiveCollection(
       gfa += s.properties.gfa || 0;
     }
     const first = src[0].properties;
+    // one representative land use → the merged unit renders in a single colour
+    // (the dominant use by area); the per-plot breakdown is kept on the merge record.
+    const dominant = src.reduce((a, b) => ((b.properties.area || 0) > (a.properties.area || 0) ? b : a)).properties;
     const mps = planStatusOf(m.id);
     features.push({
       type: 'Feature',
       properties: {
         code: m.id, name: m.name_ar || m.name_en || m.codes.join('+'),
-        land_use: first.land_use, sector: first.sector,
+        land_use: dominant.land_use, sector: first.sector,
         gfa, area, floors: first.floors, height: first.height,
         coverage: first.coverage, far: first.far, style: null,
         ...(mps ? { planStatus: mps } : {}),

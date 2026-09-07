@@ -147,19 +147,38 @@ export function DetailPanel({
             <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
           </div>
           <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date || '—'}</b></div>
-          {mergeRec && (
-            <div className="own-merge">
-              <div className="merge-contains">
-                <div className="mc-title"><IconMerge size={13} /> {t('merged.contains', lang)} <span className="mc-count">{mergeRec.codes.length}</span></div>
-                <ul className="mc-list">
-                  {mergeRec.codes.map((c) => (
-                    <li key={c}><span className="mc-name">{nameOfConstituent(c, projects, splits, lang)}</span><span className="mc-code mono">{c}</span></li>
-                  ))}
-                </ul>
+          {mergeRec && (() => {
+            const parts = mergeRec.parts?.length ? mergeRec.parts : mergeRec.codes.map((c) => ({ code: c, land_use: null as string | null, area: 0 }));
+            const total = parts.reduce((s, pt) => s + (pt.area || 0), 0);
+            return (
+              <div className="own-merge">
+                <div className="merge-contains">
+                  <div className="mc-title"><IconMerge size={13} /> {t('merged.breakdown', lang)} <span className="mc-count">{mergeRec.codes.length}</span></div>
+                  <ul className="mc-list">
+                    {parts.map((pt) => {
+                      const plu = pt.land_use ? landUses[pt.land_use] : undefined;
+                      const plabel = plu ? (lang === 'ar' ? plu.labelAr : plu.labelEn) : (pt.land_use ?? '—');
+                      return (
+                        <li key={pt.code} className="mc-item">
+                          <span className="mc-sw" style={{ background: plu?.color ?? '#C9C9C9' }} title={plabel} />
+                          <div className="mc-info">
+                            <span className="mc-name">{nameOfConstituent(pt.code, projects, splits, lang)}</span>
+                            <span className="mc-lu">{plabel}</span>
+                          </div>
+                          <div className="mc-nums">
+                            {pt.area > 0 && <span className="mc-area mono">{num(pt.area, 0)} m²</span>}
+                            <span className="mc-code mono">{pt.code}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {total > 0 && <div className="mc-total"><span>{t('merged.total', lang)}</span><b className="mono">{num(total, 0)} m²</b></div>}
+                </div>
+                {canAttr && <button className="btn sm danger" onClick={doUnmerge}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
               </div>
-              {canAttr && <button className="btn sm danger" onClick={doUnmerge}><IconMerge size={14} /> {t('d.unmerge', lang)}</button>}
-            </div>
-          )}
+            );
+          })()}
         </Section>
 
         <Section k="s:summary" title={t('sec.summary', lang)}>
