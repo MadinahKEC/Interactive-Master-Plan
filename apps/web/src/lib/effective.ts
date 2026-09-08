@@ -154,6 +154,17 @@ export function effectiveCollection(
     });
   }
 
+  // Surface the custom display number (plotNo) on every feature that has one, so the
+  // map label + tooltip show the same identifier as the card/report. Clone on write —
+  // never mutate the shared base feature objects.
+  for (let i = 0; i < features.length; i++) {
+    const f = features[i];
+    const pn = projects[f.properties.code]?.plotNo;
+    if (pn && f.properties.plotNo !== pn) {
+      features[i] = { ...f, properties: { ...f.properties, plotNo: pn } };
+    }
+  }
+
   return { ...base, features };
 }
 

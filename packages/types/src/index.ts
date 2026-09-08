@@ -18,6 +18,7 @@ export interface PlotProps {
   style?: string | null;      // KMZ provenance
   planStatus?: string | null; // set when the plot is in the development plan (status key)
   elecLoad?: number | null;   // manual kVA override for expected electrical load (else auto from GFA+land use)
+  plotNo?: string;            // custom display code shown instead of `code` (map label, tooltip)
 }
 
 export type PlotFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, PlotProps>;

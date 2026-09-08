@@ -151,11 +151,12 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       } catch { /* */ }
       const L = langRef.current;
       const pr = resolveProject(p.code, p.land_use, projRef.current);
-      const title = pr.named ? (L === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : p.code;
+      const displayCode = pr.overlay.plotNo || p.code;
+      const title = pr.named ? (L === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : displayCode;
       const type = L === 'ar' ? pr.type.ar : pr.type.en;
       const own = L === 'ar' ? pr.ownership.ar : pr.ownership.en;
       tip.setLngLat(e.lngLat).setHTML(
-        `<div class="tip"><span class="tt">${title}</span><span class="ts">${type} · <b class="mono">${p.code}</b> · <span style="color:${pr.ownership.color}">${own}</span></span></div>`,
+        `<div class="tip"><span class="tt">${title}</span><span class="ts">${type} · <b class="mono">${displayCode}</b> · <span style="color:${pr.ownership.color}">${own}</span></span></div>`,
       ).addTo(map);
     });
     map.on('mouseleave', HIT, () => {

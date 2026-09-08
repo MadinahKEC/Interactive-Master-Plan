@@ -216,7 +216,7 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         id: 'plots-label', type: 'symbol', source: 'plots', ...srcLayer, minzoom: 11.5,
         layout: {
           visibility: 'none',
-          'text-field': ['get', 'code'],
+          'text-field': ['coalesce', ['get', 'plotNo'], ['get', 'code']],
           'text-font': ['Open Sans Regular'],
           'text-size': ['interpolate', ['linear'], ['zoom'], 11.5, 9.5, 14, 11.5, 17, 13.5],
           'text-allow-overlap': false,

@@ -48,7 +48,7 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   const rows = multi.map((code) => {
     const p = byCode.get(code); const pr = p ? resolveProject(code, p.land_use, projects) : null;
     const name = pr?.named ? (lang === 'ar' ? pr.overlay.name_ar || pr.overlay.name_en : pr.overlay.name_en || pr.overlay.name_ar) : '—';
-    return { code, name, area: p?.area ?? 0, gfa: p?.gfa ?? 0 };
+    return { code, plotNo: pr?.overlay.plotNo, name, area: p?.area ?? 0, gfa: p?.gfa ?? 0 };
   });
   const luLabel = (k: string) => (k === '—' ? '—' : (lang === 'ar' ? landUses[k]?.labelAr : landUses[k]?.labelEn) ?? k);
   const luColor = (k: string) => landUses[k]?.color ?? '#C9C9C9';
@@ -121,7 +121,7 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
       <div className="m-list">
         {rows.map((r) => (
           <div className="m-row" key={r.code}>
-            <span className="mono m-code">{r.code}</span>
+            <span className="mono m-code">{r.plotNo || r.code}</span>
             <span className="m-name">{r.name}</span>
             <span className="mono m-area">{fmt(r.area)}</span>
             <button className="mini-btn" onClick={() => requestZoom(r.code)}><IconZoom size={13} /></button>

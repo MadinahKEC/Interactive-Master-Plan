@@ -81,7 +81,7 @@ export function CompareModal({ data, projects, landUses, onClose }: {
                               <button className="cmp-x" title={t('sl.remove', lang)} onClick={() => toggle(p.code)}><IconClose size={13} /></button>
                             </div>
                             <div className="cmp-name" title={name}>{name}</div>
-                            <div className="cmp-code mono">{p.code}</div>
+                            <div className="cmp-code mono">{pr.overlay.plotNo || p.code}</div>
                             <span className="cmp-status" style={{ background: pr.status.color }}>{lang === 'ar' ? pr.status.ar : pr.status.en}</span>
                             <button className="cmp-view" onClick={() => { select(p); requestZoom(p.code); onClose(); }}><IconZoom size={12} /> {t('d.zoom', lang)}</button>
                           </th>

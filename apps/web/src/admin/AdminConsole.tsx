@@ -127,7 +127,7 @@ function PlotsTab({ data, projects, landUses, onEdit, onAddToPlan, onViewMap }: 
     const phs = pr.overlay.phases ?? [];
     const done = phs.filter((ph) => ph.status === 'Completed').length;
     return {
-      code: p.code, name, luKey: (p.land_use as string) ?? '',
+      code: p.code, plotNo: pr.overlay.plotNo, name, luKey: (p.land_use as string) ?? '',
       land_use: lang === 'ar' ? landUses[p.land_use as string]?.labelAr ?? p.land_use : landUses[p.land_use as string]?.labelEn ?? p.land_use,
       luColor: landUses[p.land_use as string]?.color ?? '#C9C9C9', sector: p.sector, floors: p.floors ?? 0, area: p.area ?? 0,
       status: lang === 'ar' ? pr.status.ar : pr.status.en, statusKey: pr.status.key, statusColor: pr.status.color,
@@ -140,7 +140,7 @@ function PlotsTab({ data, projects, landUses, onEdit, onAddToPlan, onViewMap }: 
   const rows = useMemo(() => {
     const s = q.trim().toUpperCase();
     let r = all;
-    if (s) r = r.filter((x) => x.code.toUpperCase().includes(s) || (x.name ?? '').toUpperCase().includes(s));
+    if (s) r = r.filter((x) => x.code.toUpperCase().includes(s) || (x.plotNo ?? '').toUpperCase().includes(s) || (x.name ?? '').toUpperCase().includes(s));
     if (luF) r = r.filter((x) => x.luKey === luF);
     if (secF) r = r.filter((x) => x.sector === secF);
     if (statusF) r = r.filter((x) => x.statusKey === statusF);
@@ -194,7 +194,7 @@ function PlotsTab({ data, projects, landUses, onEdit, onAddToPlan, onViewMap }: 
           <tbody>
             {shown.map((r) => (
               <tr key={r.code} onClick={() => onEdit(r.code)}>
-                <td className="mono at-code">{r.code}</td><td>{r.name}</td>
+                <td className="mono at-code">{r.plotNo || r.code}</td><td>{r.name}</td>
                 <td><span className="at-lu"><span className="at-sw" style={{ background: r.luColor }} />{r.land_use}</span></td>
                 <td>{lang === 'ar' ? SECTORS[r.sector]?.labelAr ?? r.sector : r.sector}</td>
                 <td className="mono">{r.floors}</td><td className="mono">{Math.round(r.area).toLocaleString()}</td>
