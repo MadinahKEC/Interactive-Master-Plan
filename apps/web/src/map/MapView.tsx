@@ -22,6 +22,21 @@ function fmtDuration(sec: number, lang: 'ar' | 'en'): string {
   return m ? `${h} ${hLbl} ${m} ${mLbl}` : `${h} ${hLbl}`;
 }
 
+/** Outer ring of every polygon in a Polygon/MultiPolygon (used as spotlight-mask holes). */
+function outerRings(geom: any): number[][][] {
+  if (!geom) return [];
+  const polys = geom.type === 'MultiPolygon' ? geom.coordinates : [geom.coordinates];
+  return polys.map((poly: any) => poly[0]).filter(Boolean);
+}
+/** Bounding-box centre [lng,lat] of a Polygon/MultiPolygon. */
+function bboxCenter(geom: any): [number, number] {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const ring of outerRings(geom)) for (const [x, y] of ring) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  return [(minX + maxX) / 2, (minY + maxY) / 2];
+}
+
 const TILES_URL = import.meta.env.VITE_TILES_URL || undefined;
 const FILTERED_LAYERS = ['plots-fill', 'plots-line', 'plots-3d', 'plots-label'];
 const fs = (id: string | number) => ({ source: 'plots', id, ...(TILES_URL ? { sourceLayer: 'plots' } : {}) });
@@ -128,8 +143,15 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       const b = fullBounds.current ?? new maplibregl.LngLatBounds(KEC_BOUNDS[0], KEC_BOUNDS[1]);
       map.fitBounds(b, { padding: 60, duration: 0 });
       try { map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.45, position: [1.5, 210, 30] }); } catch { /* */ }
-      // annotation layers (drawn on top)
+      // selection spotlight: a dark mask covering everything EXCEPT the selected plot
+      // (the plot is punched out as a hole), sitting just under the gold selection glow.
       const empty = { type: 'FeatureCollection', features: [] } as any;
+      if (!map.getSource('sel-mask')) map.addSource('sel-mask', { type: 'geojson', data: empty });
+      if (!map.getLayer('sel-mask-fill')) map.addLayer({
+        id: 'sel-mask-fill', type: 'fill', source: 'sel-mask',
+        paint: { 'fill-color': '#081A0E', 'fill-opacity': 0, 'fill-opacity-transition': { duration: 260 } },
+      } as any, map.getLayer('plots-sel-glow') ? 'plots-sel-glow' : undefined);
+      // annotation layers (drawn on top)
       if (!map.getSource('annot-polys')) map.addSource('annot-polys', { type: 'geojson', data: empty });
       if (!map.getSource('annot-lines')) map.addSource('annot-lines', { type: 'geojson', data: empty });
       if (!map.getLayer('annot-poly-fill')) map.addLayer({ id: 'annot-poly-fill', type: 'fill', source: 'annot-polys', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.16 } });
@@ -433,7 +455,8 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     });
   }, [dim]);
 
-  // single-selection highlight (fill + outline; no auto zoom)
+  // single-selection: gold highlight (fill + outline + glow), a spotlight dim mask
+  // that punches the plot out of a dark overlay, and a gentle camera ease toward it.
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const code = selected?.code ?? '';
@@ -441,6 +464,32 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const apply = () => {
       if (map.getLayer('plots-sel')) map.setFilter('plots-sel', f);
       if (map.getLayer('plots-sel-fill')) map.setFilter('plots-sel-fill', f);
+      if (map.getLayer('plots-sel-glow')) map.setFilter('plots-sel-glow', f);
+
+      // spotlight: dark mask everywhere except the selected plot (its rings become holes)
+      const src = map.getSource('sel-mask') as maplibregl.GeoJSONSource | undefined;
+      const feat = code ? dataRef.current?.features.find((x) => x.properties.code === code) : null;
+      if (src) {
+        if (feat) {
+          const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
+          const holes = outerRings(feat.geometry);
+          src.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [world, ...holes] } as any }] } as any);
+          if (map.getLayer('sel-mask-fill')) map.setPaintProperty('sel-mask-fill', 'fill-opacity', 0.34);
+        } else if (map.getLayer('sel-mask-fill')) {
+          map.setPaintProperty('sel-mask-fill', 'fill-opacity', 0);
+        }
+      }
+
+      // smooth ease toward the plot, keeping it clear of the panels (side-docked card on
+      // desktop, bottom sheet on mobile).
+      if (feat && !useApp.getState().editGeom) {
+        const rtl = document.documentElement.dir === 'rtl';
+        const mobile = window.matchMedia('(max-width:768px)').matches;
+        const pad = mobile
+          ? { top: 60, bottom: Math.round(map.getContainer().clientHeight * 0.52), left: 20, right: 20 }
+          : { top: 90, bottom: 60, left: rtl ? 320 : 450, right: rtl ? 450 : 320 };
+        map.easeTo({ center: bboxCenter(feat.geometry), padding: pad, duration: 700, easing: (t) => 1 - Math.pow(1 - t, 3) });
+      }
     };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [selected]);
