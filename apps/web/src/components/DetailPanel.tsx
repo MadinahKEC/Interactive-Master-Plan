@@ -45,6 +45,17 @@ export function DetailPanel({
   // never re-opens by itself on the next plot.
   useEffect(() => { setShareOpen(false); setPdfOpen(false); setFeasOpen(false); }, [selected?.code]);
 
+  // Keep the card mounted briefly after it's dismissed so it can play an exit
+  // animation (slide out) before it disappears — every close path clears `selected`.
+  const [shown, setShown] = useState(selected);
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    if (selected) { setShown(selected); setClosing(false); return; }
+    setClosing(true);
+    const id = setTimeout(() => setShown(null), 300);
+    return () => clearTimeout(id);
+  }, [selected]);
+
   // Drag to resize the card width (desktop); the tile grid & content reflow to fit.
   const DP_MIN = 320, DP_MAX = 620, DP_DEF = 376;
   // Not persisted on purpose: the card returns to its default width on page reload.
@@ -79,11 +90,11 @@ export function DetailPanel({
     wRef.current = w; setDpW(w);
   };
 
-  if (!selected) return null;
+  if (!shown) return null;
   // Read live from the effective feature so edits (attributes, electrical load…) reflect
   // immediately; fall back to the click-time snapshot before data is ready.
-  const feat = data?.features.find((ft) => ft.properties.code === selected.code);
-  const p = feat?.properties ?? selected;
+  const feat = data?.features.find((ft) => ft.properties.code === shown.code);
+  const p = feat?.properties ?? shown;
   const pr = resolveProject(p.code, p.land_use, projects);
   const lu = landUses[p.land_use as string];
   const luLabel = lu ? (lang === 'ar' ? lu.labelAr : lu.labelEn) : (p.land_use ?? '—');
@@ -121,7 +132,7 @@ export function DetailPanel({
   };
 
   return (
-    <div className="panel" id="detail" style={{ ['--dp-w' as string]: `${dpW}px` }}>
+    <div className={`panel ${closing ? 'dp-out' : ''}`} id="detail" style={{ ['--dp-w' as string]: `${dpW}px` }}>
       <div className="d-resize" onPointerDown={onResizeDown} onKeyDown={onResizeKey} role="separator" aria-orientation="vertical"
         aria-label={t('d.resize', lang)} tabIndex={0} title={t('d.resize', lang)}><span className="d-resize-grip" /></div>
       <div className="d-head">

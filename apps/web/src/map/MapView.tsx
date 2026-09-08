@@ -174,6 +174,14 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       if (clickTimer.current) clearTimeout(clickTimer.current);
       clickTimer.current = window.setTimeout(() => { useApp.getState().select(p); clickTimer.current = null; }, 240);
     });
+    // Click empty map space (no plot under the cursor) → close the open plot card.
+    map.on('click', (e) => {
+      const a = useApp.getState();
+      if (a.editGeom || a.measuring || a.creating || modeRef.current !== 'off' || !a.selected) return;
+      const layers = HIT.filter((l) => map.getLayer(l));
+      const hits = layers.length ? map.queryRenderedFeatures(e.point, { layers }) : [];
+      if (!hits.length) a.select(null);
+    });
     // Google-Maps-style double-click: smooth, gradual zoom-in by one level toward the
     // cursor (works anywhere on the map). Edit/measure modes keep their own dblclick.
     map.on('dblclick', (e) => {
