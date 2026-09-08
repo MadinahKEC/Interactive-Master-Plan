@@ -69,7 +69,7 @@ export default function App() {
   useBackClose(creating, () => useApp.getState().setCreating(false), 44);
   useBackClose(measuring, () => useApp.getState().setMeasuring(false), 42);
   useBackClose(multi.length > 0, () => useApp.getState().clearMulti(), 20);
-  useBackClose(!!selected, () => useApp.getState().select(null), 10);
+  useBackClose(!!selected, () => useApp.getState().fitAll(), 10);
 
   // First-visit onboarding tour (after login, once the UI is on screen).
   useEffect(() => {
@@ -95,7 +95,7 @@ export default function App() {
       if (a.creating) { a.setCreating(false); return; }
       if (a.measuring) { a.setMeasuring(false); return; }
       if (a.multi.length) { a.clearMulti(); return; }
-      if (a.selected) { a.select(null); return; }
+      if (a.selected) { a.fitAll(); return; }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

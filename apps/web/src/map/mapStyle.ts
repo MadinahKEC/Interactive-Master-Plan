@@ -168,19 +168,13 @@ export function buildStyle(tilesUrl?: string, colors?: Record<string, { color: s
         filter: ['in', ['get', 'code'], ['literal', []]],
       },
       {
-        // soft blurred gold halo under the selected plot (premium focus glow)
-        id: 'plots-sel-glow', type: 'line', source: 'plots', ...srcLayer,
-        paint: { 'line-color': '#C9A227', 'line-width': 13, 'line-opacity': 0.55, 'line-blur': 6 },
-        filter: ['==', ['get', 'code'], ''],
-      },
-      {
         id: 'plots-sel-fill', type: 'fill', source: 'plots', ...srcLayer,
         paint: { 'fill-color': '#9A8A1E', 'fill-opacity': 0.32 },
         filter: ['==', ['get', 'code'], ''],
       },
       {
         id: 'plots-sel', type: 'line', source: 'plots', ...srcLayer,
-        paint: { 'line-color': '#C9A227', 'line-width': 3.4, 'line-opacity': 1 },
+        paint: { 'line-color': '#9A8A1E', 'line-width': 3.4, 'line-opacity': 1 },
         filter: ['==', ['get', 'code'], ''],
       },
       {

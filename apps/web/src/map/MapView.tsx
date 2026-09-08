@@ -22,7 +22,7 @@ function fmtDuration(sec: number, lang: 'ar' | 'en'): string {
   return m ? `${h} ${hLbl} ${m} ${mLbl}` : `${h} ${hLbl}`;
 }
 
-/** Outer ring of every polygon in a Polygon/MultiPolygon (used as spotlight-mask holes). */
+/** Outer ring of every polygon in a Polygon/MultiPolygon. */
 function outerRings(geom: any): number[][][] {
   if (!geom) return [];
   const polys = geom.type === 'MultiPolygon' ? geom.coordinates : [geom.coordinates];
@@ -143,15 +143,8 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       const b = fullBounds.current ?? new maplibregl.LngLatBounds(KEC_BOUNDS[0], KEC_BOUNDS[1]);
       map.fitBounds(b, { padding: 60, duration: 0 });
       try { map.setLight({ anchor: 'viewport', color: '#ffffff', intensity: 0.45, position: [1.5, 210, 30] }); } catch { /* */ }
-      // selection spotlight: a dark mask covering everything EXCEPT the selected plot
-      // (the plot is punched out as a hole), sitting just under the gold selection glow.
-      const empty = { type: 'FeatureCollection', features: [] } as any;
-      if (!map.getSource('sel-mask')) map.addSource('sel-mask', { type: 'geojson', data: empty });
-      if (!map.getLayer('sel-mask-fill')) map.addLayer({
-        id: 'sel-mask-fill', type: 'fill', source: 'sel-mask',
-        paint: { 'fill-color': '#081A0E', 'fill-opacity': 0, 'fill-opacity-transition': { duration: 260 } },
-      } as any, map.getLayer('plots-sel-glow') ? 'plots-sel-glow' : undefined);
       // annotation layers (drawn on top)
+      const empty = { type: 'FeatureCollection', features: [] } as any;
       if (!map.getSource('annot-polys')) map.addSource('annot-polys', { type: 'geojson', data: empty });
       if (!map.getSource('annot-lines')) map.addSource('annot-lines', { type: 'geojson', data: empty });
       if (!map.getLayer('annot-poly-fill')) map.addLayer({ id: 'annot-poly-fill', type: 'fill', source: 'annot-polys', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.16 } });
@@ -196,13 +189,14 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       if (clickTimer.current) clearTimeout(clickTimer.current);
       clickTimer.current = window.setTimeout(() => { useApp.getState().select(p); clickTimer.current = null; }, 240);
     });
-    // Click empty map space (no plot under the cursor) → close the open plot card.
+    // Click empty map space (no plot under the cursor) → close the open plot card and
+    // ease back out to the whole plan.
     map.on('click', (e) => {
       const a = useApp.getState();
       if (a.editGeom || a.measuring || a.creating || modeRef.current !== 'off' || !a.selected) return;
       const layers = HIT.filter((l) => map.getLayer(l));
       const hits = layers.length ? map.queryRenderedFeatures(e.point, { layers }) : [];
-      if (!hits.length) a.select(null);
+      if (!hits.length) a.fitAll();
     });
     // Google-Maps-style double-click: smooth, gradual zoom-in by one level toward the
     // cursor (works anywhere on the map). Edit/measure modes keep their own dblclick.
@@ -455,8 +449,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     });
   }, [dim]);
 
-  // single-selection: gold highlight (fill + outline + glow), a spotlight dim mask
-  // that punches the plot out of a dark overlay, and a gentle camera ease toward it.
+  // single-selection: gold highlight (fill + outline) + a gentle camera ease toward the plot.
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const code = selected?.code ?? '';
@@ -464,24 +457,10 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const apply = () => {
       if (map.getLayer('plots-sel')) map.setFilter('plots-sel', f);
       if (map.getLayer('plots-sel-fill')) map.setFilter('plots-sel-fill', f);
-      if (map.getLayer('plots-sel-glow')) map.setFilter('plots-sel-glow', f);
-
-      // spotlight: dark mask everywhere except the selected plot (its rings become holes)
-      const src = map.getSource('sel-mask') as maplibregl.GeoJSONSource | undefined;
-      const feat = code ? dataRef.current?.features.find((x) => x.properties.code === code) : null;
-      if (src) {
-        if (feat) {
-          const world = [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]];
-          const holes = outerRings(feat.geometry);
-          src.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [world, ...holes] } as any }] } as any);
-          if (map.getLayer('sel-mask-fill')) map.setPaintProperty('sel-mask-fill', 'fill-opacity', 0.34);
-        } else if (map.getLayer('sel-mask-fill')) {
-          map.setPaintProperty('sel-mask-fill', 'fill-opacity', 0);
-        }
-      }
 
       // smooth ease toward the plot, keeping it clear of the panels (side-docked card on
       // desktop, bottom sheet on mobile).
+      const feat = code ? dataRef.current?.features.find((x) => x.properties.code === code) : null;
       if (feat && !useApp.getState().editGeom) {
         const rtl = document.documentElement.dir === 'rtl';
         const mobile = window.matchMedia('(max-width:768px)').matches;
