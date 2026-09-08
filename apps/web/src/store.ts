@@ -23,7 +23,7 @@ export interface AppState {
   basemap: Basemap;
   dim: Dim;
   sector: SectorKey | 'all';
-  hiddenUses: Set<string>;        // land uses toggled OFF; empty = all shown (new uses show by default)
+  selectedUses: Set<string>;      // land uses to SHOW; empty = show all (new uses included by default)
   planOnly: boolean;              // show only plots that are in the development plan
   adv: AdvFilter;                 // advanced numeric/status filters
   search: string;
@@ -58,7 +58,6 @@ export interface AppState {
   setAdv: (patch: Partial<AdvFilter>) => void;
   resetAdv: () => void;
   toggleUse: (k: string) => void;
-  soloUse: (k: string, allKeys: string[]) => void;   // click a colour → show only this use (toggle)
   setSearch: (s: string) => void;
   setSearchCodes: (c: string[] | null) => void;
   select: (p: PlotProps | null) => void;
@@ -90,7 +89,7 @@ export const useApp = create<AppState>((set) => ({
   basemap: 'light',
   dim: '2d',
   sector: 'all',
-  hiddenUses: new Set(),
+  selectedUses: new Set(),
   planOnly: false,
   adv: emptyAdv,
   search: '',
@@ -125,14 +124,7 @@ export const useApp = create<AppState>((set) => ({
   setAdv: (patch) => set((s) => ({ adv: { ...s.adv, ...patch } })),
   resetAdv: () => set({ adv: { statuses: [] } }),
   toggleUse: (k) =>
-    set((s) => { const hiddenUses = new Set(s.hiddenUses); hiddenUses.has(k) ? hiddenUses.delete(k) : hiddenUses.add(k); return { hiddenUses }; }),
-  soloUse: (k, allKeys) =>
-    set((s) => {
-      const others = allKeys.filter((x) => x !== k);
-      // already isolated to k (every other use hidden, k shown) → clear back to all shown
-      const isSolo = !s.hiddenUses.has(k) && others.every((x) => s.hiddenUses.has(x));
-      return { hiddenUses: new Set(isSolo ? [] : others) };
-    }),
+    set((s) => { const selectedUses = new Set(s.selectedUses); selectedUses.has(k) ? selectedUses.delete(k) : selectedUses.add(k); return { selectedUses }; }),
   setSearch: (search) => set({ search }),
   setSearchCodes: (searchCodes) => set({ searchCodes }),
   select: (selected) => set({ selected, multi: [] }),
@@ -161,7 +153,7 @@ export const useApp = create<AppState>((set) => ({
   reveal: () => set((s) => ({ revealToken: s.revealToken + 1 })),
   requestExport: () => set((s) => ({ exportToken: s.exportToken + 1 })),
   setReportImage: (reportImage) => set({ reportImage }),
-  reset: () => set((s) => ({ sector: 'all', hiddenUses: new Set(), planOnly: false, adv: { statuses: [] }, search: '', searchCodes: null, selected: null, multi: [], fitToken: s.fitToken + 1 })),
+  reset: () => set((s) => ({ sector: 'all', selectedUses: new Set(), planOnly: false, adv: { statuses: [] }, search: '', searchCodes: null, selected: null, multi: [], fitToken: s.fitToken + 1 })),
 }));
 
 const inRange = (v: number | null | undefined, min?: number, max?: number): boolean => {
@@ -174,7 +166,7 @@ const inRange = (v: number | null | undefined, min?: number, max?: number): bool
 /** Client-side predicate mirrored from the MapLibre filter (for KPI recompute). */
 export function matchPlot(p: PlotProps, s: AppState): boolean {
   if (s.sector !== 'all' && p.sector !== s.sector) return false;
-  if (s.hiddenUses.has(p.land_use ?? '')) return false;
+  if (s.selectedUses.size && !s.selectedUses.has(p.land_use ?? '')) return false;
   if (s.planOnly && !p.planStatus) return false;
   if (s.searchCodes && !s.searchCodes.includes(p.code)) return false;
   const a = s.adv;

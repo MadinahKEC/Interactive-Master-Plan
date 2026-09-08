@@ -27,10 +27,10 @@ const FILTERED_LAYERS = ['plots-fill', 'plots-line', 'plots-3d', 'plots-label'];
 const fs = (id: string | number) => ({ source: 'plots', id, ...(TILES_URL ? { sourceLayer: 'plots' } : {}) });
 const PAD = { top: 90, bottom: 60, left: 360, right: 340 };
 
-function buildFilter(sector: string, hiddenUses: Set<string>, codes: string[] | null, planOnly: boolean, adv?: AdvFilter): FilterSpecification | null {
+function buildFilter(sector: string, selectedUses: Set<string>, codes: string[] | null, planOnly: boolean, adv?: AdvFilter): FilterSpecification | null {
   const parts: any[] = ['all'];
   if (sector !== 'all') parts.push(['==', ['get', 'sector'], sector]);
-  if (hiddenUses.size) parts.push(['!', ['in', ['get', 'land_use'], ['literal', [...hiddenUses]]]]);
+  if (selectedUses.size) parts.push(['in', ['get', 'land_use'], ['literal', [...selectedUses]]]);
   if (planOnly) parts.push(['has', 'planStatus']);
   if (codes) parts.push(['in', ['get', 'code'], ['literal', codes]]);
   if (adv) {
@@ -217,7 +217,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, hiddenUses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, measureMode, labels, landmarks, lmCats, creating, flyover } = useApp();
+  const { sector, selectedUses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, measureMode, labels, landmarks, lmCats, creating, flyover } = useApp();
   const lmData = useLandmarks();
   const [measure, setMeasure] = useState<{ dist: number; area: number; n: number; routeDist?: number; routeDur?: number; routing?: boolean; routeErr?: boolean }>({ dist: 0, area: 0, n: 0 });
 
@@ -249,9 +249,9 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
-    const apply = () => { const f = buildFilter(sector, hiddenUses, searchCodes, planOnly, adv); FILTERED_LAYERS.forEach((l) => map.getLayer(l) && map.setFilter(l, f)); };
+    const apply = () => { const f = buildFilter(sector, selectedUses, searchCodes, planOnly, adv); FILTERED_LAYERS.forEach((l) => map.getLayer(l) && map.setFilter(l, f)); };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
-  }, [sector, hiddenUses, searchCodes, planOnly, adv]);
+  }, [sector, selectedUses, searchCodes, planOnly, adv]);
 
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
