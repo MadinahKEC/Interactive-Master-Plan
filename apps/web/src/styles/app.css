@@ -103,7 +103,12 @@ html[dir="rtl"] .rail-hide svg{transform:rotate(-90deg)}
 .lg{display:flex;align-items:center;gap:9px;padding:5px 7px;border-radius:8px;cursor:pointer;transition:.12s}
 .lg:hover{background:var(--kec-surface)}
 .lg.off{opacity:.34}
-.lg .sw{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.14)}
+/* colour swatch doubles as a "show only this use" (solo) button */
+.lg .sw{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.14);padding:0;cursor:pointer;transition:transform .12s,box-shadow .12s}
+.lg .sw:hover{transform:scale(1.18);box-shadow:0 0 0 3px var(--kec-surface-2,rgba(47,107,62,.18))}
+.lg.solo{background:var(--kec-surface)}
+.lg.solo .sw{box-shadow:0 0 0 2px var(--kec-green);transform:scale(1.05)}
+.lg.solo .nm{font-weight:700;color:var(--kec-title)}
 .lg .nm{font-size:11.5px;color:var(--kec-ink);flex:1;line-height:1.25}
 .lg .ct{font-size:10px;color:var(--kec-muted);font-family:var(--kec-mono)}
 

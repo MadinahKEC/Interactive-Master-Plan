@@ -11,7 +11,7 @@ const fmtBig = (x: number) =>
 
 export function ControlPanel({ data, landUses, projects }: { data: PlotCollection; landUses: Record<string, EffLandUse>; projects: Record<string, ProjectInfo> }) {
   const state = useApp();
-  const { lang, sector, uses, planOnly, adv, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, setSearch, setSearchCodes, select, toggleControls } = state;
+  const { lang, sector, hiddenUses, planOnly, adv, setAdv, resetAdv, togglePlanOnly, setSector, toggleUse, soloUse, setSearch, setSearchCodes, select, toggleControls } = state;
   // "In plan" = all plan plots; a status chip filters plan plots by that status.
   const inPlanActive = planOnly && adv.statuses.length === 0;
   const planClick = (k?: string) => {
@@ -144,13 +144,18 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
 
         <div className="sect-title">{t('cp.uses', lang)} <span className="mini">{t('cp.filterHint', lang)}</span></div>
         <div className="legend">
-          {Object.keys(landUses).filter((k) => useCounts[k]).sort((a, b) => useCounts[b] - useCounts[a]).map((k) => (
-            <div key={k} className={`lg ${uses.has(k) ? '' : 'off'}`} onClick={() => toggleUse(k)}>
-              <span className="sw" style={{ background: landUses[k].color }} />
-              <span className="nm">{lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}</span>
-              <span className="ct">{useCounts[k]}</span>
-            </div>
-          ))}
+          {Object.keys(landUses).filter((k) => useCounts[k]).sort((a, b) => useCounts[b] - useCounts[a]).map((k) => {
+            const others = Object.keys(landUses).filter((x) => x !== k);
+            const solo = !hiddenUses.has(k) && others.every((x) => hiddenUses.has(x));
+            return (
+              <div key={k} className={`lg ${hiddenUses.has(k) ? 'off' : ''} ${solo ? 'solo' : ''}`} onClick={() => toggleUse(k)}>
+                <button type="button" className="sw" style={{ background: landUses[k].color }} title={t('cp.soloHint', lang)} aria-label={t('cp.soloHint', lang)}
+                  onClick={(e) => { e.stopPropagation(); soloUse(k, Object.keys(landUses)); }} />
+                <span className="nm">{lang === 'ar' ? landUses[k].labelAr : landUses[k].labelEn}</span>
+                <span className="ct">{useCounts[k]}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
