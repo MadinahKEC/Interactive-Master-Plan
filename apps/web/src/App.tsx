@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapView } from './map/MapView';
 import { TopBar } from './components/TopBar';
 import { Sidebar } from './components/Sidebar';
@@ -151,12 +151,20 @@ export default function App() {
   // truly ready (signed in + data loaded), then latches off for good. Latching avoids the
   // flicker of the map peeking through for a frame before a second "loading" pass.
   const [ready, setReady] = useState(false);
+  const signedInAt = useRef(0);
+  // The app UI mounts behind the login overlay, so data is usually already loaded by the
+  // time the user signs in. Stamp the sign-in moment and hold the branded loader for a
+  // deliberate beat after it, so logging in always shows the loading screen (and it comes
+  // back on the next sign-in after a sign-out).
   useEffect(() => {
-    if (ready || status === 'out') return;
-    if (status === 'in' && baseData && !error) {
-      const id = setTimeout(() => setReady(true), 350); // one short, deliberate beat
-      return () => clearTimeout(id);
-    }
+    if (status === 'in') { if (!signedInAt.current) signedInAt.current = Date.now(); }
+    else if (status === 'out') { signedInAt.current = 0; setReady(false); }
+  }, [status]);
+  useEffect(() => {
+    if (ready || status !== 'in' || !baseData || error) return;
+    const wait = Math.max(500, 1100 - (Date.now() - (signedInAt.current || Date.now())));
+    const id = setTimeout(() => setReady(true), wait);
+    return () => clearTimeout(id);
   }, [status, baseData, error, ready]);
   const showSplash = !ready && !error && status !== 'out';
 

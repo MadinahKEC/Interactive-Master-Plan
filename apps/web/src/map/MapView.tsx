@@ -458,16 +458,21 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       if (map.getLayer('plots-sel')) map.setFilter('plots-sel', f);
       if (map.getLayer('plots-sel-fill')) map.setFilter('plots-sel-fill', f);
 
-      // smooth ease toward the plot, keeping it clear of the panels (side-docked card on
-      // desktop, bottom sheet on mobile).
+      // Ease toward the plot ONLY when it isn't already comfortably in view (clear of the
+      // docked panels). Moving the camera on every click — even for plots already on
+      // screen — is what felt jumpy; this keeps it calm and smooth.
       const feat = code ? dataRef.current?.features.find((x) => x.properties.code === code) : null;
       if (feat && !useApp.getState().editGeom) {
         const rtl = document.documentElement.dir === 'rtl';
         const mobile = window.matchMedia('(max-width:768px)').matches;
+        const cw = map.getContainer().clientWidth, ch = map.getContainer().clientHeight;
         const pad = mobile
-          ? { top: 60, bottom: Math.round(map.getContainer().clientHeight * 0.52), left: 20, right: 20 }
+          ? { top: 60, bottom: Math.round(ch * 0.52), left: 20, right: 20 }
           : { top: 90, bottom: 60, left: rtl ? 320 : 450, right: rtl ? 450 : 320 };
-        map.easeTo({ center: bboxCenter(feat.geometry), padding: pad, duration: 700, easing: (t) => 1 - Math.pow(1 - t, 3) });
+        const c = bboxCenter(feat.geometry);
+        const pt = map.project(c);
+        const inView = pt.x > pad.left && pt.x < cw - pad.right && pt.y > pad.top && pt.y < ch - pad.bottom;
+        if (!inView) map.easeTo({ center: c, padding: pad, duration: 650, easing: (t) => 1 - Math.pow(1 - t, 3) });
       }
     };
     map.isStyleLoaded() ? apply() : map.once('idle', apply);

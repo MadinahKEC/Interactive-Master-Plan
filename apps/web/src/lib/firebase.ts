@@ -275,8 +275,10 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
       // strip empty per-plot fields so records stay lean as the plan grows
       for (const k of spec.maps) if (k === 'projects' || k === 'plotAttrs') merged[k] = compactMap(merged[k]);
       const packed = packBlob(merged); kb = Math.round(packed.length / 1024);
-      // Early warning well before the 1 MB ceiling, so we can shard proactively.
-      if (packed.length > 750000) { emitSync('write-err', `slice "${name}" is ${kb}KB — nearing the 1MB limit`); console.warn(`[firestore] slice "${name}" ${kb}KB approaching 1MB — consider per-plot sharding`); }
+      // Early warning well before the 1 MB ceiling, so we can shard proactively. This is
+      // a console-only heads-up — the write still succeeds, so it must NOT surface the
+      // "not saved" toast to the user.
+      if (packed.length > 750000) console.warn(`[firestore] slice "${name}" ${kb}KB approaching 1MB — consider per-plot sharding`);
       tx.set(sliceRef(name), { b: packed, at: Date.now() });
     });
     return kb;
@@ -285,6 +287,7 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
   // Serialised so two edits in quick succession never run overlapping transactions
   // on the same slice doc (that contention is what made a save occasionally fail).
   let flushing = false;
+  let failStreak = 0;                     // consecutive failed flush cycles
   async function flush() {
     if (flushing) return;                 // a flush is running; it re-checks pending when it ends
     flushing = true;
@@ -297,9 +300,13 @@ export function startFirestoreSync(store: StoreApi<SyncableStore>) {
     flushing = false;
     if (failed.length) {
       for (const n of failed) pending.add(n);                 // keep them queued and retry shortly
-      emitSync('write-err', `retrying [${failed.join(',')}]`);
+      failStreak++;
+      // A single retry after transient contention almost always succeeds, so don't alarm
+      // the user with "not saved" on the first miss — only surface it if it keeps failing.
+      if (failStreak >= 2) emitSync('write-err', `retrying [${failed.join(',')}]`);
       clearTimeout(writeTimer); writeTimer = setTimeout(flush, 1500);
     } else {
+      failStreak = 0;
       emitSync('write-ok', `saved · [${names.join(',')}] · ${kb}KB`);
       if (pending.size) { clearTimeout(writeTimer); writeTimer = setTimeout(flush, 250); } // changes that arrived mid-flush
     }

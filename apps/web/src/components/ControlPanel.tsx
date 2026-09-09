@@ -36,6 +36,8 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
     return c;
   }, [data]);
 
+  // Recompute only when a FILTER changes — not on every selection/camera change (which
+  // also mutate the app store) — so a 958-plot sweep doesn't run on each plot click.
   const kpis = useMemo(() => {
     let n = 0, gfa = 0, area = 0; const u = new Set<string>();
     for (const f of data.features) {
@@ -44,7 +46,8 @@ export function ControlPanel({ data, landUses, projects }: { data: PlotCollectio
       if (f.properties.land_use) u.add(f.properties.land_use);
     }
     return { n, gfa, area, uses: u.size };
-  }, [data, state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, sector, selectedUses, planOnly, adv, state.searchCodes]);
 
   // search anything: code, project name, area, or owner/investor
   const onSearch = (v: string) => {
