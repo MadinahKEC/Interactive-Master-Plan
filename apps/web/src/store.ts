@@ -37,6 +37,7 @@ export interface AppState {
   measuring: boolean;             // map measurement tool active
   measureMode: 'line' | 'route';  // straight polyline vs. driving route
   labels: boolean;                // force plot-code labels on the map
+  projectLabels: boolean;         // show elegant project-group name plates on the map
   landmarks: boolean;             // show Madinah city landmarks
   lmCats: Set<string>;            // enabled landmark categories
   railOpen: boolean;              // left navigation rail visible
@@ -71,6 +72,7 @@ export interface AppState {
   setMeasuring: (v: boolean) => void;
   setMeasureMode: (m: 'line' | 'route') => void;
   toggleLabels: () => void;
+  toggleProjectLabels: () => void;
   toggleLandmarks: () => void;
   toggleLmCat: (key: string) => void;
   toggleRail: () => void;
@@ -103,6 +105,7 @@ export const useApp = create<AppState>((set) => ({
   measuring: false,
   measureMode: 'line',
   labels: false,
+  projectLabels: true,
   landmarks: false,
   lmCats: new Set(LM_CAT_KEYS),
   railOpen: true,
@@ -143,6 +146,7 @@ export const useApp = create<AppState>((set) => ({
   setMeasuring: (measuring) => set({ measuring }),
   setMeasureMode: (measureMode) => set({ measureMode }),
   toggleLabels: () => set((s) => ({ labels: !s.labels })),
+  toggleProjectLabels: () => set((s) => ({ projectLabels: !s.projectLabels })),
   toggleLandmarks: () => set((s) => ({ landmarks: !s.landmarks })),
   toggleLmCat: (key) => set((s) => { const lmCats = new Set(s.lmCats); lmCats.has(key) ? lmCats.delete(key) : lmCats.add(key); return { lmCats }; }),
   toggleRail: () => set((s) => ({ railOpen: !s.railOpen })),

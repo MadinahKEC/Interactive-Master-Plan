@@ -146,7 +146,8 @@ export async function createUserSecondary(email: string, password: string) {
 
 interface SyncableStore {
   plotAttrs: unknown; projects: unknown; landUses: unknown; plotGeom: unknown;
-  merges: unknown; users: unknown; audit: unknown; hiddenCards: unknown; hiddenLandUses: unknown;
+  merges: unknown; projectGroups: unknown; planStyle: unknown; users: unknown; audit: unknown;
+  hiddenCards: unknown; hiddenLandUses: unknown;
   importAll: (json: string) => boolean;
 }
 
@@ -207,12 +208,12 @@ function emitSync(kind: SyncEvt['kind'], msg: string) {
  */
 // After a local edit these maps WIN over any incoming remote for a grace window,
 // so a stale/concurrent snapshot can't make a just-made change "appear then vanish".
-const SHIELDED_MAPS = ['landUses', 'projects', 'plotAttrs', 'hiddenCards', 'hiddenLandUses'] as const;
+const SHIELDED_MAPS = ['landUses', 'projects', 'plotAttrs', 'hiddenCards', 'hiddenLandUses', 'planStyle'] as const;
 const SHIELD_MS = 12000;
 
 // slice name → { keys stored in it; which are object-maps / string-arrays to union }
 const SLICES: Record<string, { keys: string[]; maps: string[]; arrays: string[] }> = {
-  _core: { keys: ['landUses', 'users', 'merges', 'hiddenCards', 'hiddenLandUses', 'audit'], maps: ['landUses'], arrays: ['hiddenCards', 'hiddenLandUses'] },
+  _core: { keys: ['landUses', 'users', 'merges', 'projectGroups', 'planStyle', 'hiddenCards', 'hiddenLandUses', 'audit'], maps: ['landUses'], arrays: ['hiddenCards', 'hiddenLandUses'] },
   attrs: { keys: ['plotAttrs'], maps: ['plotAttrs'], arrays: [] },
   projects: { keys: ['projects'], maps: ['projects'], arrays: [] },
   geom: { keys: ['plotGeom'], maps: ['plotGeom'], arrays: [] },

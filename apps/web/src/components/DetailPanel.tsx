@@ -3,7 +3,7 @@ import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, OWNERSHIP_META, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
@@ -13,7 +13,7 @@ import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
 import { useInterestedInvestors, INVESTOR_LOG_ENABLED } from '../lib/investorLog';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconCompare, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconCompare, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, IconTag, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
 
@@ -31,6 +31,7 @@ export function DetailPanel({
   const merges = useOverrides((s) => s.merges);
   const unmerge = useOverrides((s) => s.unmerge);
   const setProject = useOverrides((s) => s.setProject);
+  const projectGroups = useOverrides((s) => s.projectGroups);
   const splits = useOverrides((s) => s.splits);
   const createdPlots = useOverrides((s) => s.createdPlots);
   const removeCreatedPlot = useOverrides((s) => s.removeCreatedPlot);
@@ -105,6 +106,8 @@ export function DetailPanel({
   const ownLabel = lang === 'ar' ? pr.ownership.ar : pr.ownership.en;
   const summary = lang === 'ar' ? pr.overlay.summary_ar : pr.overlay.summary_en;
   const mergeRec = merges.find((m) => m.id === p.code);
+  const group = projectGroups.find((g) => g.codes.includes(p.code));
+  const groupName = group ? (lang === 'ar' ? group.name_ar || group.name_en : group.name_en || group.name_ar) : null;
   const phases = pr.overlay.phases ?? [];
   const devDesc = (lang === 'ar' ? pr.overlay.devplan_ar : pr.overlay.devplan_en)?.trim();
   const hasDevDesc = Boolean(devDesc);
@@ -153,10 +156,17 @@ export function DetailPanel({
       <div className="d-scroll">
         <CardCtx.Provider value={hiddenCards}>
         <Section k="s:ownership" title={t('sec.ownership', lang)}>
-          <div className="own-row">
-            <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
-            <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
-          </div>
+          {groupName && (
+            <div className="own-group"><IconTag size={13} /><span className="og-k">{t('pg.partOf', lang)}</span><b className="og-name">{groupName}</b></div>
+          )}
+          {canAttr ? (
+            <OwnershipEditor code={p.code} overlay={pr.overlay} lang={lang} />
+          ) : (
+            <div className="own-row">
+              <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
+              <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
+            </div>
+          )}
           <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date || '—'}</b></div>
           {mergeRec && (() => {
             const parts = mergeRec.parts?.length ? mergeRec.parts : mergeRec.codes.map((c) => ({ code: c, land_use: null as string | null, area: 0 }));
@@ -477,6 +487,41 @@ function InvestorInterest({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
         </div>
       )}
     </Section>
+  );
+}
+
+/** Inline ownership control on the plot card (editors only): pick a status, and when the
+ *  plot is reserved/owned, name the owning party. Writes straight to the synced overlay. */
+function OwnershipEditor({ code, overlay, lang }: { code: string; overlay: ProjectInfo; lang: 'ar' | 'en' }) {
+  const setProject = useOverrides((s) => s.setProject);
+  const current = OWNERSHIP_META[overlay.ownership ?? ''] ? overlay.ownership! : (overlay.owner ? 'owned' : 'available');
+  const [owner, setOwner] = useState(overlay.owner ?? '');
+  useEffect(() => { setOwner(overlay.owner ?? ''); }, [code, overlay.owner]);
+  const pick = (key: string) => {
+    if (key === current) return;
+    if (key === 'available') { setProject(code, { ownership: 'available', owner: undefined }); setOwner(''); }
+    else setProject(code, { ownership: key });
+  };
+  const commitOwner = () => { const v = owner.trim(); if ((overlay.owner ?? '') !== v) setProject(code, { owner: v || undefined }); };
+  return (
+    <div className="own-edit">
+      <div className="own-seg" role="group" aria-label={t('d.setStatus', lang)}>
+        {Object.values(OWNERSHIP_META).map((o) => (
+          <button key={o.key} type="button" className={`own-seg-btn ${current === o.key ? 'on' : ''}`}
+            style={current === o.key ? ({ ['--own-c' as string]: o.color } as any) : undefined}
+            onClick={() => pick(o.key)}>
+            <span className="own-seg-dot" style={{ background: o.color }} />{lang === 'ar' ? o.ar : o.en}
+          </button>
+        ))}
+      </div>
+      {current !== 'available' && (
+        <label className="own-name-edit">
+          <IconOwner size={14} />
+          <input value={owner} placeholder={t('d.ownerName', lang)} onChange={(e) => setOwner(e.target.value)}
+            onBlur={commitOwner} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+        </label>
+      )}
+    </div>
   );
 }
 

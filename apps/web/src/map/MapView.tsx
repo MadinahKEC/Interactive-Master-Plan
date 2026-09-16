@@ -7,7 +7,7 @@ import { useApp, type AdvFilter } from '../store';
 import { useOverrides, type Annotation } from '../lib/overrides';
 import { resolveProject, t, type ProjectInfo } from '../lib/domain';
 import { geomArea } from '../lib/subdivide';
-import { useDialog } from '../lib/dialog';
+import { useDialog, confirmDialog } from '../lib/dialog';
 import { useLandmarks, LM_CAT_MAP, type Landmark } from '../lib/landmarks';
 import { IconWalk, IconCar, IconClock } from '../components/icons';
 import type { EffLandUse } from '../lib/effective';
@@ -87,7 +87,11 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   const luRef = useRef(landUses);
   const annotations = useOverrides((s) => s.annotations);
   const planStyle = useOverrides((s) => s.planStyle);
+  const projectGroups = useOverrides((s) => s.projectGroups);
   const annotRef = useRef<Annotation[]>(annotations);
+  const pgPool = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const projGroupsRef = useRef(projectGroups);
+  const projLabelsRef = useRef(useApp.getState().projectLabels);
   const modeRef = useRef<'off' | 'text' | 'arrow' | 'rect'>('off');
   const colorRef = useRef('#B5462F');
   const pendingRef = useRef<number[] | null>(null);
@@ -150,7 +154,14 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       if (!map.getLayer('annot-poly-fill')) map.addLayer({ id: 'annot-poly-fill', type: 'fill', source: 'annot-polys', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.16 } });
       if (!map.getLayer('annot-poly-line')) map.addLayer({ id: 'annot-poly-line', type: 'line', source: 'annot-polys', paint: { 'line-color': ['get', 'color'], 'line-width': 2 } });
       if (!map.getLayer('annot-lines-l')) map.addLayer({ id: 'annot-lines-l', type: 'line', source: 'annot-lines', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 3.4 } });
+      // project-group identity outline: a soft gold glow + crisp gold line around the
+      // plots that belong to a named project (distinct from the plan's dashed border).
+      const beforeId = map.getLayer('plots-multi') ? 'plots-multi' : undefined;
+      const emptyFilter: any = ['in', ['get', 'code'], ['literal', []]];
+      if (!map.getLayer('pg-glow')) map.addLayer({ id: 'pg-glow', type: 'line', source: 'plots', ...(TILES_URL ? { 'source-layer': 'plots' } : {}), filter: emptyFilter, layout: { 'line-join': 'round' }, paint: { 'line-color': '#C9B549', 'line-width': 8, 'line-opacity': 0.26, 'line-blur': 3 } }, beforeId);
+      if (!map.getLayer('pg-line')) map.addLayer({ id: 'pg-line', type: 'line', source: 'plots', ...(TILES_URL ? { 'source-layer': 'plots' } : {}), filter: emptyFilter, layout: { 'line-join': 'round' }, paint: { 'line-color': '#B69121', 'line-width': 1.8, 'line-opacity': 0.9 } }, beforeId);
       renderAnnot(annotRef.current);
+      renderProjectGroups();
     });
 
     const HIT = ['plots-fill', 'plots-3d'];
@@ -241,7 +252,7 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [data]);
 
-  const { sector, selectedUses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, measureMode, labels, landmarks, lmCats, creating, flyover } = useApp();
+  const { sector, selectedUses, searchCodes, planOnly, adv, basemap, selected, multi, dim, fitToken, editGeom, zoomToken, zoomCode, revealToken, exportToken, annotateMode, annotateColor, measuring, measureMode, labels, projectLabels, landmarks, lmCats, creating, flyover } = useApp();
   const lmData = useLandmarks();
   const [measure, setMeasure] = useState<{ dist: number; area: number; n: number; routeDist?: number; routeDur?: number; routing?: boolean; routeErr?: boolean }>({ dist: 0, area: 0, n: 0 });
 
@@ -836,6 +847,83 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
     const apply = () => renderAnnot(annotations);
     map.isStyleLoaded() ? apply() : map.once('idle', apply);
   }, [annotations]);
+
+  // ---------- project-group name plates (luxurious gold/glass labels) ----------
+  const groupCenter = (feats: any[]): [number, number] | null => {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, any = false;
+    for (const f of feats) for (const ring of outerRings(f.geometry)) for (const pt of ring) {
+      const x = pt[0], y = pt[1]; any = true;
+      if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    return any ? [(minX + maxX) / 2, (minY + maxY) / 2] : null;
+  };
+  const renameGroup = async (g: { id: string; name_ar?: string; name_en?: string }) => {
+    const L = langRef.current;
+    const r = await useDialog.getState().open({
+      title: t('pg.rename', L), dir: L === 'ar' ? 'rtl' : 'ltr',
+      fields: [
+        { key: 'name_en', label: t('a.nameEn', L), value: g.name_en ?? '' },
+        { key: 'name_ar', label: t('a.nameAr', L), value: g.name_ar ?? '' },
+      ],
+      buttons: [{ label: t('a.cancel', L), value: 'cancel' }, { label: t('a.save', L), value: 'ok', variant: 'primary' }],
+    });
+    if (r.value !== 'ok') return;
+    useOverrides.getState().updateProjectGroup(g.id, { name_en: (r.fields.name_en || '').trim() || undefined, name_ar: (r.fields.name_ar || '').trim() || undefined });
+  };
+  const removeGroup = async (g: { id: string }) => {
+    const L = langRef.current;
+    if (!(await confirmDialog({ title: t('pg.remove', L), body: t('pg.removeConfirm', L), confirmLabel: t('pg.remove', L), cancelLabel: t('a.cancel', L), danger: true, dir: L === 'ar' ? 'rtl' : 'ltr' }))) return;
+    useOverrides.getState().removeProjectGroup(g.id);
+  };
+  const makePgEl = (g: import('../lib/overrides').ProjectGroup, L: 'ar' | 'en', count: number): HTMLElement => {
+    const name = (L === 'ar' ? g.name_ar || g.name_en : g.name_en || g.name_ar) || '';
+    const el = document.createElement('div'); el.className = 'pg-marker';
+    const plate = document.createElement('div'); plate.className = 'pg-plate';
+    const kick = document.createElement('span'); kick.className = 'pg-kicker'; kick.textContent = t('pg.kicker', L);
+    const nm = document.createElement('span'); nm.className = 'pg-name'; nm.textContent = name;
+    const meta = document.createElement('span'); meta.className = 'pg-meta'; meta.textContent = `${count} ${t('pg.plotsWord', L)}`;
+    plate.append(kick, nm, meta);
+    if (canAnnotRef.current) {
+      el.classList.add('editable');
+      const tools = document.createElement('div'); tools.className = 'pg-tools';
+      const edit = document.createElement('button'); edit.className = 'pg-tool'; edit.type = 'button'; edit.textContent = '✎'; edit.title = t('pg.rename', L);
+      const del = document.createElement('button'); del.className = 'pg-tool del'; del.type = 'button'; del.textContent = '×'; del.title = t('pg.remove', L);
+      edit.onclick = (ev) => { ev.stopPropagation(); renameGroup(g); };
+      del.onclick = (ev) => { ev.stopPropagation(); removeGroup(g); };
+      tools.append(edit, del); plate.append(tools);
+    }
+    el.append(plate);
+    const stem = document.createElement('span'); stem.className = 'pg-stem'; el.append(stem);
+    return el;
+  };
+  const renderProjectGroups = () => {
+    const map = mapRef.current; if (!map) return;
+    const groups = projGroupsRef.current; const on = projLabelsRef.current;
+    const L = langRef.current;
+    const feats = dataRef.current?.features ?? [];
+    const byC = new Map(feats.map((f) => [f.properties.code, f]));
+    // gold identity outline around member plots (toggled with the labels)
+    const allCodes = on ? Array.from(new Set(groups.flatMap((g) => g.codes))) : [];
+    for (const id of ['pg-glow', 'pg-line']) if (map.getLayer(id)) map.setFilter(id, ['in', ['get', 'code'], ['literal', allCodes]] as any);
+    // name plates (rebuild from scratch — the set is small and centres are world-fixed)
+    const pool = pgPool.current;
+    pool.forEach((m) => m.remove()); pool.clear();
+    if (!on) return;
+    for (const g of groups) {
+      const gf = g.codes.map((c) => byC.get(c)).filter(Boolean) as any[];
+      if (!gf.length) continue;
+      const center = groupCenter(gf); if (!center) continue;
+      const mk = new maplibregl.Marker({ element: makePgEl(g, L, gf.length), anchor: 'bottom' }).setLngLat(center).addTo(map);
+      pool.set(g.id, mk);
+    }
+  };
+  useEffect(() => { projGroupsRef.current = projectGroups; }, [projectGroups]);
+  useEffect(() => { projLabelsRef.current = projectLabels; }, [projectLabels]);
+  useEffect(() => {
+    const map = mapRef.current; if (!map) return;
+    const apply = () => renderProjectGroups();
+    map.isStyleLoaded() ? apply() : map.once('idle', apply);
+  }, [projectGroups, projectLabels, data, lang, basemap, canAnnotate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>

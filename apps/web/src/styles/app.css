@@ -295,6 +295,66 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   box-shadow:0 1px 4px rgba(20,61,30,.35);transition:opacity .15s;flex:none}
 .lm-marker.editable:hover .lm-del{opacity:1}
 
+/* ---- project-group name plates (named projects shown on the map) ---- */
+.pg-marker{pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center}
+.pg-plate{position:relative;pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:7px 18px;border-radius:12px;
+  background:linear-gradient(160deg,rgba(255,255,255,.97),rgba(240,245,236,.93));
+  border:1px solid rgba(154,138,30,.55);
+  box-shadow:0 12px 32px rgba(20,61,30,.22),0 2px 6px rgba(20,61,30,.14),inset 0 1px 0 rgba(255,255,255,.75);
+  backdrop-filter:blur(6px)}
+.pg-plate::before{content:'';position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--kec-gold),transparent);opacity:.95}
+.pg-kicker{font-size:8.5px;font-weight:800;letter-spacing:.24em;color:var(--kec-gold);text-transform:uppercase}
+.pg-name{font-family:var(--kec-serif);font-size:15px;font-weight:600;color:var(--kec-green-deep);line-height:1.15;text-align:center;max-width:230px}
+.pg-meta{font-size:9.5px;font-weight:600;color:var(--kec-muted);letter-spacing:.02em}
+.pg-stem{position:relative;width:2px;height:16px;background:linear-gradient(var(--kec-gold),rgba(154,138,30,.3))}
+.pg-stem::after{content:'';position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;
+  background:var(--kec-gold);box-shadow:0 0 0 3px rgba(154,138,30,.22),0 1px 4px rgba(20,61,30,.45)}
+.pg-tools{position:absolute;top:-9px;inset-inline-end:-9px;display:flex;gap:3px;opacity:0;transition:opacity .15s}
+.pg-marker.editable:hover .pg-tools{opacity:1}
+.pg-tool{pointer-events:auto;border:0;width:19px;height:19px;border-radius:50%;cursor:pointer;font-size:11px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;color:#fff;background:var(--kec-green);box-shadow:0 1px 4px rgba(20,61,30,.4)}
+.pg-tool.del{background:var(--kec-neg)}
+/* satellite / earth basemap: dark glass + gold, matching the flagship pills */
+.map-sat .pg-plate{background:linear-gradient(160deg,rgba(16,34,27,.9),rgba(11,26,16,.85));border-color:rgba(201,181,73,.7)}
+.map-sat .pg-name{color:#fff}
+.map-sat .pg-meta{color:rgba(255,255,255,.72)}
+
+/* ---- inline ownership editor (plot card) ---- */
+.own-edit{display:flex;flex-direction:column;gap:9px}
+.own-seg{display:flex;gap:6px}
+.own-seg-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 8px;
+  border:1px solid var(--kec-hairline);border-radius:9px;background:var(--card);color:var(--kec-muted);
+  font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.own-seg-btn:hover{border-color:var(--kec-green-mid);color:var(--kec-ink)}
+.own-seg-btn.on{color:var(--kec-ink);border-color:var(--own-c,var(--kec-green));
+  background:color-mix(in srgb,var(--own-c,var(--kec-green)) 12%,transparent);box-shadow:inset 0 0 0 1px var(--own-c,var(--kec-green))}
+.own-seg-dot{width:8px;height:8px;border-radius:50%;flex:none}
+.own-name-edit{display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--kec-hairline);
+  border-radius:9px;background:var(--card);color:var(--kec-muted)}
+.own-name-edit input{border:0;outline:0;background:transparent;flex:1;font-size:13px;color:var(--kec-ink);min-width:0}
+.own-group{display:flex;align-items:center;gap:6px;margin-bottom:9px;padding:6px 10px;border-radius:9px;
+  background:color-mix(in srgb,var(--kec-gold) 12%,transparent);border:1px solid rgba(154,138,30,.3);color:var(--kec-gold)}
+.own-group .og-k{font-size:10.5px;font-weight:600}
+.own-group .og-name{margin-inline-start:auto;color:var(--kec-green-deep);font-size:12.5px;font-weight:600}
+
+/* ---- bulk ownership editor (multi-selection) ---- */
+.m-own{padding:0 14px 4px}
+.m-own-open{width:100%;justify-content:center}
+.m-own-panel{display:flex;flex-direction:column;gap:9px;padding:12px;border:1px solid var(--kec-hairline);border-radius:12px;background:var(--kec-surface)}
+.m-own-q{font-size:11.5px;font-weight:600;color:var(--kec-muted);margin-top:2px}
+.m-own-mode{display:flex;gap:6px}
+.m-own-mode button{flex:1;padding:7px;border:1px solid var(--kec-hairline);border-radius:8px;background:var(--card);
+  color:var(--kec-muted);font-size:11.5px;font-weight:600;cursor:pointer;transition:.15s}
+.m-own-mode button.on{border-color:var(--kec-green);color:var(--kec-green);background:color-mix(in srgb,var(--kec-green) 10%,transparent)}
+.m-own-list{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto}
+.m-own-row{display:flex;align-items:center;gap:8px}
+.m-own-code{flex:none;min-width:52px;font-size:11px;color:var(--kec-muted)}
+.m-own-row input{flex:1;border:1px solid var(--kec-hairline);border-radius:7px;padding:6px 9px;background:var(--card);font-size:12.5px;color:var(--kec-ink);min-width:0}
+.m-own-acts{display:flex;gap:8px;justify-content:flex-end}
+.m-project-btn{width:100%;justify-content:center}
+
 /* ---- Subdivide modal ---- */
 .modal-wrap{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:20px}
 .modal{background:var(--kec-paper);border:1px solid var(--kec-hairline);border-radius:16px;box-shadow:var(--shadow-lg);width:660px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;animation:slideIn .25s}
