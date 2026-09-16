@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, estimatedElecLoadKva, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, estimatedElecLoadKva, OWNERSHIP_META, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
 import { useDialog, confirmDialog } from '../lib/dialog';
-import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt, IconPlots, IconRuler, IconBuilding, IconCube } from './icons';
+import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt, IconPlots, IconRuler, IconBuilding, IconCube, IconOwner, IconTag } from './icons';
 import type { EffLandUse } from '../lib/effective';
 import type { ReactNode } from 'react';
 
@@ -19,6 +19,7 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   const mergePlots = useOverrides((s) => s.mergePlots);
   const addPlotsToPlan = useOverrides((s) => s.addPlotsToPlan);
   const removePlotsFromPlan = useOverrides((s) => s.removePlotsFromPlan);
+  const addProjectGroup = useOverrides((s) => s.addProjectGroup);
   const projOver = useOverrides((s) => s.projects);
   const byCode = useMemo(() => new Map(data.features.map((f) => [f.properties.code, f.properties])), [data]);
 
@@ -110,6 +111,30 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
     if (!(await confirmDialog({ title: t('m.removeFromPlan', lang), body: t('m.removeFromPlanConfirm', lang), icon: <IconCalendar size={24} />, confirmLabel: t('m.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir }))) return;
     removePlotsFromPlan(multi); clearMulti();
   };
+  const doMarkProject = async () => {
+    const codes = [...multi];
+    const r = await useDialog.getState().open({
+      title: t('pg.name', lang),
+      icon: <IconTag size={24} />,
+      body: t('pg.markHint', lang),
+      dir,
+      fields: [
+        { key: 'name_en', label: t('a.nameEn', lang), value: '', placeholder: t('m.mergeNamePh', lang) },
+        { key: 'name_ar', label: t('a.nameAr', lang), value: '' },
+      ],
+      buttons: [
+        { label: t('a.cancel', lang), value: 'cancel' },
+        { label: t('pg.create', lang), value: 'ok', variant: 'primary' },
+      ],
+    });
+    if (r.value !== 'ok') return;
+    const nameEn = (r.fields.name_en ?? '').trim();
+    const nameAr = (r.fields.name_ar ?? '').trim();
+    if (!nameEn && !nameAr) return;
+    addProjectGroup(codes, { ...(nameEn ? { name_en: nameEn } : {}), ...(nameAr ? { name_ar: nameAr } : {}) });
+    clearMulti();
+    setTimeout(() => requestZoom(codes[0]), 60);
+  };
 
   return (
     <div className="panel" id="multi">
@@ -169,16 +194,96 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
         )}
       </div>
       </div>
+      {canMerge && <BulkOwnership codes={multi} projects={projects} lang={lang} onDone={clearMulti} />}
       {canMerge && (
         <div className="m-actions">
           {inPlanCount < multi.length && <button className="btn primary m-plan-btn" onClick={doAddToPlan}><IconCalendar size={15} /> {t('m.addToPlan', lang)}</button>}
           {inPlanCount > 0 && <button className="btn danger m-plan-btn" onClick={doRemoveFromPlan}><IconTrash size={15} /> {t('m.removeFromPlan', lang)}</button>}
         </div>
       )}
+      {canMerge && (
+        <div className="m-merge">
+          <button className="btn m-project-btn" onClick={doMarkProject}><IconTag size={15} /> {t('pg.mark', lang)}</button>
+          <div className="m-merge-hint">{t('pg.markHint', lang)}</div>
+        </div>
+      )}
       {multi.length >= 2 && canMerge && (
         <div className="m-merge">
           <button className="btn primary" onClick={doMerge}><IconMerge size={15} /> {t('m.merge', lang)}</button>
           <div className="m-merge-hint">{t('m.mergeHint', lang)}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Bulk ownership editor for a multi-selection: pick a status for all selected plots, and
+ *  (for reserved/owned) either one owner for all, or a different party per plot. */
+function BulkOwnership({ codes, projects, lang, onDone }: { codes: string[]; projects: Record<string, ProjectInfo>; lang: 'ar' | 'en'; onDone: () => void }) {
+  const setOwnershipMany = useOverrides((s) => s.setOwnershipMany);
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<string>('reserved');
+  const [mode, setMode] = useState<'same' | 'per'>('same');
+  const [sameOwner, setSameOwner] = useState('');
+  const [perOwners, setPerOwners] = useState<Record<string, string>>({});
+  const needsOwner = status !== 'available';
+  const apply = () => {
+    let owners: Record<string, string> | undefined;
+    if (needsOwner) {
+      owners = mode === 'same'
+        ? Object.fromEntries(codes.map((c) => [c, sameOwner.trim()]))
+        : Object.fromEntries(codes.map((c) => [c, (perOwners[c] ?? projects[c]?.owner ?? '').trim()]));
+    }
+    setOwnershipMany(codes, status, owners);
+    onDone();
+  };
+  return (
+    <div className="m-own">
+      {!open ? (
+        <button className="btn m-own-open" onClick={() => setOpen(true)}><IconOwner size={15} /> {t('mo.set', lang)}</button>
+      ) : (
+        <div className="m-own-panel">
+          <div className="m-own-seg own-seg">
+            {Object.values(OWNERSHIP_META).map((o) => (
+              <button key={o.key} type="button" className={`own-seg-btn ${status === o.key ? 'on' : ''}`}
+                style={status === o.key ? ({ ['--own-c' as string]: o.color } as any) : undefined}
+                onClick={() => setStatus(o.key)}>
+                <span className="own-seg-dot" style={{ background: o.color }} />{lang === 'ar' ? o.ar : o.en}
+              </button>
+            ))}
+          </div>
+          {needsOwner && (
+            <>
+              <div className="m-own-q">{t('mo.question', lang)}</div>
+              <div className="m-own-mode">
+                <button type="button" className={mode === 'same' ? 'on' : ''} onClick={() => setMode('same')}>{t('mo.same', lang)}</button>
+                <button type="button" className={mode === 'per' ? 'on' : ''} onClick={() => setMode('per')}>{t('mo.perPlot', lang)}</button>
+              </div>
+              {mode === 'same' ? (
+                <label className="own-name-edit">
+                  <IconOwner size={14} />
+                  <input value={sameOwner} placeholder={t('d.ownerName', lang)} onChange={(e) => setSameOwner(e.target.value)} />
+                </label>
+              ) : (
+                <div className="m-own-list">
+                  {codes.map((c) => {
+                    const cur = perOwners[c] ?? projects[c]?.owner ?? '';
+                    const label = projects[c]?.plotNo || c;
+                    return (
+                      <label className="m-own-row" key={c}>
+                        <span className="mono m-own-code">{label}</span>
+                        <input value={cur} placeholder={t('d.ownerName', lang)} onChange={(e) => setPerOwners((m) => ({ ...m, [c]: e.target.value }))} />
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+          <div className="m-own-acts">
+            <button className="btn sm" onClick={() => setOpen(false)}>{t('a.cancel', lang)}</button>
+            <button className="btn sm primary" onClick={apply}>{t('mo.apply', lang)}</button>
+          </div>
         </div>
       )}
     </div>

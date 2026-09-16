@@ -2,7 +2,7 @@ import { useApp } from '../store';
 import { t } from '../lib/domain';
 import { LM_CATEGORIES } from '../lib/landmarks';
 import { useBackClose } from '../lib/backstack';
-import { IconLabel, IconLandmark } from './icons';
+import { IconLabel, IconLandmark, IconTag } from './icons';
 
 /**
  * One place for everything that controls *what the map shows*: basemap, the 2D /
@@ -10,7 +10,7 @@ import { IconLabel, IconLandmark } from './icons';
  * category). Opened from the rail so these controls stop being scattered.
  */
 export function LayersFlyout({ onClose }: { onClose: () => void }) {
-  const { lang, basemap, dim, labels, landmarks, lmCats, flyover, setBasemap, setDim, toggleLabels, toggleLandmarks, toggleLmCat, toggleFlyover } = useApp();
+  const { lang, basemap, dim, labels, projectLabels, landmarks, lmCats, flyover, setBasemap, setDim, toggleLabels, toggleProjectLabels, toggleLandmarks, toggleLmCat, toggleFlyover } = useApp();
   const rtl = lang === 'ar';
   useBackClose(true, onClose, 50);
 
@@ -44,6 +44,10 @@ export function LayersFlyout({ onClose }: { onClose: () => void }) {
           <label className={`lf-toggle ${labels ? 'on' : ''}`}>
             <input type="checkbox" checked={labels} onChange={toggleLabels} />
             <span className="pt-switch" /><span className="pt-label"><IconLabel size={14} /> {t('cp.labels', lang)}</span>
+          </label>
+          <label className={`lf-toggle ${projectLabels ? 'on' : ''}`}>
+            <input type="checkbox" checked={projectLabels} onChange={toggleProjectLabels} />
+            <span className="pt-switch" /><span className="pt-label"><IconTag size={14} /> {t('cp.projectLabels', lang)}</span>
           </label>
           <label className={`lf-toggle ${landmarks ? 'on' : ''}`}>
             <input type="checkbox" checked={landmarks} onChange={toggleLandmarks} />
