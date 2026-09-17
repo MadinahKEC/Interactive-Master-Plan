@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
 import { resolveProject, estimatedElecLoadKva, OWNERSHIP_META, STANDARD_PHASES, t, type ProjectInfo } from '../lib/domain';
 import { useDialog, confirmDialog } from '../lib/dialog';
-import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt, IconPlots, IconRuler, IconBuilding, IconCube, IconOwner, IconTag } from './icons';
+import { IconClose, IconMerge, IconZoom, IconCalendar, IconTrash, IconBolt, IconPlots, IconRuler, IconBuilding, IconCube, IconOwner } from './icons';
 import type { EffLandUse } from '../lib/effective';
 import type { ReactNode } from 'react';
 
@@ -19,7 +19,6 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
   const mergePlots = useOverrides((s) => s.mergePlots);
   const addPlotsToPlan = useOverrides((s) => s.addPlotsToPlan);
   const removePlotsFromPlan = useOverrides((s) => s.removePlotsFromPlan);
-  const addProjectGroup = useOverrides((s) => s.addProjectGroup);
   const projOver = useOverrides((s) => s.projects);
   const byCode = useMemo(() => new Map(data.features.map((f) => [f.properties.code, f.properties])), [data]);
 
@@ -111,30 +110,6 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
     if (!(await confirmDialog({ title: t('m.removeFromPlan', lang), body: t('m.removeFromPlanConfirm', lang), icon: <IconCalendar size={24} />, confirmLabel: t('m.removeFromPlan', lang), cancelLabel: t('a.cancel', lang), danger: true, dir }))) return;
     removePlotsFromPlan(multi); clearMulti();
   };
-  const doMarkProject = async () => {
-    const codes = [...multi];
-    const r = await useDialog.getState().open({
-      title: t('pg.name', lang),
-      icon: <IconTag size={24} />,
-      body: t('pg.markHint', lang),
-      dir,
-      fields: [
-        { key: 'name_en', label: t('a.nameEn', lang), value: '', placeholder: t('m.mergeNamePh', lang) },
-        { key: 'name_ar', label: t('a.nameAr', lang), value: '' },
-      ],
-      buttons: [
-        { label: t('a.cancel', lang), value: 'cancel' },
-        { label: t('pg.create', lang), value: 'ok', variant: 'primary' },
-      ],
-    });
-    if (r.value !== 'ok') return;
-    const nameEn = (r.fields.name_en ?? '').trim();
-    const nameAr = (r.fields.name_ar ?? '').trim();
-    if (!nameEn && !nameAr) return;
-    addProjectGroup(codes, { ...(nameEn ? { name_en: nameEn } : {}), ...(nameAr ? { name_ar: nameAr } : {}) });
-    clearMulti();
-    setTimeout(() => requestZoom(codes[0]), 60);
-  };
 
   return (
     <div className="panel" id="multi">
@@ -199,12 +174,6 @@ export function MultiSelectPanel({ data, projects, landUses }: { data: PlotColle
         <div className="m-actions">
           {inPlanCount < multi.length && <button className="btn primary m-plan-btn" onClick={doAddToPlan}><IconCalendar size={15} /> {t('m.addToPlan', lang)}</button>}
           {inPlanCount > 0 && <button className="btn danger m-plan-btn" onClick={doRemoveFromPlan}><IconTrash size={15} /> {t('m.removeFromPlan', lang)}</button>}
-        </div>
-      )}
-      {canMerge && (
-        <div className="m-merge">
-          <button className="btn m-project-btn" onClick={doMarkProject}><IconTag size={15} /> {t('pg.mark', lang)}</button>
-          <div className="m-merge-hint">{t('pg.markHint', lang)}</div>
         </div>
       )}
       {multi.length >= 2 && canMerge && (

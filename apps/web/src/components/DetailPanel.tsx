@@ -13,7 +13,7 @@ import { PlotFactsheet } from './PlotFactsheet';
 import { FeasibilityModal } from './FeasibilityModal';
 import { computeInvestmentScore, centroidOf, haversineKm, HARAM, scoreColor, gradeLabel } from '../lib/investment';
 import { useInterestedInvestors, INVESTOR_LOG_ENABLED } from '../lib/investorLog';
-import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconCompare, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, IconTag, TypeIcon } from './icons';
+import { IconClose, IconEdit, IconShape, IconZoom, IconOwner, IconMerge, IconCalendar, IconPlus, IconTrash, IconSplit, IconShare, IconCompare, IconDownload, IconChevron, IconBuilding, IconRuler, IconLayers, IconInvest, IconClock, IconPalette, IconGlobe, IconRect, IconCube, IconBolt, TypeIcon } from './icons';
 import type { ReactNode as RN } from 'react';
 import type { EffLandUse } from '../lib/effective';
 
@@ -31,7 +31,6 @@ export function DetailPanel({
   const merges = useOverrides((s) => s.merges);
   const unmerge = useOverrides((s) => s.unmerge);
   const setProject = useOverrides((s) => s.setProject);
-  const projectGroups = useOverrides((s) => s.projectGroups);
   const splits = useOverrides((s) => s.splits);
   const createdPlots = useOverrides((s) => s.createdPlots);
   const removeCreatedPlot = useOverrides((s) => s.removeCreatedPlot);
@@ -106,8 +105,6 @@ export function DetailPanel({
   const ownLabel = lang === 'ar' ? pr.ownership.ar : pr.ownership.en;
   const summary = lang === 'ar' ? pr.overlay.summary_ar : pr.overlay.summary_en;
   const mergeRec = merges.find((m) => m.id === p.code);
-  const group = projectGroups.find((g) => g.codes.includes(p.code));
-  const groupName = group ? (lang === 'ar' ? group.name_ar || group.name_en : group.name_en || group.name_ar) : null;
   const phases = pr.overlay.phases ?? [];
   const devDesc = (lang === 'ar' ? pr.overlay.devplan_ar : pr.overlay.devplan_en)?.trim();
   const hasDevDesc = Boolean(devDesc);
@@ -156,9 +153,6 @@ export function DetailPanel({
       <div className="d-scroll">
         <CardCtx.Provider value={hiddenCards}>
         <Section k="s:ownership" title={t('sec.ownership', lang)}>
-          {groupName && (
-            <div className="own-group"><IconTag size={13} /><span className="og-k">{t('pg.partOf', lang)}</span><b className="og-name">{groupName}</b></div>
-          )}
           {canAttr ? (
             <OwnershipEditor code={p.code} overlay={pr.overlay} lang={lang} />
           ) : (

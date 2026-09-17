@@ -146,7 +146,7 @@ export async function createUserSecondary(email: string, password: string) {
 
 interface SyncableStore {
   plotAttrs: unknown; projects: unknown; landUses: unknown; plotGeom: unknown;
-  merges: unknown; projectGroups: unknown; planStyle: unknown; users: unknown; audit: unknown;
+  merges: unknown; planStyle: unknown; users: unknown; audit: unknown;
   hiddenCards: unknown; hiddenLandUses: unknown;
   importAll: (json: string) => boolean;
 }
@@ -213,7 +213,7 @@ const SHIELD_MS = 12000;
 
 // slice name → { keys stored in it; which are object-maps / string-arrays to union }
 const SLICES: Record<string, { keys: string[]; maps: string[]; arrays: string[] }> = {
-  _core: { keys: ['landUses', 'users', 'merges', 'projectGroups', 'planStyle', 'hiddenCards', 'hiddenLandUses', 'audit'], maps: ['landUses'], arrays: ['hiddenCards', 'hiddenLandUses'] },
+  _core: { keys: ['landUses', 'users', 'merges', 'planStyle', 'hiddenCards', 'hiddenLandUses', 'audit'], maps: ['landUses'], arrays: ['hiddenCards', 'hiddenLandUses'] },
   attrs: { keys: ['plotAttrs'], maps: ['plotAttrs'], arrays: [] },
   projects: { keys: ['projects'], maps: ['projects'], arrays: [] },
   geom: { keys: ['plotGeom'], maps: ['plotGeom'], arrays: [] },
