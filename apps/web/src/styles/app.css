@@ -295,31 +295,40 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
   box-shadow:0 1px 4px rgba(20,61,30,.35);transition:opacity .15s;flex:none}
 .lm-marker.editable:hover .lm-del{opacity:1}
 
-/* ---- project-group name plates (named projects shown on the map) ---- */
-.pg-marker{pointer-events:none;user-select:none;display:flex;flex-direction:column;align-items:center}
-.pg-plate{position:relative;pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:1px;
-  padding:7px 18px;border-radius:12px;
-  background:linear-gradient(160deg,rgba(255,255,255,.97),rgba(240,245,236,.93));
-  border:1px solid rgba(154,138,30,.55);
-  box-shadow:0 12px 32px rgba(20,61,30,.22),0 2px 6px rgba(20,61,30,.14),inset 0 1px 0 rgba(255,255,255,.75);
-  backdrop-filter:blur(6px)}
-.pg-plate::before{content:'';position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;
-  background:linear-gradient(90deg,transparent,var(--kec-gold),transparent);opacity:.95}
-.pg-kicker{font-size:8.5px;font-weight:800;letter-spacing:.24em;color:var(--kec-gold);text-transform:uppercase}
-.pg-name{font-family:var(--kec-serif);font-size:15px;font-weight:600;color:var(--kec-green-deep);line-height:1.15;text-align:center;max-width:230px}
-.pg-meta{font-size:9.5px;font-weight:600;color:var(--kec-muted);letter-spacing:.02em}
-.pg-stem{position:relative;width:2px;height:16px;background:linear-gradient(var(--kec-gold),rgba(154,138,30,.3))}
-.pg-stem::after{content:'';position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;
-  background:var(--kec-gold);box-shadow:0 0 0 3px rgba(154,138,30,.22),0 1px 4px rgba(20,61,30,.45)}
-.pg-tools{position:absolute;top:-9px;inset-inline-end:-9px;display:flex;gap:3px;opacity:0;transition:opacity .15s}
-.pg-marker.editable:hover .pg-tools{opacity:1}
-.pg-tool{pointer-events:auto;border:0;width:19px;height:19px;border-radius:50%;cursor:pointer;font-size:11px;line-height:1;
-  display:inline-flex;align-items:center;justify-content:center;color:#fff;background:var(--kec-green);box-shadow:0 1px 4px rgba(20,61,30,.4)}
-.pg-tool.del{background:var(--kec-neg)}
-/* satellite / earth basemap: dark glass + gold, matching the flagship pills */
-.map-sat .pg-plate{background:linear-gradient(160deg,rgba(16,34,27,.9),rgba(11,26,16,.85));border-color:rgba(201,181,73,.7)}
-.map-sat .pg-name{color:#fff}
-.map-sat .pg-meta{color:rgba(255,255,255,.72)}
+/* ---- project-group markers: a resting gold seal, luxury name card on hover ---- */
+.pg-marker{display:flex;flex-direction:column;align-items:center;user-select:none;cursor:default;
+  filter:drop-shadow(0 2px 6px rgba(20,61,30,.35))}
+/* resting medallion — small & elegant, always visible; the NAME appears only on hover */
+.pg-seal{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  font-family:var(--kec-serif);font-size:12.5px;font-weight:700;color:#4a3b12;
+  background:radial-gradient(circle at 34% 28%,#F7EBB8 0%,#E4C766 38%,#C9A94A 66%,#A9822E 100%);
+  border:1.5px solid rgba(255,255,255,.72);
+  box-shadow:0 1px 4px rgba(20,61,30,.45),0 0 0 3px rgba(201,169,74,.22),inset 0 1px 1px rgba(255,255,255,.65);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
+.pg-marker:hover .pg-seal{transform:scale(1.12);
+  box-shadow:0 3px 10px rgba(20,61,30,.5),0 0 0 5px rgba(201,169,74,.3),inset 0 1px 1px rgba(255,255,255,.7)}
+/* name card — revealed on hover with a soft rise + fade */
+.pg-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;margin-bottom:9px;
+  padding:9px 20px 10px;border-radius:14px;white-space:nowrap;pointer-events:none;
+  opacity:0;transform:translateY(7px) scale(.95);transition:opacity .2s ease,transform .2s cubic-bezier(.2,.8,.2,1);
+  background:linear-gradient(157deg,rgba(26,47,34,.98),rgba(9,22,14,.98));
+  border:1px solid rgba(201,181,73,.5);
+  box-shadow:0 18px 44px rgba(0,0,0,.42),0 3px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+.pg-marker:hover .pg-card{opacity:1;transform:none;pointer-events:auto}
+.pg-card::before{content:'';position:absolute;left:16px;right:16px;top:0;height:1.5px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,#D9C063,transparent)}
+.pg-card::after{content:'';position:absolute;left:50%;bottom:-6px;width:12px;height:12px;transform:translateX(-50%) rotate(45deg);
+  background:rgba(9,22,14,.98);border-right:1px solid rgba(201,181,73,.5);border-bottom:1px solid rgba(201,181,73,.5)}
+.pg-kicker{font-size:8px;font-weight:800;letter-spacing:.3em;color:#D9C063;text-transform:uppercase;padding-inline-start:.3em}
+.pg-name{font-family:var(--kec-serif);font-size:15.5px;font-weight:600;color:#F4F1E4;line-height:1.2;
+  letter-spacing:.01em;max-width:240px;white-space:normal;text-align:center}
+.pg-meta{font-size:9px;font-weight:600;color:rgba(244,241,228,.55);letter-spacing:.04em;margin-top:1px}
+.pg-tools{display:flex;gap:7px;margin-top:8px}
+.pg-tool{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:8px;cursor:pointer;font-size:12px;line-height:1;color:#EBE3C4;
+  background:rgba(255,255,255,.06);border:1px solid rgba(201,181,73,.4);transition:.15s}
+.pg-tool:hover{background:rgba(201,181,73,.18);border-color:rgba(201,181,73,.7);color:#fff}
+.pg-tool.del:hover{background:rgba(181,70,47,.28);border-color:rgba(181,70,47,.7);color:#fff}
 
 /* ---- inline ownership editor (plot card) ---- */
 .own-edit{display:flex;flex-direction:column;gap:9px}

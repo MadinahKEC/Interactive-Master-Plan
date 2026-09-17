@@ -158,8 +158,8 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
       // plots that belong to a named project (distinct from the plan's dashed border).
       const beforeId = map.getLayer('plots-multi') ? 'plots-multi' : undefined;
       const emptyFilter: any = ['in', ['get', 'code'], ['literal', []]];
-      if (!map.getLayer('pg-glow')) map.addLayer({ id: 'pg-glow', type: 'line', source: 'plots', ...(TILES_URL ? { 'source-layer': 'plots' } : {}), filter: emptyFilter, layout: { 'line-join': 'round' }, paint: { 'line-color': '#C9B549', 'line-width': 8, 'line-opacity': 0.26, 'line-blur': 3 } }, beforeId);
-      if (!map.getLayer('pg-line')) map.addLayer({ id: 'pg-line', type: 'line', source: 'plots', ...(TILES_URL ? { 'source-layer': 'plots' } : {}), filter: emptyFilter, layout: { 'line-join': 'round' }, paint: { 'line-color': '#B69121', 'line-width': 1.8, 'line-opacity': 0.9 } }, beforeId);
+      if (!map.getLayer('pg-glow')) map.addLayer({ id: 'pg-glow', type: 'line', source: 'plots', ...(TILES_URL ? { 'source-layer': 'plots' } : {}), filter: emptyFilter, layout: { 'line-join': 'round' }, paint: { 'line-color': '#C9B549', 'line-width': 6, 'line-opacity': 0.18, 'line-blur': 3 } }, beforeId);
+      if (!map.getLayer('pg-line')) map.addLayer({ id: 'pg-line', type: 'line', source: 'plots', ...(TILES_URL ? { 'source-layer': 'plots' } : {}), filter: emptyFilter, layout: { 'line-join': 'round' }, paint: { 'line-color': '#B69121', 'line-width': 1.4, 'line-opacity': 0.72 } }, beforeId);
       renderAnnot(annotRef.current);
       renderProjectGroups();
     });
@@ -877,23 +877,26 @@ export function MapView({ data, projects, landUses, canAnnotate }: {
   };
   const makePgEl = (g: import('../lib/overrides').ProjectGroup, L: 'ar' | 'en', count: number): HTMLElement => {
     const name = (L === 'ar' ? g.name_ar || g.name_en : g.name_en || g.name_ar) || '';
+    const initial = (name.trim().charAt(0) || '◆').toUpperCase();
     const el = document.createElement('div'); el.className = 'pg-marker';
-    const plate = document.createElement('div'); plate.className = 'pg-plate';
+    // — name card: hidden at rest, revealed on hover —
+    const card = document.createElement('div'); card.className = 'pg-card';
     const kick = document.createElement('span'); kick.className = 'pg-kicker'; kick.textContent = t('pg.kicker', L);
     const nm = document.createElement('span'); nm.className = 'pg-name'; nm.textContent = name;
     const meta = document.createElement('span'); meta.className = 'pg-meta'; meta.textContent = `${count} ${t('pg.plotsWord', L)}`;
-    plate.append(kick, nm, meta);
+    card.append(kick, nm, meta);
     if (canAnnotRef.current) {
       el.classList.add('editable');
       const tools = document.createElement('div'); tools.className = 'pg-tools';
       const edit = document.createElement('button'); edit.className = 'pg-tool'; edit.type = 'button'; edit.textContent = '✎'; edit.title = t('pg.rename', L);
-      const del = document.createElement('button'); del.className = 'pg-tool del'; del.type = 'button'; del.textContent = '×'; del.title = t('pg.remove', L);
+      const del = document.createElement('button'); del.className = 'pg-tool del'; del.type = 'button'; del.textContent = '✕'; del.title = t('pg.remove', L);
       edit.onclick = (ev) => { ev.stopPropagation(); renameGroup(g); };
       del.onclick = (ev) => { ev.stopPropagation(); removeGroup(g); };
-      tools.append(edit, del); plate.append(tools);
+      tools.append(edit, del); card.append(tools);
     }
-    el.append(plate);
-    const stem = document.createElement('span'); stem.className = 'pg-stem'; el.append(stem);
+    // — resting seal: a small gold medallion carrying the project's initial —
+    const seal = document.createElement('span'); seal.className = 'pg-seal'; seal.textContent = initial;
+    el.append(card, seal);
     return el;
   };
   const renderProjectGroups = () => {
