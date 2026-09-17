@@ -30,6 +30,7 @@ export interface UndoPatch {
   hiddenCards?: string[];
   hiddenLandmarks?: string[];
   merges?: MergeRecord[];
+  projectGroups?: ProjectGroup[];
   splits?: Record<string, SubPlotRecord[]>;
   planStyle?: PlanStyle;
 }
@@ -67,6 +68,15 @@ export interface CreatedPlot {
   area: number; gfa?: number; floors?: number; height?: number; coverage?: number; far?: number;
   geometry: { type: 'Polygon'; coordinates: any };
 }
+/** A named project spanning one or more plots — NOT a merge: the plots stay separate,
+ *  this only marks them as belonging to the same project and shows a shared name on the
+ *  map. Synced to everyone. */
+export interface ProjectGroup {
+  id: string;              // e.g. 'PG-1712…'
+  name_ar?: string; name_en?: string;
+  codes: string[];         // member plot codes
+  at?: number;
+}
 /** A note left on a plot by a signed-in user (synced to everyone). */
 export interface PlotComment { id: string; text: string; author: string; at: number }
 /** An investor who expressed interest in a plot (interest pipeline / CRM-lite). */
@@ -93,6 +103,7 @@ interface OverridesState {
   landUses: Record<string, LandUseOverride>;
   plotGeom: Record<string, GeomOverride>;
   merges: MergeRecord[];
+  projectGroups: ProjectGroup[];
   splits: Record<string, SubPlotRecord[]>;
   annotations: Annotation[];
   users: AdminUser[];
@@ -108,6 +119,13 @@ interface OverridesState {
 
   setPlotAttr: (code: string, patch: PlotAttrOverride, actor?: string) => void;
   setProject: (code: string, patch: ProjectInfo, actor?: string) => void;
+  /** Apply an ownership status (and optional owner name per plot) to many plots in ONE
+   *  update — the bulk-edit convenience for a multi-selection. `owners` maps code→name;
+   *  a missing entry leaves that plot's owner untouched. */
+  setOwnershipMany: (codes: string[], ownership: string, owners?: Record<string, string>, actor?: string) => void;
+  addProjectGroup: (codes: string[], patch: Partial<ProjectGroup>, actor?: string) => string;
+  updateProjectGroup: (id: string, patch: Partial<ProjectGroup>, actor?: string) => void;
+  removeProjectGroup: (id: string, actor?: string) => void;
   addPlotsToPlan: (codes: string[], phase: Phase, actor?: string) => number;
   removePlotsFromPlan: (codes: string[], actor?: string) => number;
   setLandUse: (key: string, patch: LandUseOverride, actor?: string) => void;
@@ -163,6 +181,7 @@ export const useOverrides = create<OverridesState>()(
       landUses: {},
       plotGeom: {},
       merges: [],
+      projectGroups: [],
       splits: {},
       annotations: [],
       users: seedUsers,
@@ -242,6 +261,40 @@ export const useOverrides = create<OverridesState>()(
         set((s) => ({
           projects: { ...s.projects, [code]: { ...s.projects[code], ...patch } },
           audit: pushAudit(s, { actor, action: 'plot.project', target: code, detail: patch.name_ar || patch.name_en || 'updated', prev: { projects: { [code]: s.projects[code] ?? null } } }),
+        })),
+
+      // Set an ownership status on many plots at once (one state update → one sync write).
+      // For 'available' the owner name is cleared; otherwise `owners[code]` sets each plot's
+      // owner (same name for all, or a different party per plot — the caller decides).
+      setOwnershipMany: (codes, ownership, owners = {}, actor = 'admin') =>
+        set((s) => {
+          const projects = { ...s.projects };
+          const prevProjects: Record<string, any> = {};
+          for (const code of codes) {
+            prevProjects[code] = s.projects[code] ?? null;
+            const owner = ownership === 'available' ? undefined : (owners[code] ?? s.projects[code]?.owner);
+            projects[code] = { ...s.projects[code], ownership, owner };
+          }
+          return { projects, audit: pushAudit(s, { actor, action: 'plot.ownership', target: `${codes.length} plots`, detail: ownership, prev: { projects: prevProjects } }) };
+        }),
+
+      addProjectGroup: (codes, patch, actor = 'admin') => {
+        const id = 'PG-' + Date.now();
+        set((s) => ({
+          projectGroups: [...s.projectGroups, { id, codes, at: Date.now(), ...patch }],
+          audit: pushAudit(s, { actor, action: 'project.group', target: id, detail: (patch.name_ar || patch.name_en || codes.join(' + ')), prev: { projectGroups: s.projectGroups } }),
+        }));
+        return id;
+      },
+      updateProjectGroup: (id, patch, actor = 'admin') =>
+        set((s) => ({
+          projectGroups: s.projectGroups.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+          audit: pushAudit(s, { actor, action: 'project.group.edit', target: id, detail: (patch.name_ar || patch.name_en || 'updated'), prev: { projectGroups: s.projectGroups } }),
+        })),
+      removeProjectGroup: (id, actor = 'admin') =>
+        set((s) => ({
+          projectGroups: s.projectGroups.filter((g) => g.id !== id),
+          audit: pushAudit(s, { actor, action: 'project.group.remove', target: id, detail: 'removed', prev: { projectGroups: s.projectGroups } }),
         })),
 
       // Bulk-join the development plan: seed a starter phase on every selected plot that
@@ -349,7 +402,7 @@ export const useOverrides = create<OverridesState>()(
       updateUser: (id, patch) => set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)) })),
       removeUser: (id) => set((s) => ({ users: s.users.filter((u) => u.id !== id) })),
 
-      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks, hiddenLandUses: get().hiddenLandUses, hiddenCards: get().hiddenCards, planStyle: get().planStyle, investors: get().investors }, null, 2),
+      exportAll: () => JSON.stringify({ plotAttrs: get().plotAttrs, projects: get().projects, landUses: get().landUses, plotGeom: get().plotGeom, merges: get().merges, projectGroups: get().projectGroups, splits: get().splits, annotations: get().annotations, users: get().users, optionLists: get().optionLists, createdPlots: get().createdPlots, comments: get().comments, hiddenLandmarks: get().hiddenLandmarks, hiddenLandUses: get().hiddenLandUses, hiddenCards: get().hiddenCards, planStyle: get().planStyle, investors: get().investors }, null, 2),
       importAll: (json) => {
         try {
           const o = JSON.parse(json);
@@ -359,6 +412,7 @@ export const useOverrides = create<OverridesState>()(
             landUses: o.landUses ?? s.landUses,
             plotGeom: o.plotGeom ?? s.plotGeom,
             merges: o.merges ?? s.merges,
+            projectGroups: o.projectGroups ?? s.projectGroups,
             splits: o.splits ?? s.splits,
             annotations: o.annotations ?? s.annotations,
             users: o.users ?? s.users,
@@ -389,16 +443,16 @@ export const useOverrides = create<OverridesState>()(
           out[name] = m;
         };
         (['plotAttrs', 'projects', 'landUses', 'createdPlots', 'plotGeom', 'optionLists'] as const).forEach(applyMap);
-        (['hiddenLandUses', 'hiddenCards', 'hiddenLandmarks', 'merges', 'splits'] as const).forEach((name) => { if (p[name] !== undefined) out[name] = p[name]; });
+        (['hiddenLandUses', 'hiddenCards', 'hiddenLandmarks', 'merges', 'projectGroups', 'splits'] as const).forEach((name) => { if (p[name] !== undefined) out[name] = p[name]; });
         if (p.planStyle !== undefined) out.planStyle = p.planStyle;
         out.audit = s.audit.filter((x) => x.id !== id);
         return out as any;
       }),
       clearAudit: () => set({ audit: [] }),
-      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], hiddenLandUses: [], hiddenCards: [], planStyle: DEFAULT_PLAN_STYLE, investors: {}, audit: [] }),
+      reset: () => set({ plotAttrs: {}, projects: {}, landUses: {}, plotGeom: {}, merges: [], projectGroups: [], splits: {}, annotations: [], users: seedUsers, optionLists: {}, createdPlots: {}, comments: {}, hiddenLandmarks: [], hiddenLandUses: [], hiddenCards: [], planStyle: DEFAULT_PLAN_STYLE, investors: {}, audit: [] }),
     }),
     // Undo images (`prev`) are compact, so we persist them — but only for the most recent
     // 50 entries, to keep localStorage lean while undo survives reloads for recent edits.
-    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, hiddenLandUses: s.hiddenLandUses, hiddenCards: s.hiddenCards, planStyle: s.planStyle, investors: s.investors, audit: s.audit.map((e, i) => (i < 50 ? e : (({ prev, ...r }) => r)(e))) }) as any },
+    { name: 'kec_overrides', partialize: (s) => ({ plotAttrs: s.plotAttrs, projects: s.projects, landUses: s.landUses, plotGeom: s.plotGeom, merges: s.merges, projectGroups: s.projectGroups, splits: s.splits, annotations: s.annotations, users: s.users, optionLists: s.optionLists, createdPlots: s.createdPlots, comments: s.comments, hiddenLandmarks: s.hiddenLandmarks, hiddenLandUses: s.hiddenLandUses, hiddenCards: s.hiddenCards, planStyle: s.planStyle, investors: s.investors, audit: s.audit.map((e, i) => (i < 50 ? e : (({ prev, ...r }) => r)(e))) }) as any },
   ),
 );

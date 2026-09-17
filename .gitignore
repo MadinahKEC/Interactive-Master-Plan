@@ -31,3 +31,7 @@ infra/volumes/
 .firebase/
 firebase-debug.log
 *firebase-debug.log
+
+# Claude Code personal settings & hooks (not shared)
+.claude/settings.local.json
+.claude/auto-push.sh
