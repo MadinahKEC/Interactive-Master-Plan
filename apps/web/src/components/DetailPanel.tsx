@@ -3,7 +3,7 @@ import { SECTORS, can, type PlotCollection } from '@kec/types';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
 import { useOverrides } from '../lib/overrides';
-import { resolveProject, OWNERSHIP_META, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
+import { resolveProject, STATUS_META, STANDARD_PHASES, LICENSE_STAGES, INVEST_FIELDS, fmtInvest, estimatedElecLoadKva, t, type ProjectInfo } from '../lib/domain';
 import { useShortlist } from '../lib/shortlist';
 import { shareUrl } from '../lib/urlState';
 import { confirmDialog } from '../lib/dialog';
@@ -153,14 +153,10 @@ export function DetailPanel({
       <div className="d-scroll">
         <CardCtx.Provider value={hiddenCards}>
         <Section k="s:ownership" title={t('sec.ownership', lang)}>
-          {canAttr ? (
-            <OwnershipEditor code={p.code} overlay={pr.overlay} lang={lang} />
-          ) : (
-            <div className="own-row">
-              <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
-              <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
-            </div>
-          )}
+          <div className="own-row">
+            <span className="own-badge" style={{ background: pr.ownership.color }}>{ownLabel}</span>
+            <span className="own-name"><IconOwner size={14} />{pr.owner || (lang === 'ar' ? 'لا يوجد مالك' : 'No owner')}</span>
+          </div>
           <div className="own-date">{t('d.purchase', lang)}: <b className="mono">{pr.overlay.purchase_date || '—'}</b></div>
           {mergeRec && (() => {
             const parts = mergeRec.parts?.length ? mergeRec.parts : mergeRec.codes.map((c) => ({ code: c, land_use: null as string | null, area: 0 }));
@@ -481,41 +477,6 @@ function InvestorInterest({ code, lang }: { code: string; lang: 'ar' | 'en' }) {
         </div>
       )}
     </Section>
-  );
-}
-
-/** Inline ownership control on the plot card (editors only): pick a status, and when the
- *  plot is reserved/owned, name the owning party. Writes straight to the synced overlay. */
-function OwnershipEditor({ code, overlay, lang }: { code: string; overlay: ProjectInfo; lang: 'ar' | 'en' }) {
-  const setProject = useOverrides((s) => s.setProject);
-  const current = OWNERSHIP_META[overlay.ownership ?? ''] ? overlay.ownership! : (overlay.owner ? 'owned' : 'available');
-  const [owner, setOwner] = useState(overlay.owner ?? '');
-  useEffect(() => { setOwner(overlay.owner ?? ''); }, [code, overlay.owner]);
-  const pick = (key: string) => {
-    if (key === current) return;
-    if (key === 'available') { setProject(code, { ownership: 'available', owner: undefined }); setOwner(''); }
-    else setProject(code, { ownership: key });
-  };
-  const commitOwner = () => { const v = owner.trim(); if ((overlay.owner ?? '') !== v) setProject(code, { owner: v || undefined }); };
-  return (
-    <div className="own-edit">
-      <div className="own-seg" role="group" aria-label={t('d.setStatus', lang)}>
-        {Object.values(OWNERSHIP_META).map((o) => (
-          <button key={o.key} type="button" className={`own-seg-btn ${current === o.key ? 'on' : ''}`}
-            style={current === o.key ? ({ ['--own-c' as string]: o.color } as any) : undefined}
-            onClick={() => pick(o.key)}>
-            <span className="own-seg-dot" style={{ background: o.color }} />{lang === 'ar' ? o.ar : o.en}
-          </button>
-        ))}
-      </div>
-      {current !== 'available' && (
-        <label className="own-name-edit">
-          <IconOwner size={14} />
-          <input value={owner} placeholder={t('d.ownerName', lang)} onChange={(e) => setOwner(e.target.value)}
-            onBlur={commitOwner} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
-        </label>
-      )}
-    </div>
   );
 }
 

@@ -21,6 +21,7 @@ import LZString from 'lz-string';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence,
   browserLocalPersistence, browserSessionPersistence, createUserWithEmailAndPassword,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword,
   type User,
 } from 'firebase/auth';
 import type { StoreApi } from 'zustand';
@@ -125,6 +126,16 @@ export async function signIn(email: string, password: string, remember: boolean)
   return signInWithEmailAndPassword(auth, email, password);
 }
 export function signOutFb() { return signOut(auth); }
+
+/** Change the signed-in user's password: re-authenticate with the current password
+ *  (Firebase requires a recent login for this), then set the new one. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error('no-user');
+  const cred = EmailAuthProvider.credential(user.email, currentPassword);
+  await reauthenticateWithCredential(user, cred);
+  await updatePassword(user, newPassword);
+}
 
 /** Bootstrap the super-admin account on first run (main auth, then signs in as it). */
 export function bootstrapAccount(email: string, password: string) {

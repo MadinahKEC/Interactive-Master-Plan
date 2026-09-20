@@ -9,6 +9,7 @@ export const IconUsers = ({ size }: P) => (<svg {...S(size)}><circle cx="9" cy="
 export const IconAudit = ({ size }: P) => (<svg {...S(size)}><path d="M6 3h9l4 4v14H6Z" /><path d="M14 3v4h4M9 12h7M9 16h7M9 8h2" /></svg>);
 export const IconSettings = ({ size }: P) => (<svg {...S(size)}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></svg>);
 export const IconClose = ({ size }: P) => (<svg {...S(size)}><path d="M6 6l12 12M18 6L6 18" /></svg>);
+export const IconKey = ({ size }: P) => (<svg {...S(size)}><circle cx="8" cy="8" r="4" /><path d="M11 11l8 8M16 16l2-2M18.5 18.5l1.5-1.5" /></svg>);
 export const IconEdit = ({ size }: P) => (<svg {...S(size)}><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>);
 export const IconShape = ({ size }: P) => (<svg {...S(size)}><path d="M5 6l7-3 7 4-2 9-8 3-5-6 1-7Z" /><circle cx="5" cy="6" r="1.6" fill="currentColor" stroke="none" /><circle cx="12" cy="3" r="1.6" fill="currentColor" stroke="none" /><circle cx="19" cy="7" r="1.6" fill="currentColor" stroke="none" /><circle cx="17" cy="16" r="1.6" fill="currentColor" stroke="none" /><circle cx="9" cy="19" r="1.6" fill="currentColor" stroke="none" /></svg>);
 export const IconMerge = ({ size }: P) => (<svg {...S(size)}><path d="M7 4v4a4 4 0 0 0 4 4h6" /><path d="M17 4v4a4 4 0 0 1-4 4H7" /><path d="M14 9l3 3-3 3" /></svg>);

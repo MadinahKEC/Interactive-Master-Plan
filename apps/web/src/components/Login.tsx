@@ -37,7 +37,8 @@ export function Login() {
       <div className="auth-brand">
         <div className="auth-brand__in">
           <div className="auth-mark"><img src={import.meta.env.BASE_URL + 'KEC.png'} alt="KEC" /></div>
-          <h1 className="auth-brand__t">{ar ? 'المخطط العام التفاعلي' : 'Interactive Master Plan'}</h1>
+          <h1 className="auth-brand__t">Interactive Master Plan</h1>
+          <p className="auth-brand__dept">{ar ? 'إدارة تطوير الأعمال' : 'Business Development Department'}</p>
           <p className="auth-brand__s">{ar ? 'مدينة المعرفة الاقتصادية' : 'Knowledge Economic City'}</p>
           <span className="auth-brand__rule" />
         </div>
@@ -62,7 +63,14 @@ export function Login() {
           </div>
 
           <button className="btn auth-go primary" type="submit" disabled={busy}>{busy ? (ar ? 'جارٍ الدخول…' : 'Signing in…') : (ar ? 'دخول آمن' : 'Sign In securely')}</button>
-          <p className="auth-note">{ar ? 'كل حساب يُصدره المسؤول. المستعرض يسجّل بحسابه الخاص ويرى المخطط للقراءة فقط.' : 'Every account is issued by an administrator. Viewers sign in with their own account and see the plan read-only.'}</p>
+          <div className="auth-contact">
+            <span className="auth-contact__t">{ar ? 'الإبلاغ عن مشاكل النظام' : 'System Issue Contact'}</span>
+            <span className="auth-contact__d">{ar ? 'للإبلاغ عن أي مشكلة في النظام، تواصل مع:' : 'To report any system issue, please contact:'}</span>
+            <div className="auth-contact__list">
+              <a href="mailto:zalshowaier@madinahkec.com">zalshowaier@madinahkec.com</a>
+              <a href="mailto:shamdan@madinahkec.com">shamdan@madinahkec.com</a>
+            </div>
+          </div>
           <p className="auth-pow">powered by : Sa^^3R</p>
         </form>
       </div>
