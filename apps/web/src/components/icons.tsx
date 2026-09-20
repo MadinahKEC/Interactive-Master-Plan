@@ -12,8 +12,8 @@ export const IconClose = ({ size }: P) => (<svg {...S(size)}><path d="M6 6l12 12
 /** Closed padlock (matches the reference change-password window) — used for the
  *  change-password rail button and the dialog header. */
 export const IconKey = ({ size }: P) => (<svg {...S(size)}><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" /><path d="M12 14.4v2.6" /></svg>);
-/** Exclamation in a ring — the "system issue / notice" affordance. */
-export const IconAlert = ({ size }: P) => (<svg {...S(size)}><circle cx="12" cy="12" r="9" /><path d="M12 7.4v5.4" /><circle cx="12" cy="16.2" r="0.95" fill="currentColor" stroke="none" /></svg>);
+/** Support headset — the "system issue contact" affordance (matches the reference). */
+export const IconHeadset = ({ size }: P) => (<svg {...S(size)}><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><path d="M6 12H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1z" /><path d="M18 12h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" /><path d="M18 17a4 4 0 0 1-4 4h-2" /></svg>);
 export const IconMail = ({ size }: P) => (<svg {...S(size)}><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M4 7l8 5.5L20 7" /></svg>);
 export const IconEdit = ({ size }: P) => (<svg {...S(size)}><path d="M4 20h4L19 9l-4-4L4 16v4Z" /><path d="M14 6l4 4" /></svg>);
 export const IconShape = ({ size }: P) => (<svg {...S(size)}><path d="M5 6l7-3 7 4-2 9-8 3-5-6 1-7Z" /><circle cx="5" cy="6" r="1.6" fill="currentColor" stroke="none" /><circle cx="12" cy="3" r="1.6" fill="currentColor" stroke="none" /><circle cx="19" cy="7" r="1.6" fill="currentColor" stroke="none" /><circle cx="17" cy="16" r="1.6" fill="currentColor" stroke="none" /><circle cx="9" cy="19" r="1.6" fill="currentColor" stroke="none" /></svg>);

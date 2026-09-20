@@ -1079,14 +1079,13 @@ html[lang="en"] .al-text:empty::before{content:'Type…';color:rgba(255,255,255,
 /* System-issue support: a discreet corner button that lifts a premium contact card */
 .support{position:fixed;inset-inline-end:24px;bottom:24px;z-index:10001;display:flex;flex-direction:column;align-items:flex-end;gap:13px}
 .support-scrim{position:fixed;inset:0;z-index:-1}
-.support-fab{position:relative;width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;
-  background:radial-gradient(circle at 32% 28%,#3E8E4F,var(--kec-green-deep));
-  box-shadow:0 8px 24px rgba(20,61,30,.4),0 0 0 1.5px rgba(201,169,74,.55),inset 0 1px 0 rgba(255,255,255,.16);
-  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
-.support-fab:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 12px 30px rgba(20,61,30,.5),0 0 0 2px rgba(201,169,74,.85),inset 0 1px 0 rgba(255,255,255,.22)}
-.support-fab__ring{position:absolute;inset:-5px;border-radius:50%;border:1.5px solid var(--kec-gold);opacity:.5;pointer-events:none;animation:supportPulse 2.6s ease-out infinite}
-.support.open .support-fab__ring{display:none}
-@keyframes supportPulse{0%{transform:scale(.92);opacity:.55}70%{transform:scale(1.4);opacity:0}100%{opacity:0}}
+.support-fab{position:relative;width:56px;height:56px;border-radius:50%;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;
+  background:linear-gradient(135deg,var(--kec-green) 0%,var(--kec-green-deep) 100%);
+  box-shadow:0 10px 26px rgba(20,61,30,.34);transition:transform .16s ease,box-shadow .16s ease}
+.support-fab:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(20,61,30,.42)}
+.support-fab__ring{position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--kec-gold);pointer-events:none;animation:supportPulse 1.8s ease-out infinite}
+.support.open .support-fab__ring{animation:none;opacity:0}
+@keyframes supportPulse{0%{transform:scale(.82);opacity:.85}100%{transform:scale(1.75);opacity:0}}
 .support-pop{position:relative;width:296px;max-width:82vw;padding:16px 18px 14px;border-radius:16px;overflow:hidden;
   background:linear-gradient(160deg,#fff,var(--kec-surface));border:1px solid var(--kec-hairline);
   box-shadow:0 22px 55px rgba(20,61,30,.24),0 3px 10px rgba(20,61,30,.12);

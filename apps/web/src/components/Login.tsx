@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
-import { IconClose, IconAlert, IconMail } from './icons';
+import { IconClose, IconHeadset, IconMail } from './icons';
 
 const ERR: Record<string, { ar: string; en: string }> = {
   invalid: { ar: 'البريد الإلكتروني وكلمة المرور غير متطابقين مع أي حساب.', en: 'That email and password do not match an account.' },
@@ -89,7 +89,7 @@ function SupportFab({ ar }: { ar: boolean }) {
       <button type="button" className="support-fab" onClick={() => setOpen((o) => !o)}
         aria-label={ar ? 'الدعم الفني' : 'System Issue Contact'} title={ar ? 'الدعم الفني' : 'System Issue Contact'}>
         <span className="support-fab__ring" />
-        {open ? <IconClose size={20} /> : <IconAlert size={22} />}
+        {open ? <IconClose size={22} /> : <IconHeadset size={26} />}
       </button>
     </div>
   );
