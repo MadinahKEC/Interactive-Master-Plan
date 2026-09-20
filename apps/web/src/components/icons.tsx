@@ -9,8 +9,9 @@ export const IconUsers = ({ size }: P) => (<svg {...S(size)}><circle cx="9" cy="
 export const IconAudit = ({ size }: P) => (<svg {...S(size)}><path d="M6 3h9l4 4v14H6Z" /><path d="M14 3v4h4M9 12h7M9 16h7M9 8h2" /></svg>);
 export const IconSettings = ({ size }: P) => (<svg {...S(size)}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></svg>);
 export const IconClose = ({ size }: P) => (<svg {...S(size)}><path d="M6 6l12 12M18 6L6 18" /></svg>);
-/** A refined vertical key — for the "change password" action. */
-export const IconKey = ({ size }: P) => (<svg {...S(size)}><circle cx="12" cy="6.8" r="3.4" /><path d="M12 10.2V19M12 14h2.6M12 16.4h2.1" /></svg>);
+/** Closed padlock (matches the reference change-password window) — used for the
+ *  change-password rail button and the dialog header. */
+export const IconKey = ({ size }: P) => (<svg {...S(size)}><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" /><path d="M12 14.4v2.6" /></svg>);
 /** Exclamation in a ring — the "system issue / notice" affordance. */
 export const IconAlert = ({ size }: P) => (<svg {...S(size)}><circle cx="12" cy="12" r="9" /><path d="M12 7.4v5.4" /><circle cx="12" cy="16.2" r="0.95" fill="currentColor" stroke="none" /></svg>);
 export const IconMail = ({ size }: P) => (<svg {...S(size)}><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M4 7l8 5.5L20 7" /></svg>);
