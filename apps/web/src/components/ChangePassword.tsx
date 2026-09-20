@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../store';
 import { t } from '../lib/domain';
 import { changePassword } from '../lib/firebase';
-import { IconClose } from './icons';
+import { IconClose, IconKey } from './icons';
 
 /** Themed dialog to change the signed-in user's password: current + new + confirm. */
 export function ChangePassword({ onClose }: { onClose: () => void }) {
@@ -38,7 +38,7 @@ export function ChangePassword({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-wrap" onClick={onClose}>
       <form className="modal cpw" onClick={(e) => e.stopPropagation()} onSubmit={submit} dir={ar ? 'rtl' : 'ltr'}>
-        <div className="modal-head"><b>{t('pw.title', lang)}</b><button type="button" className="ic-btn" onClick={onClose}><IconClose size={16} /></button></div>
+        <div className="modal-head"><b className="cpw-head"><span className="cpw-badge"><IconKey size={16} /></span>{t('pw.title', lang)}</b><button type="button" className="ic-btn" onClick={onClose}><IconClose size={16} /></button></div>
         <div className="cpw-body">
           {done ? (
             <div className="cpw-done"><span className="cpw-check">✓</span>{t('pw.done', lang)}</div>

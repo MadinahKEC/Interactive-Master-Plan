@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../store';
 import { useAuth } from '../lib/auth';
+import { IconClose, IconLifebuoy, IconMail } from './icons';
 
 const ERR: Record<string, { ar: string; en: string }> = {
   invalid: { ar: 'البريد الإلكتروني وكلمة المرور غير متطابقين مع أي حساب.', en: 'That email and password do not match an account.' },
@@ -63,17 +64,33 @@ export function Login() {
           </div>
 
           <button className="btn auth-go primary" type="submit" disabled={busy}>{busy ? (ar ? 'جارٍ الدخول…' : 'Signing in…') : (ar ? 'دخول آمن' : 'Sign In securely')}</button>
-          <div className="auth-contact">
-            <span className="auth-contact__t">{ar ? 'الإبلاغ عن مشاكل النظام' : 'System Issue Contact'}</span>
-            <span className="auth-contact__d">{ar ? 'للإبلاغ عن أي مشكلة في النظام، تواصل مع:' : 'To report any system issue, please contact:'}</span>
-            <div className="auth-contact__list">
-              <a href="mailto:zalshowaier@madinahkec.com">zalshowaier@madinahkec.com</a>
-              <a href="mailto:shamdan@madinahkec.com">shamdan@madinahkec.com</a>
-            </div>
-          </div>
           <p className="auth-pow">powered by : Sa^^3R</p>
         </form>
       </div>
+      <SupportFab ar={ar} />
+    </div>
+  );
+}
+
+/** A discreet, premium support affordance pinned to the page corner. Tapping it lifts
+ *  an elegant card with who to contact about any system issue. */
+function SupportFab({ ar }: { ar: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`support ${open ? 'open' : ''}`} dir={ar ? 'rtl' : 'ltr'}>
+      {open && <div className="support-scrim" onClick={() => setOpen(false)} />}
+      <div className="support-pop" role="dialog" aria-hidden={!open}>
+        <div className="support-pop__glow" />
+        <span className="support-pop__k">{ar ? 'الدعم الفني' : 'System Issue Contact'}</span>
+        <p className="support-pop__d">{ar ? 'للإبلاغ عن أي مشكلة في النظام، يُرجى التواصل مع:' : 'To report any system issue, please contact:'}</p>
+        <a className="support-pop__mail" href="mailto:zalshowaier@madinahkec.com"><IconMail size={14} /><span>zalshowaier@madinahkec.com</span></a>
+        <a className="support-pop__mail" href="mailto:shamdan@madinahkec.com"><IconMail size={14} /><span>shamdan@madinahkec.com</span></a>
+      </div>
+      <button type="button" className="support-fab" onClick={() => setOpen((o) => !o)}
+        aria-label={ar ? 'الدعم الفني' : 'System Issue Contact'} title={ar ? 'الدعم الفني' : 'System Issue Contact'}>
+        <span className="support-fab__ring" />
+        {open ? <IconClose size={20} /> : <IconLifebuoy size={22} />}
+      </button>
     </div>
   );
 }
